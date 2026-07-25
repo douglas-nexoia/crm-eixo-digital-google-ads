@@ -2,19 +2,18 @@ import { supabase } from './supabase';
 import { Busca, Lead, ScoutJSONFormat } from './types';
 import { gerarMensagemPadrao } from './mensagem-template';
 
-// Buscar TODOS os nichos/segmentos e cidades únicos vinculados aos leads no Supabase
+// Buscar TODOS os nichos/segmentos e cidades através do JOIN entre buscas e leads
 export async function getNichosECidadesUnicosFromSupabase(): Promise<{ nichos: string[]; cidades: string[] }> {
   try {
-    // 1. Buscar nichos e cidades da tabela 'buscas'
-    const { data: buscasData } = await supabase
+    // 1. Buscar nichos e cidades diretamente da tabela de buscas
+    const { data: buscasData, error: errorBuscas } = await supabase
       .from('buscas')
-      .select('nicho, cidade')
-      .not('nicho', 'is', null);
+      .select('nicho, cidade');
 
-    // 2. Buscar nichos e cidades associados diretamente pelos leads
+    // 2. Buscar nichos e cidades associados via tabela de leads (caso haja inconsistência)
     const { data: leadsData } = await supabase
       .from('leads')
-      .select('buscas(nicho, cidade)');
+      .select('buscas!inner(nicho, cidade)');
 
     const nichosSet = new Set<string>();
     const cidadesSet = new Set<string>();
@@ -39,12 +38,12 @@ export async function getNichosECidadesUnicosFromSupabase(): Promise<{ nichos: s
       });
     }
 
-    const nichos = Array.from(nichosSet).sort();
-    const cidades = Array.from(cidadesSet).sort();
+    const nichos = Array.from(nichosSet).sort((a, b) => a.localeCompare(b));
+    const cidades = Array.from(cidadesSet).sort((a, b) => a.localeCompare(b));
 
     return { nichos, cidades };
   } catch (err) {
-    console.error('Erro ao buscar nichos únicos no Supabase:', err);
+    console.error('Erro ao buscar nichos e cidades únicos no Supabase:', err);
     return { nichos: [], cidades: [] };
   }
 }
