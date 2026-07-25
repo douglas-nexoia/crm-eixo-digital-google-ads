@@ -1,121 +1,73 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Copy, Check, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getLeadsPaginadosFromSupabase, getNichosECidadesUnicosFromSupabase } from '@/lib/supabase-service';
-import { getLocalLeads, getLocalBuscas } from '@/lib/storage';
+import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { FunnelBadge } from '@/components/FunnelBadge';
 
 export default function ExplorarLeadsPage() {
-  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [nichosDisponiveis, setNichosDisponiveis] = useState<string[]>([]);
+  const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
-  // Filtros
+  // Filtros Nativa do Supabase
   const [filtroNicho, setFiltroNicho] = useState<string>('todos');
   const [filtroCidade, setFiltroCidade] = useState<string>('todos');
   const [filtroNivel, setFiltroNivel] = useState<string>('todos');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [buscaTexto, setBuscaTexto] = useState<string>('');
   
-  // Paginação
+  // Paginação Server-side do Supabase
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(20);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  // 1. Carregar Todos os Leads do Supabase/Local
+  // 1. Carregar Nichos e Cidades Únicos diretamente do Supabase
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      const res = await getLeadsPaginadosFromSupabase({ page: 1, pageSize: 1000 });
-      if (res.leads.length > 0) {
-        setAllLeads(res.leads);
-      } else {
-        setAllLeads(getLocalLeads());
-      }
-      setLoading(false);
+    async function loadFiltros() {
+      const { nichos, cidades } = await getNichosECidadesUnicosFromSupabase();
+      setNichosDisponiveis(nichos);
+      setCidadesDisponiveis(cidades);
     }
-    loadData();
+    loadFiltros();
   }, []);
 
-  // 2. Classificação RÍGIDA e Fiel ao Nicho do Robô / Nome da Empresa
-  const getLeadNichoCalculado = (lead: Lead): string => {
-    const nichoBanco = (lead.buscas?.nicho || '').trim();
-    if (nichoBanco) return nichoBanco;
+  // 2. Consulta Direta e Nativa dos Leads no Supabase
+  const fetchLeads = async () => {
+    setLoading(true);
+    const result = await getLeadsPaginadosFromSupabase({
+      page,
+      pageSize,
+      nicho: filtroNicho,
+      cidade: filtroCidade,
+      scoreNivel: filtroNivel,
+      statusFunil: filtroStatus,
+      buscaTexto
+    });
 
-    const nomeLower = (lead.nome || '').toLowerCase();
-
-    if (nomeLower.includes('detail') || nomeLower.includes('estética automotiva') || nomeLower.includes('garage detail')) {
-      return 'Estética Automotiva';
+    if (result.leads.length > 0 || result.totalCount > 0) {
+      setLeads(result.leads);
+      setTotalCount(result.totalCount);
+      setTotalPages(result.totalPages || 1);
+    } else {
+      const local = getLocalLeads();
+      setLeads(local);
+      setTotalCount(local.length);
+      setTotalPages(1);
     }
-    if (nomeLower.includes('auto') || nomeLower.includes('mecânica') || nomeLower.includes('oficina') || nomeLower.includes('câmbio') || nomeLower.includes('óleo') || nomeLower.includes('center')) {
-      return 'Centro Automotivo / Mecânica';
-    }
-    if (nomeLower.includes('odonto') || nomeLower.includes('sorriso') || nomeLower.includes('dentista') || nomeLower.includes('orto')) {
-      return 'Odontologia';
-    }
-    
-    return 'Geral';
+    setLoading(false);
   };
 
-  // 3. Nichos e Cidades Únicos sem a palavra "Outros"
-  const { nichosDisponiveis, cidadesDisponiveis } = useMemo(() => {
-    const nichosSet = new Set<string>();
-    const cidadesSet = new Set<string>();
-
-    allLeads.forEach(lead => {
-      const nicho = getLeadNichoCalculado(lead);
-      if (nicho && nicho !== 'Outros') nichosSet.add(nicho);
-      
-      const cidade = lead.buscas?.cidade || lead.cidade;
-      if (cidade) cidadesSet.add(cidade);
-    });
-
-    return {
-      nichosDisponiveis: Array.from(nichosSet).sort((a, b) => a.localeCompare(b)),
-      cidadesDisponiveis: Array.from(cidadesSet).sort((a, b) => a.localeCompare(b))
-    };
-  }, [allLeads]);
-
-  // 4. Filtragem Precisa dos Leads
-  const leadsFiltrados = useMemo(() => {
-    return allLeads.filter(lead => {
-      if (filtroNicho !== 'todos') {
-        const nichoLead = getLeadNichoCalculado(lead);
-        if (nichoLead.toLowerCase() !== filtroNicho.toLowerCase()) return false;
-      }
-
-      if (filtroCidade !== 'todos') {
-        const cidadeLead = lead.buscas?.cidade || lead.cidade;
-        if (cidadeLead !== filtroCidade) return false;
-      }
-
-      if (filtroNivel !== 'todos') {
-        if (lead.score_nivel !== filtroNivel) return false;
-      }
-
-      if (filtroStatus !== 'todos') {
-        if (lead.status_funil !== filtroStatus) return false;
-      }
-
-      if (buscaTexto.trim()) {
-        const texto = buscaTexto.toLowerCase();
-        if (!lead.nome.toLowerCase().includes(texto)) return false;
-      }
-
-      return true;
-    });
-  }, [allLeads, filtroNicho, filtroCidade, filtroNivel, filtroStatus, buscaTexto]);
-
-  // 5. Paginação dos Resultados
-  const totalCount = leadsFiltrados.length;
-  const totalPages = Math.ceil(totalCount / pageSize) || 1;
-  const leadsPaginados = useMemo(() => {
-    const from = (page - 1) * pageSize;
-    return leadsFiltrados.slice(from, from + pageSize);
-  }, [leadsFiltrados, page, pageSize]);
+  useEffect(() => {
+    fetchLeads();
+  }, [page, filtroNicho, filtroCidade, filtroNivel, filtroStatus, buscaTexto]);
 
   const handleCopiarMensagem = (lead: Lead) => {
     const texto = lead.mensagem_editada || lead.mensagem_sugerida || '';
@@ -132,12 +84,12 @@ export default function ExplorarLeadsPage() {
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Explorar Leads</h1>
           <p className="text-slate-400 text-sm mt-1">
-            Empresas capturadas pelo EIXO-SCOUT no Google Maps ({totalCount} registros nesta visualização).
+            Empresas capturadas pelo EIXO-SCOUT no Google Maps ({totalCount} registros encontrados).
           </p>
         </div>
       </div>
 
-      {/* Barra de Filtros */}
+      {/* Barra de Filtros Nativa */}
       <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         
         {/* Busca por Nome */}
@@ -155,7 +107,7 @@ export default function ExplorarLeadsPage() {
           />
         </div>
 
-        {/* Filtro Nicho / Segmento Fiel ao Robô */}
+        {/* Filtro por Nicho Nativo */}
         <select
           value={filtroNicho}
           onChange={(e) => {
@@ -172,24 +124,24 @@ export default function ExplorarLeadsPage() {
           ))}
         </select>
 
-        {/* Filtro Cidade */}
+        {/* Filtro por Cidade Nativo */}
         <select
           value={filtroCidade}
           onChange={(e) => {
             setFiltroCidade(e.target.value);
             setPage(1);
           }}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 capitalize focus:outline-none focus:border-blue-500"
         >
           <option value="todos">Todas as Cidades</option>
           {cidadesDisponiveis.map((cidade) => (
-            <option key={cidade} value={cidade}>
+            <option key={cidade} value={cidade} className="capitalize">
               {cidade}
             </option>
           ))}
         </select>
 
-        {/* Filtro Nível Score */}
+        {/* Filtro por Nível de Score */}
         <select
           value={filtroNivel}
           onChange={(e) => {
@@ -204,7 +156,7 @@ export default function ExplorarLeadsPage() {
           <option value="baixo">✅ Oportunidade Baixa</option>
         </select>
 
-        {/* Filtro Status Funil */}
+        {/* Filtro por Status do Funil */}
         <select
           value={filtroStatus}
           onChange={(e) => {
@@ -231,6 +183,7 @@ export default function ExplorarLeadsPage() {
             <thead className="text-xs uppercase bg-slate-950/80 text-slate-400 border-b border-slate-800">
               <tr>
                 <th className="px-4 py-3.5">Empresa</th>
+                <th className="px-4 py-3.5">Segmento / Cidade</th>
                 <th className="px-4 py-3.5">Maps</th>
                 <th className="px-4 py-3.5">GMB (Nota / Aval.)</th>
                 <th className="px-4 py-3.5">Site & Redes</th>
@@ -242,19 +195,22 @@ export default function ExplorarLeadsPage() {
             <tbody className="divide-y divide-slate-800/60">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
                     Carregando leads do Supabase...
                   </td>
                 </tr>
-              ) : leadsPaginados.length === 0 ? (
+              ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
                     Nenhum lead encontrado para os filtros selecionados.
                   </td>
                 </tr>
               ) : (
-                leadsPaginados.map((lead) => {
+                leads.map((lead) => {
                   const pathDiagnostico = `/diagnostico/${lead.slug && lead.slug !== 'null' ? lead.slug : lead.id}`;
+                  const nichoExibicao = lead.nicho || lead.buscas?.nicho || 'Geral';
+                  const cidadeExibicao = lead.cidade || lead.buscas?.cidade || '';
+
                   return (
                     <tr key={lead.id} className="hover:bg-slate-900/50 transition-colors">
                       
@@ -262,6 +218,12 @@ export default function ExplorarLeadsPage() {
                       <td className="px-4 py-3.5">
                         <div className="font-bold text-slate-100">{lead.nome}</div>
                         <div className="text-xs text-slate-400">{lead.telefone || 'Sem telefone'}</div>
+                      </td>
+
+                      {/* Segmento & Cidade Nativos */}
+                      <td className="px-4 py-3.5 text-xs">
+                        <div className="font-semibold text-blue-400 capitalize">{nichoExibicao}</div>
+                        <div className="text-slate-400 capitalize">{cidadeExibicao}</div>
                       </td>
 
                       {/* Posição no Maps */}
@@ -339,7 +301,7 @@ export default function ExplorarLeadsPage() {
         {/* Rodapé de Paginação */}
         <div className="bg-slate-950/80 px-4 py-3 flex items-center justify-between border-t border-slate-800 text-xs text-slate-400">
           <div>
-            Mostrando <span className="font-semibold text-slate-200">{leadsPaginados.length}</span> de{' '}
+            Mostrando <span className="font-semibold text-slate-200">{leads.length}</span> de{' '}
             <span className="font-semibold text-slate-200">{totalCount}</span> registros (Página {page} de {totalPages})
           </div>
 
