@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Trophy, Check, X, Flame, ArrowUpRight, Share2 } from 'lucide-react';
+import { Trophy } from 'lucide-react';
+import { getBuscasFromSupabase, getLeadsFromSupabase } from '@/lib/supabase-service';
 import { getLocalBuscas, getLocalLeads } from '@/lib/storage';
 import { Busca, Lead } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
@@ -12,10 +13,24 @@ export default function RankingPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedNicho, setSelectedNicho] = useState<string>('odontologia');
   const [selectedCidade, setSelectedCidade] = useState<string>('Jundiaí/SP');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setBuscas(getLocalBuscas());
-    setLeads(getLocalLeads());
+    async function loadData() {
+      setLoading(true);
+      const sbBuscas = await getBuscasFromSupabase();
+      const sbLeads = await getLeadsFromSupabase();
+
+      if (sbBuscas.length > 0 || sbLeads.length > 0) {
+        setBuscas(sbBuscas);
+        setLeads(sbLeads);
+      } else {
+        setBuscas(getLocalBuscas());
+        setLeads(getLocalLeads());
+      }
+      setLoading(false);
+    }
+    loadData();
   }, []);
 
   const nichosDisponiveis = Array.from(new Set(buscas.map(b => b.nicho)));
@@ -23,7 +38,6 @@ export default function RankingPage() {
 
   // Concorrentes do nicho e cidade selecionados ordenados por posição no Maps
   const concorrentes = leads
-    .filter(l => true) // Mock por enquanto
     .sort((a, b) => a.posicao_maps - b.posicao_maps);
 
   return (
@@ -87,104 +101,118 @@ export default function RankingPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium">
-              {concorrentes.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-900/60 transition-colors">
-                  
-                  {/* Posição no Maps */}
-                  <td className="px-4 py-4 sticky left-0 bg-slate-950 font-black text-base text-slate-100 border-r border-slate-800">
-                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs ${
-                      item.posicao_maps <= 3 
-                        ? 'bg-amber-400/20 text-amber-300 border border-amber-500/40' 
-                        : 'bg-slate-800 text-slate-400'
-                    }`}>
-                      #{item.posicao_maps}
-                    </span>
+              {loading ? (
+                <tr>
+                  <td colSpan={11} className="px-4 py-8 text-center text-slate-400">
+                    Carregando ranking do Supabase...
                   </td>
-
-                  {/* Nome */}
-                  <td className="px-4 py-4 font-bold text-slate-100">
-                    <Link href={`/leads/${item.id}`} className="hover:text-blue-400 hover:underline">
-                      {item.nome}
-                    </Link>
-                  </td>
-
-                  {/* Nota GMB */}
-                  <td className={`px-4 py-4 text-center font-bold ${
-                    (item.gmb_nota || 0) >= 4.5 
-                      ? 'bg-emerald-950/20 text-emerald-400' 
-                      : (item.gmb_nota || 0) >= 4.0 
-                      ? 'bg-amber-950/20 text-amber-400' 
-                      : 'bg-red-950/20 text-red-400'
-                  }`}>
-                    ⭐ {item.gmb_nota || 'N/A'}
-                  </td>
-
-                  {/* Avaliações */}
-                  <td className="px-4 py-4 text-center font-semibold text-slate-200">
-                    {item.gmb_avaliacoes || 0}
-                  </td>
-
-                  {/* GMB Verificado */}
-                  <td className="px-4 py-4 text-center">
-                    {item.gmb_verificado ? (
-                      <span className="text-emerald-400 font-bold">✅</span>
-                    ) : (
-                      <span className="text-red-400 font-bold">❌</span>
-                    )}
-                  </td>
-
-                  {/* Tem Site */}
-                  <td className="px-4 py-4 text-center">
-                    {item.site ? (
-                      <span className="text-emerald-400 font-bold">✅</span>
-                    ) : (
-                      <span className="text-red-400 font-bold">❌</span>
-                    )}
-                  </td>
-
-                  {/* HTTPS */}
-                  <td className="px-4 py-4 text-center">
-                    {item.site_https ? (
-                      <span className="text-emerald-400 font-bold">✅</span>
-                    ) : (
-                      <span className="text-red-400 font-bold">❌</span>
-                    )}
-                  </td>
-
-                  {/* Responsivo */}
-                  <td className="px-4 py-4 text-center">
-                    {item.site_responsivo ? (
-                      <span className="text-emerald-400 font-bold">✅</span>
-                    ) : (
-                      <span className="text-red-400 font-bold">❌</span>
-                    )}
-                  </td>
-
-                  {/* Instagram */}
-                  <td className="px-4 py-4 text-center">
-                    {item.instagram ? (
-                      <span className="text-emerald-400 font-bold">✅</span>
-                    ) : (
-                      <span className="text-red-400 font-bold">❌</span>
-                    )}
-                  </td>
-
-                  {/* Facebook */}
-                  <td className="px-4 py-4 text-center">
-                    {item.facebook ? (
-                      <span className="text-emerald-400 font-bold">✅</span>
-                    ) : (
-                      <span className="text-red-400 font-bold">❌</span>
-                    )}
-                  </td>
-
-                  {/* Score */}
-                  <td className="px-4 py-4 text-center">
-                    <ScoreBadge nivel={item.score_nivel} pontos={item.score_pontos} />
-                  </td>
-
                 </tr>
-              ))}
+              ) : concorrentes.length === 0 ? (
+                <tr>
+                  <td colSpan={11} className="px-4 py-8 text-center text-slate-500">
+                    Nenhum concorrente encontrado para a busca selecionada.
+                  </td>
+                </tr>
+              ) : (
+                concorrentes.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-900/60 transition-colors">
+                    
+                    {/* Posição no Maps */}
+                    <td className="px-4 py-4 sticky left-0 bg-slate-950 font-black text-base text-slate-100 border-r border-slate-800">
+                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs ${
+                        item.posicao_maps <= 3 
+                          ? 'bg-amber-400/20 text-amber-300 border border-amber-500/40' 
+                          : 'bg-slate-800 text-slate-400'
+                      }`}>
+                        #{item.posicao_maps}
+                      </span>
+                    </td>
+
+                    {/* Nome */}
+                    <td className="px-4 py-4 font-bold text-slate-100">
+                      <Link href={`/leads/${item.id}`} className="hover:text-blue-400 hover:underline">
+                        {item.nome}
+                      </Link>
+                    </td>
+
+                    {/* Nota GMB */}
+                    <td className={`px-4 py-4 text-center font-bold ${
+                      (item.gmb_nota || 0) >= 4.5 
+                        ? 'bg-emerald-950/20 text-emerald-400' 
+                        : (item.gmb_nota || 0) >= 4.0 
+                        ? 'bg-amber-950/20 text-amber-400' 
+                        : 'bg-red-950/20 text-red-400'
+                    }`}>
+                      ⭐ {item.gmb_nota || 'N/A'}
+                    </td>
+
+                    {/* Avaliações */}
+                    <td className="px-4 py-4 text-center font-semibold text-slate-200">
+                      {item.gmb_avaliacoes || 0}
+                    </td>
+
+                    {/* GMB Verificado */}
+                    <td className="px-4 py-4 text-center">
+                      {item.gmb_verificado ? (
+                        <span className="text-emerald-400 font-bold">✅</span>
+                      ) : (
+                        <span className="text-red-400 font-bold">❌</span>
+                      )}
+                    </td>
+
+                    {/* Tem Site */}
+                    <td className="px-4 py-4 text-center">
+                      {item.site ? (
+                        <span className="text-emerald-400 font-bold">✅</span>
+                      ) : (
+                        <span className="text-red-400 font-bold">❌</span>
+                      )}
+                    </td>
+
+                    {/* HTTPS */}
+                    <td className="px-4 py-4 text-center">
+                      {item.site_https ? (
+                        <span className="text-emerald-400 font-bold">✅</span>
+                      ) : (
+                        <span className="text-red-400 font-bold">❌</span>
+                      )}
+                    </td>
+
+                    {/* Responsivo */}
+                    <td className="px-4 py-4 text-center">
+                      {item.site_responsivo ? (
+                        <span className="text-emerald-400 font-bold">✅</span>
+                      ) : (
+                        <span className="text-red-400 font-bold">❌</span>
+                      )}
+                    </td>
+
+                    {/* Instagram */}
+                    <td className="px-4 py-4 text-center">
+                      {item.instagram ? (
+                        <span className="text-emerald-400 font-bold">✅</span>
+                      ) : (
+                        <span className="text-red-400 font-bold">❌</span>
+                      )}
+                    </td>
+
+                    {/* Facebook */}
+                    <td className="px-4 py-4 text-center">
+                      {item.facebook ? (
+                        <span className="text-emerald-400 font-bold">✅</span>
+                      ) : (
+                        <span className="text-red-400 font-bold">❌</span>
+                      )}
+                    </td>
+
+                    {/* Score */}
+                    <td className="px-4 py-4 text-center">
+                      <ScoreBadge nivel={item.score_nivel} pontos={item.score_pontos} />
+                    </td>
+
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

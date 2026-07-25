@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Filter, Copy, ExternalLink, Check, FileText } from 'lucide-react';
+import { Search, Copy, Check, FileText } from 'lucide-react';
+import { getLeadsFromSupabase } from '@/lib/supabase-service';
 import { getLocalLeads } from '@/lib/storage';
-import { Lead, StatusFunil, ScoreNivel } from '@/lib/types';
+import { Lead } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { FunnelBadge } from '@/components/FunnelBadge';
 
@@ -16,12 +17,22 @@ export default function ExplorarLeadsPage() {
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [buscaTexto, setBuscaTexto] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLeads(getLocalLeads());
+    async function fetchLeads() {
+      setLoading(true);
+      const sbLeads = await getLeadsFromSupabase();
+      if (sbLeads.length > 0) {
+        setLeads(sbLeads);
+      } else {
+        setLeads(getLocalLeads());
+      }
+      setLoading(false);
+    }
+    fetchLeads();
   }, []);
 
-  // Extrair nichos e cidades únicos para os filtros
   const nichosUnicos = Array.from(new Set(leads.map(l => l.buscas?.nicho || 'odontologia')));
   const cidadesUnicas = Array.from(new Set(leads.map(l => l.buscas?.cidade || 'Jundiaí/SP')));
 
@@ -134,7 +145,13 @@ export default function ExplorarLeadsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {leadsFiltrados.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                    Carregando leads do Supabase...
+                  </td>
+                </tr>
+              ) : leadsFiltrados.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                     Nenhum lead encontrado com os filtros selecionados.
