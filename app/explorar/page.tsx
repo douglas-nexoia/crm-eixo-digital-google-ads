@@ -3,14 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Copy, Check, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getLeadsPaginadosFromSupabase } from '@/lib/supabase-service';
-import { getLocalLeads } from '@/lib/storage';
-import { Lead } from '@/lib/types';
+import { getLeadsPaginadosFromSupabase, getBuscasFromSupabase } from '@/lib/supabase-service';
+import { getLocalLeads, getLocalBuscas } from '@/lib/storage';
+import { Lead, Busca } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { FunnelBadge } from '@/components/FunnelBadge';
 
 export default function ExplorarLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [buscas, setBuscas] = useState<Busca[]>([]);
+  
+  // Filtros
   const [filtroNicho, setFiltroNicho] = useState<string>('todos');
   const [filtroCidade, setFiltroCidade] = useState<string>('todos');
   const [filtroNivel, setFiltroNivel] = useState<string>('todos');
@@ -24,6 +27,22 @@ export default function ExplorarLeadsPage() {
   const [totalCount, setTotalCount] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
+
+  // Carregar lista de Nichos e Cidades disponíveis
+  useEffect(() => {
+    async function loadFiltrosOpcoes() {
+      const sbBuscas = await getBuscasFromSupabase(100);
+      if (sbBuscas.length > 0) {
+        setBuscas(sbBuscas);
+      } else {
+        setBuscas(getLocalBuscas());
+      }
+    }
+    loadFiltrosOpcoes();
+  }, []);
+
+  const nichosUnicos = Array.from(new Set(buscas.map(b => b.nicho).filter(Boolean)));
+  const cidadesUnicas = Array.from(new Set(buscas.map(b => b.cidade).filter(Boolean)));
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -42,7 +61,6 @@ export default function ExplorarLeadsPage() {
       setTotalCount(result.totalCount);
       setTotalPages(result.totalPages || 1);
     } else {
-      // Fallback local se o banco estiver limpo
       const local = getLocalLeads();
       setLeads(local);
       setTotalCount(local.length);
@@ -53,7 +71,7 @@ export default function ExplorarLeadsPage() {
 
   useEffect(() => {
     fetchLeads();
-  }, [page, filtroNivel, filtroStatus, buscaTexto]);
+  }, [page, filtroNicho, filtroCidade, filtroNivel, filtroStatus, buscaTexto]);
 
   const handleCopiarMensagem = (lead: Lead) => {
     const texto = lead.mensagem_editada || lead.mensagem_sugerida || '';
@@ -76,7 +94,7 @@ export default function ExplorarLeadsPage() {
       </div>
 
       {/* Barra de Filtros */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         
         {/* Busca por Nome */}
         <div className="relative">
@@ -92,6 +110,40 @@ export default function ExplorarLeadsPage() {
             className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
           />
         </div>
+
+        {/* Filtro Nicho / Segmento */}
+        <select
+          value={filtroNicho}
+          onChange={(e) => {
+            setFiltroNicho(e.target.value);
+            setPage(1);
+          }}
+          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 capitalize focus:outline-none focus:border-blue-500"
+        >
+          <option value="todos">Todos os Segmentos</option>
+          {nichosUnicos.map((nicho) => (
+            <option key={nicho} value={nicho} className="capitalize">
+              {nicho}
+            </option>
+          ))}
+        </select>
+
+        {/* Filtro Cidade */}
+        <select
+          value={filtroCidade}
+          onChange={(e) => {
+            setFiltroCidade(e.target.value);
+            setPage(1);
+          }}
+          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+        >
+          <option value="todos">Todas as Cidades</option>
+          {cidadesUnicas.map((cidade) => (
+            <option key={cidade} value={cidade}>
+              {cidade}
+            </option>
+          ))}
+        </select>
 
         {/* Filtro Nível Score */}
         <select
@@ -126,13 +178,6 @@ export default function ExplorarLeadsPage() {
           <option value="Descartado">Descartado</option>
         </select>
 
-        <button 
-          onClick={fetchLeads}
-          className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-lg border border-slate-700 transition-colors"
-        >
-          Atualizar Dados
-        </button>
-
       </div>
 
       {/* Tabela Principal de Leads */}
@@ -160,7 +205,7 @@ export default function ExplorarLeadsPage() {
               ) : leads.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                    Nenhum lead encontrado.
+                    Nenhum lead encontrado para os filtros selecionados.
                   </td>
                 </tr>
               ) : (
@@ -262,6 +307,7 @@ export default function ExplorarLeadsPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages || loading}
+              className="page >= totalPages || loading"
               className="p-1.5 rounded bg-slate-900 border border-slate-800 disabled:opacity-40 hover:bg-slate-800 text-slate-200"
             >
               <ChevronRight className="w-4 h-4" />
