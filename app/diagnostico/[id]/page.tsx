@@ -7,7 +7,7 @@ import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
 import { 
   MapPin, AlertTriangle, Trophy, MessageCircle, Star, 
-  ShieldAlert, CheckCircle2, XCircle, Sparkles, TrendingDown, ArrowUpRight
+  ShieldAlert, CheckCircle2, XCircle, Sparkles, Zap, ArrowUpRight
 } from 'lucide-react';
 
 export default function DiagnosticoPublicoPage() {
@@ -82,6 +82,15 @@ export default function DiagnosticoPublicoPage() {
     );
   }
 
+  // Primeiro colocado para comparação inteligente
+  const primeiroColocado = concorrentesTop.find(c => c.posicao_maps === 1) || concorrentesTop[0];
+  
+  // Condição do insight persuasivo
+  const temInjusticaRanking = primeiroColocado && (
+    (!primeiroColocado.site && lead.site) || 
+    ((primeiroColocado.gmb_nota || 0) < (lead.gmb_nota || 0))
+  );
+
   const whatsappMsg = encodeURIComponent(
     `Olá! Vi o relatório de presença digital da empresa *${lead.nome}* no Google e gostaria de saber como colocar nossa empresa no topo do Google!`
   );
@@ -95,7 +104,7 @@ export default function DiagnosticoPublicoPage() {
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-96 bg-blue-600/10 blur-[120px] pointer-events-none rounded-full" />
       <div className="fixed bottom-10 right-0 w-80 h-80 bg-emerald-600/10 blur-[140px] pointer-events-none rounded-full" />
 
-      {/* Top Banner de Diagnóstico */}
+      {/* Top Banner */}
       <header className="sticky top-0 z-50 bg-[#0a0d14]/80 backdrop-blur-xl border-b border-slate-800/80 px-4 py-4 shadow-2xl">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -154,11 +163,9 @@ export default function DiagnosticoPublicoPage() {
               <span className="text-[10px] text-slate-400 uppercase block font-semibold">Ranking Maps</span>
               <div className="text-3xl font-black text-slate-100 flex items-center justify-center gap-1">
                 {lead.posicao_maps ? (
-                  <>
-                    <span className={lead.posicao_maps <= 3 ? 'text-emerald-400' : 'text-amber-400'}>
-                      #{lead.posicao_maps}
-                    </span>
-                  </>
+                  <span className={lead.posicao_maps <= 3 ? 'text-emerald-400' : 'text-amber-400'}>
+                    #{lead.posicao_maps}
+                  </span>
                 ) : (
                   <span className="text-slate-500 text-lg">N/A</span>
                 )}
@@ -252,6 +259,26 @@ export default function DiagnosticoPublicoPage() {
               </tbody>
             </table>
           </div>
+
+          {/* CARD DE INSIGHT PERSUASIVO SOBRE O ALGORITMO DO GOOGLE */}
+          {temInjusticaRanking && primeiroColocado && (
+            <div className="bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-slate-950 border border-amber-500/30 rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-amber-400 font-bold uppercase tracking-wider">
+                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Oportunidade Comercial de Retomada!</span>
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                Reparou que o <strong>1º Colocado ({primeiroColocado.nome})</strong> {
+                  !primeiroColocado.site 
+                    ? 'nem possui site oficial' 
+                    : `tem nota ${primeiroColocado.gmb_nota} (menor que a sua)`
+                }? Ele só está no topo porque aplicou técnicas de otimização de perfil no Google.
+              </p>
+              <p className="text-emerald-400 font-semibold">
+                👉 Com a qualidade da {lead.nome} (Nota {lead.gmb_nota} {lead.site ? '+ Site Ativo' : ''}), sua empresa tem potencial direto para ultrapassá-lo e assumir a 1ª Posição!
+              </p>
+            </div>
+          )}
         </section>
 
         {/* Seção 3: Falhas Identificadas */}
@@ -273,7 +300,7 @@ export default function DiagnosticoPublicoPage() {
           </div>
         </section>
 
-        {/* Seção 4: CTA do WhatsApp para o seu número (11 94453-0448) */}
+        {/* Seção 4: CTA do WhatsApp para 11944530448 */}
         <section className="bg-gradient-to-b from-slate-900/80 via-slate-900 to-[#0c1322] border border-emerald-500/30 rounded-3xl p-6 text-center space-y-5 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" />
           
@@ -285,7 +312,7 @@ export default function DiagnosticoPublicoPage() {
               Quer colocar a {lead.nome} em 1º Lugar?
             </h2>
             <p className="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">
-              A <strong>Eixo Digital</strong> constrói o ecossistema completo: criação de site de alta performance, otimização semanal do Google Meu Negócio e anúncios de alta conversão.
+              A <strong>Eixo Digital</strong> constrói o ecossistema completo: criação de site de alta performance, otimização semanal do Google Meu Negócio e campanhas de Google Ads.
             </p>
           </div>
 
