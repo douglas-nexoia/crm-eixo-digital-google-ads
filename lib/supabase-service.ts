@@ -2,7 +2,6 @@ import { supabase } from './supabase';
 import { Busca, Lead, ScoutJSONFormat } from './types';
 import { gerarMensagemPadrao } from './mensagem-template';
 
-// Buscar todos os nichos/segmentos únicos cadastrados no banco
 export async function getNichosECidadesUnicosFromSupabase(): Promise<{ nichos: string[]; cidades: string[] }> {
   const { data, error } = await supabase
     .from('buscas')
@@ -110,21 +109,37 @@ export async function getLeadsFromSupabase(): Promise<Lead[]> {
   return data || [];
 }
 
+// Consulta otimizada por slug ou id sem gerar erro de console
 export async function getLeadBySlugOrIdFromSupabase(slugOrId: string): Promise<Lead | null> {
-  const { data, error } = await supabase
-    .from('leads')
-    .select('*, buscas(nicho, cidade)')
-    .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
-    .maybeSingle();
+  try {
+    // 1. Tentar buscar por slug
+    const { data: bySlug } = await supabase
+      .from('leads')
+      .select('*, buscas(nicho, cidade)')
+      .eq('slug', slugOrId)
+      .maybeSingle();
 
-  if (error) {
-    console.error('Erro ao buscar lead por slug:', error);
+    if (bySlug) return bySlug;
+
+    // 2. Se não encontrar por slug, tentar por ID (se for UUID válido)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+    if (isUuid) {
+      const { data: byId } = await supabase
+        .from('leads')
+        .select('*, buscas(nicho, cidade)')
+        .eq('id', slugOrId)
+        .maybeSingle();
+
+      if (byId) return byId;
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('Busca silenciosa de lead por slug/id:', err);
     return null;
   }
-  return data;
 }
 
-// Atualização de Lead no Supabase com tratamento seguro de RLS
 export async function updateLeadInSupabase(id: string, updates: Partial<Lead>): Promise<Lead | null> {
   try {
     const { data, error } = await supabase
