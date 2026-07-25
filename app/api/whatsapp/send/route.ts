@@ -15,7 +15,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Limpar e formatar o número (remover não dígitos)
     let numeroLimpo = (telefone || '').replace(/\D/g, '');
+    
+    // Garantir DDI 55 se o número for do Brasil (10 ou 11 dígitos)
     if (numeroLimpo.length === 10 || numeroLimpo.length === 11) {
       numeroLimpo = '55' + numeroLimpo;
     }
@@ -23,84 +26,53 @@ export async function POST(req: NextRequest) {
     const baseUrl = apiUrl.trim().replace(/\/+$/, '');
     const instanceName = instance.trim();
 
-    // Lista de Variações de Endpoints suportadas pela Evolution GO
-    const endpointsToTry = [
-      {
-        url: `${baseUrl}/message/sendText/${instanceName}`,
-        body: {
-          number: numeroLimpo,
-          textMessage: { text: mensagem },
-          options: { delay: 1200, presence: 'composing' }
-        }
+    // Rota exata da Evolution GO: /send/text
+    const endpoint = `${baseUrl}/send/text`;
+
+    // Payload exato da Evolution GO
+    const payload = {
+      instance: instanceName,
+      number: numeroLimpo,
+      text: mensagem
+    };
+
+    console.log(`Disparando WhatsApp para ${endpoint} com instância: ${instanceName}`);
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': apiKey.trim()
       },
-      {
-        url: `${baseUrl}/message/sendText`,
-        body: {
-          instanceName: instanceName,
-          instance: instanceName,
-          number: numeroLimpo,
-          textMessage: { text: mensagem },
-          text: mensagem,
-          options: { delay: 1200, presence: 'composing' }
-        }
-      },
-      {
-        url: `${baseUrl}/message/sendText/${instanceName}`,
-        body: {
-          number: numeroLimpo,
-          text: mensagem,
-          options: { delay: 1200, presence: 'composing' }
-        }
-      }
-    ];
+      body: JSON.stringify(payload)
+    });
 
-    let lastStatus = 404;
-    let lastResponseText = '';
+    const responseText = await response.text();
+    let data: any = {};
 
-    // Testar as variações até obter sucesso ou resposta diferente de 404
-    for (const item of endpointsToTry) {
-      try {
-        const response = await fetch(item.url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': apiKey.trim(),
-            'instance': instanceName
-          },
-          body: JSON.stringify(item.body)
-        });
-
-        lastStatus = response.status;
-        lastResponseText = await response.text();
-
-        if (response.ok) {
-          return NextResponse.json({
-            success: true,
-            message: 'Mensagem enviada com sucesso pelo WhatsApp!'
-          });
-        }
-
-        // Se o erro não for 404 (ex: 401 Unauthorized ou erro de parâmetro), quebrar o loop para retornar a mensagem real
-        if (response.status !== 404) {
-          break;
-        }
-      } catch (e) {
-        console.warn(`Tentativa em ${item.url} falhou, tentando próximo...`);
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      if (!response.ok) {
+        return NextResponse.json({
+          success: false,
+          error: `Erro HTTP ${response.status} na Evolution GO. Verifique se a URL (${baseUrl}) e a chave API estão corretas.`
+        }, { status: response.status });
       }
     }
 
-    // Se chegou aqui, tratar o erro
-    let data: any = {};
-    try {
-      data = JSON.parse(lastResponseText);
-    } catch {}
-
-    const msgErro = data?.response?.message || data?.message || data?.error || `Erro HTTP ${lastStatus} na Evolution GO`;
+    if (!response.ok) {
+      const msgErro = data?.response?.message || data?.message || data?.error || `Erro ${response.status} na API Evolution GO`;
+      return NextResponse.json({
+        success: false,
+        error: Array.isArray(msgErro) ? msgErro.join(', ') : String(msgErro)
+      }, { status: response.status });
+    }
 
     return NextResponse.json({
-      success: false,
-      error: `${Array.isArray(msgErro) ? msgErro.join(', ') : String(msgErro)} (URL: ${baseUrl}, Instância: ${instanceName})`
-    }, { status: lastStatus });
+      success: true,
+      message: 'Mensagem enviada com sucesso pelo WhatsApp!'
+    });
 
   } catch (err: any) {
     console.error('Erro no servidor ao enviar WhatsApp:', err);
