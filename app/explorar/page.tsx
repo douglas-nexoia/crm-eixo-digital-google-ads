@@ -29,34 +29,53 @@ export default function ExplorarLeadsPage() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  // Extração inteligente de Nichos e Cidades
-  const extrairOpcoesDeFiltro = (listaLeads: Lead[], nichosBanco: string[], cidadesBanco: string[]) => {
-    const nichosSet = new Set<string>(nichosBanco);
-    const cidadesSet = new Set<string>(cidadesBanco);
+  // Analisador inteligente de Nichos a partir dos Leads
+  const detectarNichosDosLeads = (listaLeads: Lead[], nichosDoBanco: string[]) => {
+    const setNichos = new Set<string>(nichosDoBanco);
+    const setCidades = new Set<string>();
 
-    listaLeads.forEach((l) => {
-      if (l.buscas?.nicho?.trim()) {
-        nichosSet.add(l.buscas.nicho.trim());
+    listaLeads.forEach((lead) => {
+      const nomeLower = (lead.nome || '').toLowerCase();
+      
+      // Categorização inteligente por palavras-chave caso o banco esteja sem a FK
+      if (nomeLower.includes('auto') || nomeLower.includes('mecânica') || nomeLower.includes('oficina') || nomeLower.includes('câmbio') || nomeLower.includes('óleo')) {
+        setNichos.add('Centro Automotivo / Mecânica');
+      } else if (nomeLower.includes('detail') || nomeLower.includes('estética automotiva') || nomeLower.includes('garage')) {
+        setNichos.add('Estética Automotiva');
+      } else if (nomeLower.includes('odonto') || nomeLower.includes('sorriso') || nomeLower.includes('dentista')) {
+        setNichos.add('Odontologia');
+      } else if (lead.buscas?.nicho) {
+        setNichos.add(lead.buscas.nicho);
       }
-      if (l.buscas?.cidade?.trim()) {
-        cidadesSet.add(l.buscas.cidade.trim());
+
+      if (lead.buscas?.cidade) {
+        setCidades.add(lead.buscas.cidade);
       }
     });
 
-    const nichosFinais = Array.from(nichosSet).filter(Boolean).sort();
-    const cidadesFinais = Array.from(cidadesSet).filter(Boolean).sort();
+    // Se o banco tiver apenas odontologia e os leads forem automotivos, garantir os nichos automotivos
+    if (setNichos.size === 0 || (setNichos.size === 1 && setNichos.has('odontologia'))) {
+      setNichos.add('Centro Automotivo / Mecânica');
+      setNichos.add('Estética Automotiva');
+    }
 
-    if (nichosFinais.length > 0) setNichosDisponiveis(nichosFinais);
-    if (cidadesFinais.length > 0) setCidadesDisponiveis(cidadesFinais);
+    setNichosDisponiveis(Array.from(setNichos).filter(Boolean).sort());
+    if (setCidades.size > 0) {
+      setCidadesDisponiveis(Array.from(setCidades).filter(Boolean).sort());
+    }
   };
 
   useEffect(() => {
-    async function initFiltros() {
+    async function loadFiltrosIniciais() {
       const { nichos, cidades } = await getNichosECidadesUnicosFromSupabase();
-      if (nichos.length > 0) setNichosDisponiveis(nichos);
+      
+      // Garantir nichos padrões do CRM
+      const nichosIniciais = new Set<string>([...nichos, 'Odontologia', 'Centro Automotivo / Mecânica', 'Estética Automotiva']);
+      setNichosDisponiveis(Array.from(nichosIniciais).sort());
+      
       if (cidades.length > 0) setCidadesDisponiveis(cidades);
     }
-    initFiltros();
+    loadFiltrosIniciais();
   }, []);
 
   const fetchLeads = async () => {
@@ -75,13 +94,13 @@ export default function ExplorarLeadsPage() {
       setLeads(result.leads);
       setTotalCount(result.totalCount);
       setTotalPages(result.totalPages || 1);
-      extrairOpcoesDeFiltro(result.leads, nichosDisponiveis, cidadesDisponiveis);
+      detectarNichosDosLeads(result.leads, nichosDisponiveis);
     } else {
       const local = getLocalLeads();
       setLeads(local);
       setTotalCount(local.length);
       setTotalPages(1);
-      extrairOpcoesDeFiltro(local, nichosDisponiveis, cidadesDisponiveis);
+      detectarNichosDosLeads(local, nichosDisponiveis);
     }
     setLoading(false);
   };
@@ -128,14 +147,14 @@ export default function ExplorarLeadsPage() {
           />
         </div>
 
-        {/* Filtro Nicho / Segmento */}
+        {/* Filtro Nicho / Segmento com Garantia Total de Opções */}
         <select
           value={filtroNicho}
           onChange={(e) => {
             setFiltroNicho(e.target.value);
             setPage(1);
           }}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 capitalize focus:outline-none focus:border-blue-500"
+          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 capitalize focus:outline-none focus:border-blue-500 font-semibold"
         >
           <option value="todos">Todos Os Segmentos</option>
           {nichosDisponiveis.map((nicho) => (
