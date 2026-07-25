@@ -3,15 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Copy, Check, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getLeadsPaginadosFromSupabase, getBuscasFromSupabase } from '@/lib/supabase-service';
+import { getLeadsPaginadosFromSupabase, getNichosECidadesUnicosFromSupabase } from '@/lib/supabase-service';
 import { getLocalLeads, getLocalBuscas } from '@/lib/storage';
-import { Lead, Busca } from '@/lib/types';
+import { Lead } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { FunnelBadge } from '@/components/FunnelBadge';
 
 export default function ExplorarLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [buscas, setBuscas] = useState<Busca[]>([]);
+  const [nichosDisponiveis, setNichosDisponiveis] = useState<string[]>([]);
+  const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
   
   // Filtros
   const [filtroNicho, setFiltroNicho] = useState<string>('todos');
@@ -28,21 +29,21 @@ export default function ExplorarLeadsPage() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  // Carregar lista de Nichos e Cidades disponíveis
+  // Carregar lista de Nichos e Cidades únicos diretamente do Supabase Postgres
   useEffect(() => {
     async function loadFiltrosOpcoes() {
-      const sbBuscas = await getBuscasFromSupabase(100);
-      if (sbBuscas.length > 0) {
-        setBuscas(sbBuscas);
+      const { nichos, cidades } = await getNichosECidadesUnicosFromSupabase();
+      if (nichos.length > 0 || cidades.length > 0) {
+        setNichosDisponiveis(nichos);
+        setCidadesDisponiveis(cidades);
       } else {
-        setBuscas(getLocalBuscas());
+        const local = getLocalBuscas();
+        setNichosDisponiveis(Array.from(new Set(local.map(b => b.nicho))));
+        setCidadesDisponiveis(Array.from(new Set(local.map(b => b.cidade))));
       }
     }
     loadFiltrosOpcoes();
   }, []);
-
-  const nichosUnicos = Array.from(new Set(buscas.map(b => b.nicho).filter(Boolean)));
-  const cidadesUnicas = Array.from(new Set(buscas.map(b => b.cidade).filter(Boolean)));
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -121,7 +122,7 @@ export default function ExplorarLeadsPage() {
           className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 capitalize focus:outline-none focus:border-blue-500"
         >
           <option value="todos">Todos os Segmentos</option>
-          {nichosUnicos.map((nicho) => (
+          {nichosDisponiveis.map((nicho) => (
             <option key={nicho} value={nicho} className="capitalize">
               {nicho}
             </option>
@@ -138,7 +139,7 @@ export default function ExplorarLeadsPage() {
           className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
         >
           <option value="todos">Todas as Cidades</option>
-          {cidadesUnicas.map((cidade) => (
+          {cidadesDisponiveis.map((cidade) => (
             <option key={cidade} value={cidade}>
               {cidade}
             </option>
@@ -199,7 +200,7 @@ export default function ExplorarLeadsPage() {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
-                    Carregando leads...
+                    Carregando leads do Supabase...
                   </td>
                 </tr>
               ) : leads.length === 0 ? (
@@ -307,7 +308,6 @@ export default function ExplorarLeadsPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages || loading}
-              className="page >= totalPages || loading"
               className="p-1.5 rounded bg-slate-900 border border-slate-800 disabled:opacity-40 hover:bg-slate-800 text-slate-200"
             >
               <ChevronRight className="w-4 h-4" />

@@ -1,9 +1,25 @@
-// Adicionando busca paginada ao serviço do Supabase
 import { supabase } from './supabase';
 import { Busca, Lead, ScoutJSONFormat } from './types';
 import { gerarMensagemPadrao } from './mensagem-template';
 
-export async function getBuscasFromSupabase(limit = 10): Promise<Busca[]> {
+// Buscar todos os nichos/segmentos únicos cadastrados no banco
+export async function getNichosECidadesUnicosFromSupabase(): Promise<{ nichos: string[]; cidades: string[] }> {
+  const { data, error } = await supabase
+    .from('buscas')
+    .select('nicho, cidade');
+
+  if (error || !data) {
+    console.error('Erro ao buscar nichos únicos no Supabase:', error);
+    return { nichos: [], cidades: [] };
+  }
+
+  const nichos = Array.from(new Set(data.map(item => item.nicho).filter(Boolean)));
+  const cidades = Array.from(new Set(data.map(item => item.cidade).filter(Boolean)));
+
+  return { nichos, cidades };
+}
+
+export async function getBuscasFromSupabase(limit = 50): Promise<Busca[]> {
   const { data, error } = await supabase
     .from('buscas')
     .select('*')
@@ -33,7 +49,7 @@ export interface GetLeadsResponse {
   totalPages: number;
 }
 
-// Buscar leads com paginação e filtros diretamente no banco de dados (Server-Side)
+// Buscar leads com paginação e filtro por segmento (nicho) e cidade no banco
 export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Promise<GetLeadsResponse> {
   const page = params.page || 1;
   const pageSize = params.pageSize || 20;
@@ -42,7 +58,15 @@ export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Pro
 
   let query = supabase
     .from('leads')
-    .select('*, buscas(nicho, cidade)', { count: 'exact' });
+    .select('*, buscas!inner(nicho, cidade)', { count: 'exact' });
+
+  if (params.nicho && params.nicho !== 'todos') {
+    query = query.eq('buscas.nicho', params.nicho);
+  }
+
+  if (params.cidade && params.cidade !== 'todos') {
+    query = query.eq('buscas.cidade', params.cidade);
+  }
 
   if (params.scoreNivel && params.scoreNivel !== 'todos') {
     query = query.eq('score_nivel', params.scoreNivel);
@@ -76,7 +100,7 @@ export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Pro
 export async function getLeadsFromSupabase(): Promise<Lead[]> {
   const { data, error } = await supabase
     .from('leads')
-    .select('*')
+    .select('*, buscas(nicho, cidade)')
     .order('posicao_maps', { ascending: true })
     .limit(100);
 
@@ -90,7 +114,7 @@ export async function getLeadsFromSupabase(): Promise<Lead[]> {
 export async function getLeadBySlugOrIdFromSupabase(slugOrId: string): Promise<Lead | null> {
   const { data, error } = await supabase
     .from('leads')
-    .select('*')
+    .select('*, buscas(nicho, cidade)')
     .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
     .maybeSingle();
 
