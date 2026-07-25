@@ -1,20 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  ArrowLeft, Copy, Check, Send, FileText, Save, ExternalLink, 
-  MapPin, Phone, Globe, Star, ShieldCheck, Smartphone, Lock
+  ArrowLeft, Copy, Check, Send, FileText, Save, 
+  Phone, Globe, AlertCircle, MessageSquare
 } from 'lucide-react';
 import { getLocalLeads, saveLocalLead } from '@/lib/storage';
+import { getLeadBySlugOrIdFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
+import { enviarMensagemEvolutionAPI } from '@/lib/evolution-service';
 import { Lead, StatusFunil } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
-import { FunnelBadge } from '@/components/FunnelBadge';
 
 export default function LeadDetalhesPage() {
   const params = useParams();
-  const router = useRouter();
   const leadId = params.id as string;
 
   const [lead, setLead] = useState<Lead | null>(null);
@@ -23,16 +23,31 @@ export default function LeadDetalhesPage() {
   const [statusFunil, setStatusFunil] = useState<StatusFunil>('Novo');
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
+  
+  // Estado para disparo via Evolution API
+  const [sendingEvolution, setSendingEvolution] = useState(false);
+  const [evolutionFeedback, setEvolutionFeedback] = useState<{ success: boolean; msg: string } | null>(null);
 
   useEffect(() => {
-    const allLeads = getLocalLeads();
-    const found = allLeads.find(l => l.id === leadId);
-    if (found) {
-      setLead(found);
-      setMensagemText(found.mensagem_editada || found.mensagem_sugerida || '');
-      setNotasText(found.notas || '');
-      setStatusFunil(found.status_funil);
+    async function loadLead() {
+      const sbLead = await getLeadBySlugOrIdFromSupabase(leadId);
+      if (sbLead) {
+        setLead(sbLead);
+        setMensagemText(sbLead.mensagem_editada || sbLead.mensagem_sugerida || '');
+        setNotasText(sbLead.notas || '');
+        setStatusFunil(sbLead.status_funil);
+      } else {
+        const allLeads = getLocalLeads();
+        const found = allLeads.find(l => l.id === leadId);
+        if (found) {
+          setLead(found);
+          setMensagemText(found.mensagem_editada || found.mensagem_sugerida || '');
+          setNotasText(found.notas || '');
+          setStatusFunil(found.status_funil);
+        }
+      }
     }
+    loadLead();
   }, [leadId]);
 
   if (!lead) {
@@ -49,13 +64,47 @@ export default function LeadDetalhesPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleMarcarComoEnviado = () => {
-    const updated: Lead = {
-      ...lead,
+  // Disparo direto via Evolution API
+  const handleEnviarEvolution = async () => {
+    if (!lead.telefone) {
+      setEvolutionFeedback({ success: false, msg: 'Este lead não possui telefone cadastrado.' });
+      return;
+    }
+
+    setSendingEvolution(true);
+    setEvolutionFeedback(null);
+
+    const res = await enviarMensagemEvolutionAPI(lead.telefone, mensagemText);
+    setSendingEvolution(false);
+
+    if (res.success) {
+      setEvolutionFeedback({ success: true, msg: res.message || 'Mensagem enviada com sucesso!' });
+      // Atualizar status para Contatado
+      handleMarcarComoEnviado();
+    } else {
+      setEvolutionFeedback({ 
+        success: false, 
+        msg: res.error || 'Erro ao conectar à Evolution API. Verifique as credenciais no .env' 
+      });
+    }
+  };
+
+  const handleMarcarComoEnviado = async () => {
+    const dataContato = new Date().toISOString();
+    const updates = {
       mensagem_editada: mensagemText,
       notas: notasText,
-      status_funil: 'Contatado',
-      data_contato: new Date().toISOString()
+      status_funil: 'Contatado' as StatusFunil,
+      data_contato: dataContato
+    };
+
+    // Tenta atualizar no Supabase
+    await updateLeadInSupabase(lead.id, updates);
+
+    // Atualiza localmente
+    const updated: Lead = {
+      ...lead,
+      ...updates
     };
     saveLocalLead(updated);
     setLead(updated);
@@ -64,12 +113,18 @@ export default function LeadDetalhesPage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleSalvarAlteracoes = () => {
-    const updated: Lead = {
-      ...lead,
+  const handleSalvarAlteracoes = async () => {
+    const updates = {
       mensagem_editada: mensagemText,
       notas: notasText,
       status_funil: statusFunil
+    };
+
+    await updateLeadInSupabase(lead.id, updates);
+
+    const updated: Lead = {
+      ...lead,
+      ...updates
     };
     saveLocalLead(updated);
     setLead(updated);
@@ -130,17 +185,18 @@ export default function LeadDetalhesPage() {
       {/* Grid com Indicadores e Editor de Mensagem */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Coluna 1: Indicadores e Falhas Detectadas */}
+        {/* Coluna 1: Indicadores e Falhas */}
         <div className="space-y-6">
           
-          {/* Card Indicadores Digitais */}
           <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-5 space-y-4">
             <h2 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Indicadores de Presença</h2>
             
             <div className="space-y-2.5 text-xs text-slate-300">
               <div className="flex items-center justify-between py-1.5 border-b border-slate-800/60">
                 <span className="text-slate-400">Posição no Maps</span>
-                <span className="font-bold text-slate-100">#{lead.posicao_maps}</span>
+                <span className="font-bold text-slate-100">
+                  {lead.posicao_maps ? `${lead.posicao_maps}ª posição` : 'N/A'}
+                </span>
               </div>
               <div className="flex items-center justify-between py-1.5 border-b border-slate-800/60">
                 <span className="text-slate-400">Nota no GMB</span>
@@ -169,11 +225,10 @@ export default function LeadDetalhesPage() {
             </div>
           </div>
 
-          {/* Card Falhas Identificadas */}
           <div className="bg-red-950/20 border border-red-900/40 rounded-xl p-5 space-y-3">
             <h2 className="text-xs font-bold text-red-400 uppercase tracking-wider">Falhas Identificadas (Score)</h2>
             <ul className="space-y-2 text-xs text-red-200">
-              {lead.score_detalhes.map((detalhe, idx) => (
+              {lead.score_detalhes?.map((detalhe, idx) => (
                 <li key={idx} className="flex items-start gap-2">
                   <span className="text-red-500">•</span>
                   <span>{detalhe}</span>
@@ -184,15 +239,14 @@ export default function LeadDetalhesPage() {
 
         </div>
 
-        {/* Coluna 2 e 3: Editor de Mensagem, Ações e Notas */}
+        {/* Coluna 2 e 3: Editor de Mensagem e Disparo */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Gestão de Mensagem de Prospecção */}
           <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-slate-100">Mensagem Sugerida de Abordagem</h2>
-                <p className="text-xs text-slate-400">Revise e edite a mensagem antes de copiar para o WhatsApp.</p>
+                <p className="text-xs text-slate-400">Edite a mensagem antes de disparar pelo WhatsApp.</p>
               </div>
               
               <Link
@@ -205,33 +259,58 @@ export default function LeadDetalhesPage() {
               </Link>
             </div>
 
-            {/* Textarea da Mensagem */}
             <textarea
               value={mensagemText}
               onChange={(e) => setMensagemText(e.target.value)}
-              rows={7}
+              rows={8}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500 leading-relaxed font-sans"
             />
 
-            {/* Botões de Ação */}
+            {/* Banner de Feedback da Evolution API */}
+            {evolutionFeedback && (
+              <div className={`p-3 rounded-lg flex items-center gap-2 text-xs ${
+                evolutionFeedback.success 
+                  ? 'bg-emerald-950/60 border border-emerald-800 text-emerald-300' 
+                  : 'bg-red-950/60 border border-red-800 text-red-300'
+              }`}>
+                {evolutionFeedback.success ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
+                <span>{evolutionFeedback.msg}</span>
+              </div>
+            )}
+
+            {/* Painel de Botões de Ação */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                
+                {/* Botão de Envio Direto via Evolution API */}
                 <button
-                  onClick={handleCopiarMensagem}
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-4 py-2 rounded-lg text-xs transition-colors"
+                  onClick={handleEnviarEvolution}
+                  disabled={sendingEvolution}
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs transition-all shadow-lg shadow-emerald-600/20"
                 >
-                  {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-blue-400" />}
-                  <span>{copied ? 'Copiado para área de transferência!' : 'Copiar Mensagem'}</span>
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{sendingEvolution ? 'Disparando...' : 'Enviar pelo WhatsApp (Evolution API)'}</span>
                 </button>
 
+                {/* Botão Copiar */}
+                <button
+                  onClick={handleCopiarMensagem}
+                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-2 rounded-lg text-xs transition-colors"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-blue-400" />}
+                  <span>{copied ? 'Copiado!' : 'Copiar Texto'}</span>
+                </button>
+
+                {/* Botão Marcar como Enviado */}
                 <button
                   onClick={handleMarcarComoEnviado}
-                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-lg text-xs transition-colors shadow-lg shadow-emerald-600/20"
+                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium px-3 py-2 rounded-lg text-xs transition-colors"
                 >
-                  <Send className="w-4 h-4" />
-                  <span>Marcar como Enviado</span>
+                  <Send className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Marcar Enviado</span>
                 </button>
+
               </div>
 
               <button
@@ -245,7 +324,6 @@ export default function LeadDetalhesPage() {
             </div>
           </div>
 
-          {/* Campo de Notas Livres */}
           <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-6 space-y-3">
             <h2 className="text-sm font-bold text-slate-200">Anotações do Vendedor</h2>
             <textarea
