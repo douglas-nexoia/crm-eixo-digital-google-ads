@@ -82,10 +82,8 @@ export default function DiagnosticoPublicoPage() {
     );
   }
 
-  // Primeiro colocado para comparação inteligente
   const primeiroColocado = concorrentesTop.find(c => c.posicao_maps === 1) || concorrentesTop[0];
   
-  // Condição do insight persuasivo
   const temInjusticaRanking = primeiroColocado && (
     (!primeiroColocado.site && lead.site) || 
     ((primeiroColocado.gmb_nota || 0) < (lead.gmb_nota || 0))
@@ -158,7 +156,6 @@ export default function DiagnosticoPublicoPage() {
           
           <div className="grid grid-cols-3 gap-3 text-center">
             
-            {/* Card Posição Maps */}
             <div className="bg-slate-950/80 border border-slate-800/80 p-4 rounded-xl space-y-1 relative group hover:border-slate-700 transition-all">
               <span className="text-[10px] text-slate-400 uppercase block font-semibold">Ranking Maps</span>
               <div className="text-3xl font-black text-slate-100 flex items-center justify-center gap-1">
@@ -175,7 +172,6 @@ export default function DiagnosticoPublicoPage() {
               </span>
             </div>
             
-            {/* Card Nota GMB */}
             <div className="bg-slate-950/80 border border-slate-800/80 p-4 rounded-xl space-y-1 relative group hover:border-slate-700 transition-all">
               <span className="text-[10px] text-slate-400 uppercase block font-semibold">Nota Google</span>
               <div className="text-3xl font-black text-amber-400 flex items-center justify-center gap-1">
@@ -186,7 +182,6 @@ export default function DiagnosticoPublicoPage() {
               </div>
             </div>
 
-            {/* Card Avaliações */}
             <div className="bg-slate-950/80 border border-slate-800/80 p-4 rounded-xl space-y-1 relative group hover:border-slate-700 transition-all">
               <span className="text-[10px] text-slate-400 uppercase block font-semibold">Avaliações</span>
               <span className="text-3xl font-black text-slate-100 block">
@@ -221,7 +216,6 @@ export default function DiagnosticoPublicoPage() {
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-medium">
                 
-                {/* Linha da Empresa Prospectada (Destaque Neon) */}
                 <tr className="bg-gradient-to-r from-blue-950/60 to-slate-900/80 text-blue-200 font-bold border-l-4 border-blue-500">
                   <td className="p-3 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
@@ -239,7 +233,6 @@ export default function DiagnosticoPublicoPage() {
                   </td>
                 </tr>
 
-                {/* Concorrentes Diretos do Mesmo Nicho */}
                 {concorrentesTop.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-900/40 transition-colors">
                     <td className="p-3 text-slate-200 font-medium">{c.nome}</td>
@@ -260,7 +253,7 @@ export default function DiagnosticoPublicoPage() {
             </table>
           </div>
 
-          {/* CARD DE INSIGHT PERSUASIVO SOBRE O ALGORITMO DO GOOGLE */}
+          {/* CARD DE INSIGHT PERSUASIVO */}
           {temInjusticaRanking && primeiroColocado && (
             <div className="bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-slate-950 border border-amber-500/30 rounded-xl p-4 space-y-2 text-xs">
               <div className="flex items-center gap-2 text-amber-400 font-bold uppercase tracking-wider">
@@ -300,32 +293,38 @@ export default function DiagnosticoPublicoPage() {
           </div>
         </section>
 
-        {/* Seção 4: CTA do WhatsApp para 11944530448 */}
-        <section className="bg-gradient-to-b from-slate-900/80 via-slate-900 to-[#0c1322] border border-emerald-500/30 rounded-3xl p-6 text-center space-y-5 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" />
+        {/* Seção 4: CTA do WhatsApp com espaçamento interno aperfeiçoado */}
+        <section className="bg-gradient-to-b from-slate-900/90 via-slate-900 to-[#0c1322] border border-emerald-500/30 rounded-3xl pt-10 pb-8 px-6 text-center space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-1 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" />
           
-          <div className="space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-3 py-1 rounded-full">
-              Sua Empresa no Topo do Google
-            </span>
-            <h2 className="text-xl font-black text-white leading-tight">
+          <div className="space-y-4">
+            <div className="inline-block">
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-950/90 border border-emerald-800/60 px-4 py-1.5 rounded-full shadow-md">
+                Sua Empresa no Topo do Google
+              </span>
+            </div>
+            
+            <h2 className="text-xl sm:text-2xl font-black text-white leading-tight max-w-md mx-auto pt-1">
               Quer colocar a {lead.nome} em 1º Lugar?
             </h2>
+            
             <p className="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">
               A <strong>Eixo Digital</strong> constrói o ecossistema completo: criação de site de alta performance, otimização semanal do Google Meu Negócio e campanhas de Google Ads.
             </p>
           </div>
 
-          <a
-            href={linkWhatsApp}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black px-8 py-4 rounded-2xl shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all text-sm uppercase tracking-wide w-full sm:w-auto"
-          >
-            <MessageCircle className="w-5 h-5 fill-slate-950" />
-            <span>Falar com especialista no WhatsApp</span>
-            <ArrowUpRight className="w-4 h-4" />
-          </a>
+          <div className="pt-2">
+            <a
+              href={linkWhatsApp}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black px-8 py-4 rounded-2xl shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all text-sm uppercase tracking-wide w-full sm:w-auto"
+            >
+              <MessageCircle className="w-5 h-5 fill-slate-950" />
+              <span>Falar com especialista no WhatsApp</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+          </div>
         </section>
 
       </main>
