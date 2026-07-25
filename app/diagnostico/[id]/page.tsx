@@ -9,7 +9,7 @@ import { MapPin, Star, AlertTriangle, CheckCircle, Trophy, MessageCircle } from 
 
 export default function DiagnosticoPublicoPage() {
   const params = useParams();
-  const slugParam = params.id as string;
+  const slugParam = (params.id as string) || '';
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [concorrentesTop, setConcorrentesTop] = useState<Lead[]>([]);
@@ -17,47 +17,59 @@ export default function DiagnosticoPublicoPage() {
 
   useEffect(() => {
     async function loadData() {
+      if (!slugParam) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
-      // Tenta buscar no Supabase
-      const sbLead = await getLeadBySlugOrIdFromSupabase(slugParam);
-      if (sbLead) {
-        setLead(sbLead);
-        const allLeads = await getLeadsFromSupabase();
-        const top = allLeads
-          .filter(l => l.id !== sbLead.id)
-          .sort((a, b) => a.posicao_maps - b.posicao_maps)
-          .slice(0, 3);
-        setConcorrentesTop(top);
-      } else {
-        // Fallback local
-        const all = getLocalLeads();
-        const found = all.find(l => l.slug === slugParam || l.id === slugParam);
-        if (found) {
-          setLead(found);
-          const top = all
-            .filter(l => l.id !== found.id)
+      
+      // 1. Tentar buscar o lead no Supabase
+      let found: Lead | null = await getLeadBySlugOrIdFromSupabase(slugParam);
+      
+      // 2. Fallback para os dados locais se não encontrar no Supabase
+      if (!found) {
+        const allLocal = getLocalLeads();
+        found = allLocal.find(l => l.slug === slugParam || l.id === slugParam || l.nome.toLowerCase().includes(slugParam.toLowerCase())) || null;
+      }
+
+      if (found) {
+        setLead(found);
+        
+        // 3. Buscar os 3 melhores concorrentes
+        try {
+          const allLeads = await getLeadsFromSupabase();
+          const top = (allLeads.length > 0 ? allLeads : getLocalLeads())
+            .filter(l => l.id !== found?.id)
             .sort((a, b) => a.posicao_maps - b.posicao_maps)
             .slice(0, 3);
           setConcorrentesTop(top);
+        } catch {
+          setConcorrentesTop([]);
         }
       }
+
       setLoading(false);
     }
+
     loadData();
   }, [slugParam]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-        <p className="text-slate-400 text-sm">Carregando diagnóstico...</p>
+        <p className="text-slate-400 text-sm">Carregando relatório de diagnóstico...</p>
       </div>
     );
   }
 
   if (!lead) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 text-center">
-        <p className="text-slate-400">Diagnóstico não encontrado ou link expirado.</p>
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center space-y-3">
+        <p className="text-slate-300 font-semibold">Diagnóstico não encontrado ou link expirado.</p>
+        <p className="text-xs text-slate-500 max-w-sm">
+          Verifique se o link foi copiado corretamente ou se a empresa já está cadastrada no CRM.
+        </p>
       </div>
     );
   }
@@ -93,7 +105,9 @@ export default function DiagnosticoPublicoPage() {
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="bg-slate-950 border border-slate-800/80 p-3 rounded-xl space-y-1">
               <span className="text-[10px] text-slate-400 uppercase block font-semibold">Maps</span>
-              <span className="text-2xl font-black text-slate-100">#{lead.posicao_maps}</span>
+              <span className="text-2xl font-black text-slate-100">
+                {lead.posicao_maps ? `#${lead.posicao_maps}` : 'N/A'}
+              </span>
             </div>
             
             <div className="bg-slate-950 border border-slate-800/80 p-3 rounded-xl space-y-1">
@@ -129,7 +143,7 @@ export default function DiagnosticoPublicoPage() {
                 {/* Linha do Prospect */}
                 <tr className="bg-blue-950/30 text-blue-300 font-bold border-l-2 border-blue-500">
                   <td className="p-2.5">{lead.nome} (Você)</td>
-                  <td className="p-2.5 text-center">#{lead.posicao_maps}</td>
+                  <td className="p-2.5 text-center">#{lead.posicao_maps || 'N/A'}</td>
                   <td className="p-2.5 text-center">⭐ {lead.gmb_nota || 'N/A'}</td>
                   <td className="p-2.5 text-center">{lead.site ? '✅' : '❌'}</td>
                 </tr>
