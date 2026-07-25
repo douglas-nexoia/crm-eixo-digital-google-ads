@@ -2,23 +2,49 @@ import { supabase } from './supabase';
 import { Busca, Lead, ScoutJSONFormat } from './types';
 import { gerarMensagemPadrao } from './mensagem-template';
 
+// Buscar TODOS os nichos/segmentos e cidades únicos existentes no Supabase (buscas + leads)
 export async function getNichosECidadesUnicosFromSupabase(): Promise<{ nichos: string[]; cidades: string[] }> {
-  const { data, error } = await supabase
-    .from('buscas')
-    .select('nicho, cidade');
+  try {
+    // 1. Buscar nichos e cidades da tabela 'buscas' (sem limite de 100)
+    const { data: buscasData } = await supabase
+      .from('buscas')
+      .select('nicho, cidade')
+      .limit(1000);
 
-  if (error || !data) {
-    console.error('Erro ao buscar nichos únicos no Supabase:', error);
+    // 2. Buscar nichos e cidades associados na tabela 'leads'
+    const { data: leadsData } = await supabase
+      .from('leads')
+      .select('buscas(nicho, cidade)')
+      .limit(1000);
+
+    const nichosSet = new Set<string>();
+    const cidadesSet = new Set<string>();
+
+    if (buscasData) {
+      buscasData.forEach(item => {
+        if (item.nicho?.trim()) nichosSet.add(item.nicho.trim());
+        if (item.cidade?.trim()) cidadesSet.add(item.cidade.trim());
+      });
+    }
+
+    if (leadsData) {
+      leadsData.forEach((item: any) => {
+        if (item.buscas?.nicho?.trim()) nichosSet.add(item.buscas.nicho.trim());
+        if (item.buscas?.cidade?.trim()) cidadesSet.add(item.buscas.cidade.trim());
+      });
+    }
+
+    const nichos = Array.from(nichosSet).sort();
+    const cidades = Array.from(cidadesSet).sort();
+
+    return { nichos, cidades };
+  } catch (err) {
+    console.error('Erro ao buscar nichos únicos no Supabase:', err);
     return { nichos: [], cidades: [] };
   }
-
-  const nichos = Array.from(new Set(data.map(item => item.nicho).filter(Boolean)));
-  const cidades = Array.from(new Set(data.map(item => item.cidade).filter(Boolean)));
-
-  return { nichos, cidades };
 }
 
-export async function getBuscasFromSupabase(limit = 50): Promise<Busca[]> {
+export async function getBuscasFromSupabase(limit = 100): Promise<Busca[]> {
   const { data, error } = await supabase
     .from('buscas')
     .select('*')
@@ -59,11 +85,11 @@ export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Pro
     .select('*, buscas!inner(nicho, cidade)', { count: 'exact' });
 
   if (params.nicho && params.nicho !== 'todos') {
-    query = query.eq('buscas.nicho', params.nicho);
+    query = query.ilike('buscas.nicho', params.nicho);
   }
 
   if (params.cidade && params.cidade !== 'todos') {
-    query = query.eq('buscas.cidade', params.cidade);
+    query = query.ilike('buscas.cidade', params.cidade);
   }
 
   if (params.scoreNivel && params.scoreNivel !== 'todos') {
@@ -109,7 +135,6 @@ export async function getLeadsFromSupabase(): Promise<Lead[]> {
   return data || [];
 }
 
-// Buscar especificamente os Top 3 concorrentes do mesmo nicho e mesma cidade
 export async function getTopConcorrentesDoMesmoNicho(buscaId: string, leadIdExcluido: string): Promise<Lead[]> {
   if (!buscaId) return [];
 
