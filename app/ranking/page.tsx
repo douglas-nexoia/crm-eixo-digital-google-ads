@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getLeadsFromSupabase, getNichosECidadesUnicosFromSupabase } from '@/lib/supabase-service';
 import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
-import { Trophy, Check, X, ShieldAlert, MapPin } from 'lucide-react';
+import { Trophy, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+
+type SortField = 'nome' | 'posicao_maps' | 'gmb_nota' | 'gmb_avaliacoes' | 'score_pontos';
+type SortOrder = 'asc' | 'desc';
 
 export default function RankingConcorrentesPage() {
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
@@ -16,6 +19,10 @@ export default function RankingConcorrentesPage() {
   const [filtroCidade, setFiltroCidade] = useState<string>('todos');
   const [loading, setLoading] = useState(true);
 
+  // Ordenação Interativa
+  const [sortField, setSortField] = useState<SortField>('posicao_maps');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
   useEffect(() => {
     async function loadData() {
       setLoading(true);
@@ -25,7 +32,7 @@ export default function RankingConcorrentesPage() {
       setCidadesDisponiveis(cidades);
 
       if (nichos.length > 0 && filtroNicho === 'todos') {
-        setFiltroNicho(nichos[0]); // Selecionar o primeiro nicho automaticamente para exibir a matriz
+        setFiltroNicho(nichos[0]);
       }
 
       const leadsDb = await getLeadsFromSupabase();
@@ -40,18 +47,51 @@ export default function RankingConcorrentesPage() {
     loadData();
   }, []);
 
-  // Filtragem dos concorrentes do nicho/cidade selecionados
-  const concorrentesFiltrados = allLeads.filter(lead => {
-    if (filtroNicho !== 'todos') {
-      const nichoLead = lead.nicho || lead.buscas?.nicho;
-      if (nichoLead && nichoLead.toLowerCase() !== filtroNicho.toLowerCase()) return false;
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
     }
-    if (filtroCidade !== 'todos') {
-      const cidadeLead = lead.cidade || lead.buscas?.cidade;
-      if (cidadeLead && cidadeLead.toLowerCase() !== filtroCidade.toLowerCase()) return false;
-    }
-    return true;
-  }).sort((a, b) => a.posicao_maps - b.posicao_maps);
+  };
+
+  // Filtragem e Ordenação dos concorrentes
+  const concorrentesFiltrados = useMemo(() => {
+    return allLeads.filter(lead => {
+      if (filtroNicho !== 'todos') {
+        const nichoLead = lead.nicho || lead.buscas?.nicho;
+        if (nichoLead && nichoLead.toLowerCase() !== filtroNicho.toLowerCase()) return false;
+      }
+      if (filtroCidade !== 'todos') {
+        const cidadeLead = lead.cidade || lead.buscas?.cidade;
+        if (cidadeLead && cidadeLead.toLowerCase() !== filtroCidade.toLowerCase()) return false;
+      }
+      return true;
+    }).sort((a, b) => {
+      let aVal: any = a[sortField];
+      let bVal: any = b[sortField];
+
+      if (typeof aVal === 'string') {
+        const comparison = aVal.localeCompare(bVal || '');
+        return sortOrder === 'asc' ? comparison : -comparison;
+      }
+
+      if (aVal === undefined || aVal === null) aVal = 0;
+      if (bVal === undefined || bVal === null) bVal = 0;
+
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  }, [allLeads, filtroNicho, filtroCidade, sortField, sortOrder]);
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 text-slate-600 inline ml-1" />;
+    return sortOrder === 'asc' ? (
+      <ArrowUp className="w-3 h-3 text-blue-400 inline ml-1 font-bold" />
+    ) : (
+      <ArrowDown className="w-3 h-3 text-blue-400 inline ml-1 font-bold" />
+    );
+  };
 
   return (
     <div className="p-8 space-y-6 max-w-7xl mx-auto">
@@ -100,22 +140,47 @@ export default function RankingConcorrentesPage() {
         </div>
       </div>
 
-      {/* Matriz Comparativa Lado a Lado */}
+      {/* Matriz Comparativa Lado a Lado com Ordenação por Clique */}
       <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300 border-collapse">
-            <thead className="text-xs uppercase bg-slate-950/90 text-slate-400 border-b border-slate-800">
+            <thead className="text-xs uppercase bg-slate-950/90 text-slate-400 border-b border-slate-800 select-none">
               <tr>
-                <th className="px-5 py-4 min-w-[220px]">Empresa</th>
-                <th className="px-4 py-4 text-center">Posição Maps</th>
-                <th className="px-4 py-4 text-center">Nota GMB</th>
-                <th className="px-4 py-4 text-center">Avaliações</th>
+                <th 
+                  onClick={() => handleSort('nome')} 
+                  className="px-5 py-4 min-w-[220px] cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Empresa {renderSortIcon('nome')}
+                </th>
+                <th 
+                  onClick={() => handleSort('posicao_maps')} 
+                  className="px-4 py-4 text-center cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Posição Maps {renderSortIcon('posicao_maps')}
+                </th>
+                <th 
+                  onClick={() => handleSort('gmb_nota')} 
+                  className="px-4 py-4 text-center cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Nota GMB {renderSortIcon('gmb_nota')}
+                </th>
+                <th 
+                  onClick={() => handleSort('gmb_avaliacoes')} 
+                  className="px-4 py-4 text-center cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Avaliações {renderSortIcon('gmb_avaliacoes')}
+                </th>
                 <th className="px-4 py-4 text-center">Verificado</th>
                 <th className="px-4 py-4 text-center">Possui Site</th>
                 <th className="px-4 py-4 text-center">HTTPS Seguro</th>
                 <th className="px-4 py-4 text-center">Site Responsivo</th>
                 <th className="px-4 py-4 text-center">Redes Sociais</th>
-                <th className="px-5 py-4 text-right">Pontuação Oportunidade</th>
+                <th 
+                  onClick={() => handleSort('score_pontos')} 
+                  className="px-5 py-4 text-right cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Pontuação Oportunidade {renderSortIcon('score_pontos')}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium">

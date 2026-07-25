@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, Copy, Check, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Copy, Check, FileText, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { getLeadsPaginadosFromSupabase, getNichosECidadesUnicosFromSupabase } from '@/lib/supabase-service';
 import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { FunnelBadge } from '@/components/FunnelBadge';
+
+type SortField = 'nome' | 'nicho' | 'posicao_maps' | 'gmb_nota' | 'gmb_avaliacoes' | 'score_pontos' | 'status_funil';
+type SortOrder = 'asc' | 'desc';
 
 export default function ExplorarLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -22,6 +25,10 @@ export default function ExplorarLeadsPage() {
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [buscaTexto, setBuscaTexto] = useState<string>('');
   
+  // Ordenação por Coluna
+  const [sortField, setSortField] = useState<SortField>('posicao_maps');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
   // Paginação Server-side do Supabase
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(20);
@@ -29,7 +36,6 @@ export default function ExplorarLeadsPage() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  // 1. Carregar Nichos e Cidades Únicos diretamente do Supabase
   useEffect(() => {
     async function loadFiltros() {
       const { nichos, cidades } = await getNichosECidadesUnicosFromSupabase();
@@ -39,7 +45,6 @@ export default function ExplorarLeadsPage() {
     loadFiltros();
   }, []);
 
-  // 2. Consulta Direta e Nativa dos Leads no Supabase
   const fetchLeads = async () => {
     setLoading(true);
     const result = await getLeadsPaginadosFromSupabase({
@@ -69,11 +74,53 @@ export default function ExplorarLeadsPage() {
     fetchLeads();
   }, [page, filtroNicho, filtroCidade, filtroNivel, filtroStatus, buscaTexto]);
 
+  // Função para alternar ordenação ao clicar no cabeçalho
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // Processar Ordenação nos Leads Carregados
+  const leadsOrdenados = useMemo(() => {
+    return [...leads].sort((a, b) => {
+      let aVal: any = a[sortField];
+      let bVal: any = b[sortField];
+
+      if (sortField === 'nicho') {
+        aVal = a.nicho || a.buscas?.nicho || '';
+        bVal = b.nicho || b.buscas?.nicho || '';
+      }
+
+      if (typeof aVal === 'string') {
+        const comparison = aVal.localeCompare(bVal || '');
+        return sortOrder === 'asc' ? comparison : -comparison;
+      }
+
+      if (aVal === undefined || aVal === null) aVal = 0;
+      if (bVal === undefined || bVal === null) bVal = 0;
+
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  }, [leads, sortField, sortOrder]);
+
   const handleCopiarMensagem = (lead: Lead) => {
     const texto = lead.mensagem_editada || lead.mensagem_sugerida || '';
     navigator.clipboard.writeText(texto);
     setCopiedId(lead.id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 text-slate-600 inline ml-1" />;
+    return sortOrder === 'asc' ? (
+      <ArrowUp className="w-3 h-3 text-blue-400 inline ml-1 font-bold" />
+    ) : (
+      <ArrowDown className="w-3 h-3 text-blue-400 inline ml-1 font-bold" />
+    );
   };
 
   return (
@@ -176,19 +223,49 @@ export default function ExplorarLeadsPage() {
 
       </div>
 
-      {/* Tabela Principal de Leads */}
+      {/* Tabela Principal de Leads com Ordenação Interativa */}
       <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
-            <thead className="text-xs uppercase bg-slate-950/80 text-slate-400 border-b border-slate-800">
+            <thead className="text-xs uppercase bg-slate-950/80 text-slate-400 border-b border-slate-800 select-none">
               <tr>
-                <th className="px-4 py-3.5">Empresa</th>
-                <th className="px-4 py-3.5">Segmento / Cidade</th>
-                <th className="px-4 py-3.5">Maps</th>
-                <th className="px-4 py-3.5">GMB (Nota / Aval.)</th>
+                <th 
+                  onClick={() => handleSort('nome')} 
+                  className="px-4 py-3.5 cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Empresa {renderSortIcon('nome')}
+                </th>
+                <th 
+                  onClick={() => handleSort('nicho')} 
+                  className="px-4 py-3.5 cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Segmento / Cidade {renderSortIcon('nicho')}
+                </th>
+                <th 
+                  onClick={() => handleSort('posicao_maps')} 
+                  className="px-4 py-3.5 cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Maps {renderSortIcon('posicao_maps')}
+                </th>
+                <th 
+                  onClick={() => handleSort('gmb_nota')} 
+                  className="px-4 py-3.5 cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  GMB (Nota / Aval.) {renderSortIcon('gmb_nota')}
+                </th>
                 <th className="px-4 py-3.5">Site & Redes</th>
-                <th className="px-4 py-3.5">Oportunidade</th>
-                <th className="px-4 py-3.5">Funil</th>
+                <th 
+                  onClick={() => handleSort('score_pontos')} 
+                  className="px-4 py-3.5 cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Oportunidade {renderSortIcon('score_pontos')}
+                </th>
+                <th 
+                  onClick={() => handleSort('status_funil')} 
+                  className="px-4 py-3.5 cursor-pointer hover:text-slate-100 transition-colors"
+                >
+                  Funil {renderSortIcon('status_funil')}
+                </th>
                 <th className="px-4 py-3.5 text-right">Ações</th>
               </tr>
             </thead>
@@ -199,14 +276,14 @@ export default function ExplorarLeadsPage() {
                     Carregando leads do Supabase...
                   </td>
                 </tr>
-              ) : leads.length === 0 ? (
+              ) : leadsOrdenados.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
                     Nenhum lead encontrado para os filtros selecionados.
                   </td>
                 </tr>
               ) : (
-                leads.map((lead) => {
+                leadsOrdenados.map((lead) => {
                   const pathDiagnostico = `/diagnostico/${lead.slug && lead.slug !== 'null' ? lead.slug : lead.id}`;
                   const nichoExibicao = lead.nicho || lead.buscas?.nicho || 'Geral';
                   const cidadeExibicao = lead.cidade || lead.buscas?.cidade || '';
