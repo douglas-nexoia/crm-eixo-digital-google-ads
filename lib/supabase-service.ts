@@ -109,10 +109,28 @@ export async function getLeadsFromSupabase(): Promise<Lead[]> {
   return data || [];
 }
 
-// Consulta otimizada por slug ou id sem gerar erro de console
+// Buscar especificamente os Top 3 concorrentes do mesmo nicho e mesma cidade
+export async function getTopConcorrentesDoMesmoNicho(buscaId: string, leadIdExcluido: string): Promise<Lead[]> {
+  if (!buscaId) return [];
+
+  const { data, error } = await supabase
+    .from('leads')
+    .select('*, buscas(nicho, cidade)')
+    .eq('busca_id', buscaId)
+    .neq('id', leadIdExcluido)
+    .order('posicao_maps', { ascending: true })
+    .limit(3);
+
+  if (error) {
+    console.error('Erro ao buscar concorrentes do mesmo nicho:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
 export async function getLeadBySlugOrIdFromSupabase(slugOrId: string): Promise<Lead | null> {
   try {
-    // 1. Tentar buscar por slug
     const { data: bySlug } = await supabase
       .from('leads')
       .select('*, buscas(nicho, cidade)')
@@ -121,7 +139,6 @@ export async function getLeadBySlugOrIdFromSupabase(slugOrId: string): Promise<L
 
     if (bySlug) return bySlug;
 
-    // 2. Se não encontrar por slug, tentar por ID (se for UUID válido)
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
     if (isUuid) {
       const { data: byId } = await supabase

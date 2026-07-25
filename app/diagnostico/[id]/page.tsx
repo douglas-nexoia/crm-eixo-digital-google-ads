@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { getLeadBySlugOrIdFromSupabase, getLeadsFromSupabase } from '@/lib/supabase-service';
+import { getLeadBySlugOrIdFromSupabase, getTopConcorrentesDoMesmoNicho } from '@/lib/supabase-service';
 import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
-import { MapPin, Star, AlertTriangle, CheckCircle, Trophy, MessageCircle } from 'lucide-react';
+import { MapPin, AlertTriangle, Trophy, MessageCircle } from 'lucide-react';
 
 export default function DiagnosticoPublicoPage() {
   const params = useParams();
@@ -24,10 +24,10 @@ export default function DiagnosticoPublicoPage() {
 
       setLoading(true);
       
-      // 1. Tentar buscar o lead no Supabase
+      // 1. Buscar o lead no Supabase
       let found: Lead | null = await getLeadBySlugOrIdFromSupabase(slugParam);
       
-      // 2. Fallback para os dados locais se não encontrar no Supabase
+      // Fallback local se não encontrar no Supabase
       if (!found) {
         const allLocal = getLocalLeads();
         found = allLocal.find(l => l.slug === slugParam || l.id === slugParam || l.nome.toLowerCase().includes(slugParam.toLowerCase())) || null;
@@ -36,14 +36,19 @@ export default function DiagnosticoPublicoPage() {
       if (found) {
         setLead(found);
         
-        // 3. Buscar os 3 melhores concorrentes
+        // 2. Buscar os 3 melhores concorrentes ESTRITAMENTE do MESMO NICHO e MESMA CIDADE (mesmo busca_id)
         try {
-          const allLeads = await getLeadsFromSupabase();
-          const top = (allLeads.length > 0 ? allLeads : getLocalLeads())
-            .filter(l => l.id !== found?.id)
-            .sort((a, b) => a.posicao_maps - b.posicao_maps)
-            .slice(0, 3);
-          setConcorrentesTop(top);
+          if (found.busca_id) {
+            const topConcorrentes = await getTopConcorrentesDoMesmoNicho(found.busca_id, found.id);
+            setConcorrentesTop(topConcorrentes);
+          } else {
+            const allLocal = getLocalLeads();
+            const topLocal = allLocal
+              .filter(l => l.id !== found?.id && l.busca_id === found?.busca_id)
+              .sort((a, b) => a.posicao_maps - b.posicao_maps)
+              .slice(0, 3);
+            setConcorrentesTop(topLocal);
+          }
         } catch {
           setConcorrentesTop([]);
         }
@@ -68,7 +73,7 @@ export default function DiagnosticoPublicoPage() {
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center space-y-3">
         <p className="text-slate-300 font-semibold">Diagnóstico não encontrado ou link expirado.</p>
         <p className="text-xs text-slate-500 max-w-sm">
-          Verifique se o link foi copiado corretamente ou se a empresa já está cadastrada no CRM.
+          Verifique se a empresa está cadastrada no CRM.
         </p>
       </div>
     );
@@ -122,11 +127,18 @@ export default function DiagnosticoPublicoPage() {
           </div>
         </section>
 
-        {/* Seção 2: Comparado com os Melhores Concorrentes */}
+        {/* Seção 2: Comparado com os Melhores Concorrentes do Nicho */}
         <section className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-400" />
-            <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">2. Comparado com os Líderes do Nicho</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-400" />
+              <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">2. Comparado com os Líderes do Nicho</h2>
+            </div>
+            {lead.buscas?.nicho && (
+              <span className="text-[10px] font-semibold bg-slate-950 border border-slate-800 text-blue-400 px-2 py-0.5 rounded capitalize">
+                {lead.buscas.nicho}
+              </span>
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -148,12 +160,12 @@ export default function DiagnosticoPublicoPage() {
                   <td className="p-2.5 text-center">{lead.site ? '✅' : '❌'}</td>
                 </tr>
 
-                {/* Top Concorrentes */}
+                {/* Top Concorrentes do Mesmo Nicho */}
                 {concorrentesTop.map((c) => (
                   <tr key={c.id}>
                     <td className="p-2.5 font-semibold text-slate-200">{c.nome}</td>
                     <td className="p-2.5 text-center font-bold">#{c.posicao_maps}</td>
-                    <td className="p-2.5 text-center">⭐ {c.gmb_nota}</td>
+                    <td className="p-2.5 text-center">⭐ {c.gmb_nota || 'N/A'}</td>
                     <td className="p-2.5 text-center">{c.site ? '✅' : '❌'}</td>
                   </tr>
                 ))}
