@@ -2,16 +2,13 @@ import { supabase } from './supabase';
 import { Busca, Lead, ScoutJSONFormat } from './types';
 import { gerarMensagemPadrao } from './mensagem-template';
 
-// Buscar TODOS os nichos/segmentos e cidades únicos existentes no Supabase (buscas + leads)
 export async function getNichosECidadesUnicosFromSupabase(): Promise<{ nichos: string[]; cidades: string[] }> {
   try {
-    // 1. Buscar nichos e cidades da tabela 'buscas' (sem limite de 100)
     const { data: buscasData } = await supabase
       .from('buscas')
       .select('nicho, cidade')
       .limit(1000);
 
-    // 2. Buscar nichos e cidades associados na tabela 'leads'
     const { data: leadsData } = await supabase
       .from('leads')
       .select('buscas(nicho, cidade)')
@@ -74,6 +71,7 @@ export interface GetLeadsResponse {
   totalPages: number;
 }
 
+// Buscar leads com consulta abrangente (Left Join e suporte a 20 por página)
 export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Promise<GetLeadsResponse> {
   const page = params.page || 1;
   const pageSize = params.pageSize || 20;
@@ -82,7 +80,7 @@ export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Pro
 
   let query = supabase
     .from('leads')
-    .select('*, buscas!inner(nicho, cidade)', { count: 'exact' });
+    .select('*, buscas(nicho, cidade)', { count: 'exact' });
 
   if (params.nicho && params.nicho !== 'todos') {
     query = query.ilike('buscas.nicho', params.nicho);
