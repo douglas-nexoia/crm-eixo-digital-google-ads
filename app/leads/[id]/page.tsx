@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeft, FileText, Save, 
-  Phone, Globe, AlertCircle, MessageSquare, Sparkles, Clock, PlusCircle, Send
+  Phone, Globe, AlertCircle, MessageSquare, Sparkles, Clock, PlusCircle, Send, Check
 } from 'lucide-react';
 import { getLocalLeads, saveLocalLead } from '@/lib/storage';
 import { getLeadBySlugOrIdFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
@@ -50,7 +50,7 @@ export default function LeadDetalhesPage() {
 
         let msg = targetLead.mensagem_editada || targetLead.mensagem_sugerida;
         if (!msg || !msg.trim()) {
-          msg = gerarMensagemPadrao(targetLead, targetLead.buscas?.nicho, targetLead.buscas?.cidade);
+          msg = gerarMensagemPadrao(targetLead, targetLead.buscas?.nicho || targetLead.nicho, targetLead.buscas?.cidade || targetLead.cidade);
         }
 
         setMensagemText(msg);
@@ -73,7 +73,7 @@ export default function LeadDetalhesPage() {
 
   const handleRegerarComIA = async () => {
     setGeneratingIA(true);
-    const novaMsg = await gerarMensagemAbordagemIA(lead, lead.buscas?.nicho, lead.buscas?.cidade);
+    const novaMsg = await gerarMensagemAbordagemIA(lead, lead.buscas?.nicho || lead.nicho, lead.buscas?.cidade || lead.cidade);
     setMensagemText(novaMsg);
     setGeneratingIA(false);
   };
@@ -384,7 +384,7 @@ export default function LeadDetalhesPage() {
                   <span>{sendingEvolution ? 'Disparando...' : 'Enviar pelo WhatsApp'}</span>
                 </button>
 
-                {/* Botão 2 (Novo): Enviar Link do Diagnóstico no WhatsApp */}
+                {/* Botão 2: Enviar Link do Diagnóstico no WhatsApp */}
                 <button
                   onClick={handleEnviarDiagnosticoWhatsApp}
                   disabled={sendingEvolution || sendingDiagnostico}
