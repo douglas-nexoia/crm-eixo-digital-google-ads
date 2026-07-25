@@ -1,5 +1,5 @@
 /**
- * Serviço de Integração com Evolution API (WhatsApp)
+ * Serviço de Integração com Evolution API GO (Versão GoLang)
  */
 
 export interface EvolutionSendResponse {
@@ -19,11 +19,11 @@ export async function enviarMensagemEvolutionAPI(
   if (!apiUrl || !apiKey || !instance) {
     return {
       success: false,
-      error: 'Evolution API não configurada. Defina as variáveis NEXT_PUBLIC_EVOLUTION_API_URL, NEXT_PUBLIC_EVOLUTION_API_KEY e NEXT_PUBLIC_EVOLUTION_INSTANCE no .env'
+      error: 'WhatsApp API não configurada. Defina as variáveis NEXT_PUBLIC_EVOLUTION_API_URL, NEXT_PUBLIC_EVOLUTION_API_KEY e NEXT_PUBLIC_EVOLUTION_INSTANCE no .env'
     };
   }
 
-  // Limpar e formatar o número (remover caracteres não numéricos)
+  // Limpar e formatar o número (remover não dígitos)
   let numeroLimpo = telefone.replace(/\D/g, '');
   
   // Garantir código do país (55 para Brasil)
@@ -32,47 +32,64 @@ export async function enviarMensagemEvolutionAPI(
   }
 
   try {
-    // Normalizar a URL removendo barras no final
     const baseUrl = apiUrl.trim().replace(/\/+$/, '');
     const instanceName = instance.trim();
     
-    // Endpoint padrão da Evolution API v1 / v2
-    const endpoint = `${baseUrl}/message/sendText/${instanceName}`;
+    // Suporte aos endpoints da Evolution API v1/v2 e Evolution GO
+    // Tenta primeiro o endpoint padrão /message/sendText/:instance
+    let endpoint = `${baseUrl}/message/sendText/${instanceName}`;
 
-    const response = await fetch(endpoint, {
+    let bodyPayload: any = {
+      number: numeroLimpo,
+      text: mensagem
+    };
+
+    let response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': apiKey.trim()
+        'apikey': apiKey.trim(),
+        'instance': instanceName
       },
-      body: JSON.stringify({
-        number: numeroLimpo,
-        text: mensagem,
-        options: {
-          delay: 1200,
-          presence: 'composing'
-        }
-      })
+      body: JSON.stringify(bodyPayload)
     });
+
+    // Se der 404, tentar o formato alternativo /message/sendText (com instance na URL ou payload)
+    if (response.status === 404) {
+      endpoint = `${baseUrl}/message/sendText`;
+      bodyPayload = {
+        instance: instanceName,
+        number: numeroLimpo,
+        text: mensagem
+      };
+
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apiKey.trim(),
+          'instance': instanceName
+        },
+        body: JSON.stringify(bodyPayload)
+      });
+    }
 
     const responseText = await response.text();
     let data: any = {};
 
-    // Tentar converter resposta para JSON com segurança
     try {
       data = JSON.parse(responseText);
     } catch {
-      // Se não for JSON (ex: erro HTML ou resposta de texto)
       if (!response.ok) {
         return {
           success: false,
-          error: `Erro HTTP ${response.status} ao conectar na Evolution API. Verifique a URL do servidor e o nome da Instância.`
+          error: `Erro HTTP ${response.status} ao conectar no servidor de WhatsApp. Verifique se a URL (${baseUrl}) e o nome da Instância (${instanceName}) estão corretos.`
         };
       }
     }
 
     if (!response.ok) {
-      const msgErro = data?.response?.message || data?.message || data?.error || `Erro ${response.status} na Evolution API`;
+      const msgErro = data?.response?.message || data?.message || data?.error || `Erro ${response.status} no servidor de WhatsApp`;
       return {
         success: false,
         error: Array.isArray(msgErro) ? msgErro.join(', ') : String(msgErro)
@@ -84,10 +101,10 @@ export async function enviarMensagemEvolutionAPI(
       message: 'Mensagem enviada com sucesso pelo WhatsApp!'
     };
   } catch (err: any) {
-    console.error('Erro de requisição na Evolution API:', err);
+    console.error('Erro de requisição na WhatsApp API:', err);
     return {
       success: false,
-      error: err.message || 'Falha de conexão de rede ao tentar contatar o servidor da Evolution API.'
+      error: err.message || 'Falha de conexão de rede ao tentar contatar a API do WhatsApp.'
     };
   }
 }

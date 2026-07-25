@@ -45,10 +45,7 @@ export default function LeadDetalhesPage() {
         setNotasText(targetLead.notas || '');
         setStatusFunil(targetLead.status_funil);
 
-        // Se já existe mensagem editada ou sugerida, usar ela
         let msg = targetLead.mensagem_editada || targetLead.mensagem_sugerida;
-        
-        // Se vier nula ou vazia do banco, gerar automaticamente!
         if (!msg || !msg.trim()) {
           msg = gerarMensagemPadrao(targetLead, targetLead.buscas?.nicho, targetLead.buscas?.cidade);
         }
@@ -67,7 +64,6 @@ export default function LeadDetalhesPage() {
     );
   }
 
-  // Regerar mensagem usando IA / OpenAI
   const handleRegerarComIA = async () => {
     setGeneratingIA(true);
     const novaMsg = await gerarMensagemAbordagemIA(lead, lead.buscas?.nicho, lead.buscas?.cidade);
@@ -99,7 +95,7 @@ export default function LeadDetalhesPage() {
     } else {
       setEvolutionFeedback({ 
         success: false, 
-        msg: res.error || 'Erro ao conectar à Evolution API. Verifique as credenciais.' 
+        msg: res.error || 'Erro ao conectar ao servidor do WhatsApp. Verifique as credenciais.' 
       });
     }
   };
@@ -291,7 +287,7 @@ export default function LeadDetalhesPage() {
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500 leading-relaxed font-sans"
             />
 
-            {/* Banner de Feedback da Evolution API */}
+            {/* Banner de Feedback da WhatsApp API */}
             {evolutionFeedback && (
               <div className={`p-3 rounded-lg flex items-center gap-2 text-xs ${
                 evolutionFeedback.success 
@@ -308,14 +304,14 @@ export default function LeadDetalhesPage() {
               
               <div className="flex flex-wrap items-center gap-2">
                 
-                {/* Botão de Envio Direto via Evolution API */}
+                {/* Botão de Envio Direto via WhatsApp API */}
                 <button
                   onClick={handleEnviarEvolution}
                   disabled={sendingEvolution}
                   className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs transition-all shadow-lg shadow-emerald-600/20"
                 >
                   <MessageSquare className="w-4 h-4" />
-                  <span>{sendingEvolution ? 'Disparando...' : 'Enviar pelo WhatsApp (Evolution API)'}</span>
+                  <span>{sendingEvolution ? 'Disparando...' : 'Enviar pelo WhatsApp'}</span>
                 </button>
 
                 {/* Botão Copiar */}
