@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  ArrowLeft, Copy, Check, Send, FileText, Save, 
-  Phone, Globe, AlertCircle, MessageSquare, Sparkles
+  ArrowLeft, Copy, Check, FileText, Save, 
+  Phone, Globe, AlertCircle, MessageSquare, Sparkles, Clock, PlusCircle
 } from 'lucide-react';
 import { getLocalLeads, saveLocalLead } from '@/lib/storage';
 import { getLeadBySlugOrIdFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
@@ -21,7 +21,8 @@ export default function LeadDetalhesPage() {
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [mensagemText, setMensagemText] = useState<string>('');
-  const [notasText, setNotasText] = useState<string>('');
+  const [historicoNotas, setHistoricoNotas] = useState<string>('');
+  const [novaNota, setNovaNota] = useState<string>('');
   const [statusFunil, setStatusFunil] = useState<StatusFunil>('Novo');
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -42,7 +43,7 @@ export default function LeadDetalhesPage() {
 
       if (targetLead) {
         setLead(targetLead);
-        setNotasText(targetLead.notas || '');
+        setHistoricoNotas(targetLead.notas || '');
         setStatusFunil(targetLead.status_funil);
 
         let msg = targetLead.mensagem_editada || targetLead.mensagem_sugerida;
@@ -77,6 +78,7 @@ export default function LeadDetalhesPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Disparo com Registro Automático no Histórico e Funil
   const handleEnviarEvolution = async () => {
     if (!lead.telefone) {
       setEvolutionFeedback({ success: false, msg: 'Este lead não possui telefone cadastrado.' });
@@ -91,7 +93,33 @@ export default function LeadDetalhesPage() {
 
     if (res.success) {
       setEvolutionFeedback({ success: true, msg: res.message || 'Mensagem enviada com sucesso!' });
-      handleMarcarComoEnviado();
+      
+      // Registrar no Histórico Automático
+      const agora = new Date();
+      const dataFormatada = agora.toLocaleDateString('pt-BR');
+      const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      
+      const registroAutomatico = `[${dataFormatada} às ${horaFormatada}] Mensagem enviada pelo WhatsApp`;
+      const novoHistorico = historicoNotas ? `${registroAutomatico}\n${historicoNotas}` : registroAutomatico;
+
+      const dataContato = agora.toISOString();
+      const updates = {
+        mensagem_editada: mensagemText,
+        notas: novoHistorico,
+        status_funil: 'Contatado' as StatusFunil,
+        data_contato: dataContato
+      };
+
+      await updateLeadInSupabase(lead.id, updates);
+
+      const updated: Lead = {
+        ...lead,
+        ...updates
+      };
+      saveLocalLead(updated);
+      setLead(updated);
+      setHistoricoNotas(novoHistorico);
+      setStatusFunil('Contatado');
     } else {
       setEvolutionFeedback({ 
         success: false, 
@@ -100,13 +128,20 @@ export default function LeadDetalhesPage() {
     }
   };
 
-  const handleMarcarComoEnviado = async () => {
-    const dataContato = new Date().toISOString();
+  // Adicionar Nova Anotação do Vendedor
+  const handleAdicionarNota = async () => {
+    if (!novaNota.trim()) return;
+
+    const agora = new Date();
+    const dataFormatada = agora.toLocaleDateString('pt-BR');
+    const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    const novaLinha = `[${dataFormatada} às ${horaFormatada}] ${novaNota.trim()}`;
+    const novoHistorico = historicoNotas ? `${novaLinha}\n${historicoNotas}` : novaLinha;
+
     const updates = {
-      mensagem_editada: mensagemText,
-      notas: notasText,
-      status_funil: 'Contatado' as StatusFunil,
-      data_contato: dataContato
+      notas: novoHistorico,
+      status_funil: statusFunil
     };
 
     await updateLeadInSupabase(lead.id, updates);
@@ -117,7 +152,8 @@ export default function LeadDetalhesPage() {
     };
     saveLocalLead(updated);
     setLead(updated);
-    setStatusFunil('Contatado');
+    setHistoricoNotas(novoHistorico);
+    setNovaNota('');
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -125,7 +161,7 @@ export default function LeadDetalhesPage() {
   const handleSalvarAlteracoes = async () => {
     const updates = {
       mensagem_editada: mensagemText,
-      notas: notasText,
+      notas: historicoNotas,
       status_funil: statusFunil
     };
 
@@ -248,7 +284,7 @@ export default function LeadDetalhesPage() {
 
         </div>
 
-        {/* Coluna 2 e 3: Editor de Mensagem e Disparo */}
+        {/* Coluna 2 e 3: Editor de Mensagem e Histórico */}
         <div className="lg:col-span-2 space-y-6">
           
           <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-6 space-y-4">
@@ -287,7 +323,7 @@ export default function LeadDetalhesPage() {
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500 leading-relaxed font-sans"
             />
 
-            {/* Banner de Feedback da WhatsApp API */}
+            {/* Banner de Feedback */}
             {evolutionFeedback && (
               <div className={`p-3 rounded-lg flex items-center gap-2 text-xs ${
                 evolutionFeedback.success 
@@ -304,32 +340,22 @@ export default function LeadDetalhesPage() {
               
               <div className="flex flex-wrap items-center gap-2">
                 
-                {/* Botão de Envio Direto via WhatsApp API */}
+                {/* Botão de Envio Direto (Atualiza Status + Registra Histórico Automático) */}
                 <button
                   onClick={handleEnviarEvolution}
                   disabled={sendingEvolution}
-                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs transition-all shadow-lg shadow-emerald-600/20"
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 text-white font-bold px-5 py-2.5 rounded-lg text-xs transition-all shadow-lg shadow-emerald-600/20"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>{sendingEvolution ? 'Disparando...' : 'Enviar pelo WhatsApp'}</span>
                 </button>
 
-                {/* Botão Copiar */}
                 <button
                   onClick={handleCopiarMensagem}
                   className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-2 rounded-lg text-xs transition-colors"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-blue-400" />}
                   <span>{copied ? 'Copiado!' : 'Copiar Texto'}</span>
-                </button>
-
-                {/* Botão Marcar como Enviado */}
-                <button
-                  onClick={handleMarcarComoEnviado}
-                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium px-3 py-2 rounded-lg text-xs transition-colors"
-                >
-                  <Send className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Marcar Enviado</span>
                 </button>
 
               </div>
@@ -345,15 +371,42 @@ export default function LeadDetalhesPage() {
             </div>
           </div>
 
-          <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-6 space-y-3">
-            <h2 className="text-sm font-bold text-slate-200">Anotações do Vendedor</h2>
-            <textarea
-              value={notasText}
-              onChange={(e) => setNotasText(e.target.value)}
-              placeholder="Ex: Cliente respondeu no WhatsApp, pediu retorno na terça-feira..."
-              rows={4}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 focus:outline-none focus:border-blue-500"
-            />
+          {/* Histórico Automático + Nova Anotação */}
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-400" />
+                <span>Histórico de Atividades & Anotações</span>
+              </h2>
+            </div>
+
+            {/* Adicionar Nova Anotação */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={novaNota}
+                onChange={(e) => setNovaNota(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAdicionarNota()}
+                placeholder="Escreva uma nova anotação sobre este lead..."
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+              />
+              <button
+                onClick={handleAdicionarNota}
+                className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 transition-colors"
+              >
+                <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Adicionar</span>
+              </button>
+            </div>
+
+            {/* Caixa do Histórico/Linha do Tempo */}
+            <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 text-xs font-mono text-slate-300 leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
+              {historicoNotas ? (
+                historicoNotas
+              ) : (
+                <span className="text-slate-600 font-sans italic">Nenhum evento ou anotação cadastrada para este lead.</span>
+              )}
+            </div>
           </div>
 
         </div>
