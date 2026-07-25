@@ -25,11 +25,11 @@ export default function ExplorarLeadsPage() {
   const [pageSize] = useState<number>(20);
   const [loading, setLoading] = useState(true);
 
-  // 1. Carregar Todos os Leads do Supabase/Local sem limitação
+  // 1. Carregar Todos os Leads do Supabase/Local
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      const res = await getLeadsPaginadosFromSupabase({ page: 1, pageSize: 500 });
+      const res = await getLeadsPaginadosFromSupabase({ page: 1, pageSize: 1000 });
       if (res.leads.length > 0) {
         setAllLeads(res.leads);
       } else {
@@ -40,69 +40,66 @@ export default function ExplorarLeadsPage() {
     loadData();
   }, []);
 
-  // 2. Classificação RÍGIDA e Automática de Nicho por Lead
+  // 2. Classificação RÍGIDA e Fiel ao Nicho do Robô / Nome da Empresa
   const getLeadNichoCalculado = (lead: Lead): string => {
-    const nomeLower = (lead.nome || '').toLowerCase();
-    const nichoBanco = (lead.buscas?.nicho || '').toLowerCase();
+    const nichoBanco = (lead.buscas?.nicho || '').trim();
+    if (nichoBanco) return nichoBanco;
 
-    if (nomeLower.includes('detail') || nomeLower.includes('estética automotiva') || nomeLower.includes('garage detail') || nichoBanco.includes('estética automotiva')) {
+    const nomeLower = (lead.nome || '').toLowerCase();
+
+    if (nomeLower.includes('detail') || nomeLower.includes('estética automotiva') || nomeLower.includes('garage detail')) {
       return 'Estética Automotiva';
     }
-    if (nomeLower.includes('auto') || nomeLower.includes('mecânica') || nomeLower.includes('oficina') || nomeLower.includes('câmbio') || nomeLower.includes('óleo') || nomeLower.includes('center') || nichoBanco.includes('mecânica') || nichoBanco.includes('automotivo')) {
+    if (nomeLower.includes('auto') || nomeLower.includes('mecânica') || nomeLower.includes('oficina') || nomeLower.includes('câmbio') || nomeLower.includes('óleo') || nomeLower.includes('center')) {
       return 'Centro Automotivo / Mecânica';
     }
-    if (nomeLower.includes('odonto') || nomeLower.includes('sorriso') || nomeLower.includes('dentista') || nomeLower.includes('orto') || nichoBanco.includes('odonto')) {
+    if (nomeLower.includes('odonto') || nomeLower.includes('sorriso') || nomeLower.includes('dentista') || nomeLower.includes('orto')) {
       return 'Odontologia';
     }
     
-    return lead.buscas?.nicho || 'Outros';
+    return 'Geral';
   };
 
-  // 3. Nichos e Cidades Únicos Calculados
+  // 3. Nichos e Cidades Únicos sem a palavra "Outros"
   const { nichosDisponiveis, cidadesDisponiveis } = useMemo(() => {
     const nichosSet = new Set<string>();
     const cidadesSet = new Set<string>();
 
     allLeads.forEach(lead => {
       const nicho = getLeadNichoCalculado(lead);
-      if (nicho) nichosSet.add(nicho);
+      if (nicho && nicho !== 'Outros') nichosSet.add(nicho);
       
       const cidade = lead.buscas?.cidade || lead.cidade;
       if (cidade) cidadesSet.add(cidade);
     });
 
     return {
-      nichosDisponiveis: Array.from(nichosSet).sort(),
-      cidadesDisponiveis: Array.from(cidadesSet).sort()
+      nichosDisponiveis: Array.from(nichosSet).sort((a, b) => a.localeCompare(b)),
+      cidadesDisponiveis: Array.from(cidadesSet).sort((a, b) => a.localeCompare(b))
     };
   }, [allLeads]);
 
-  // 4. Filtragem Precisa e Rígida dos Leads
+  // 4. Filtragem Precisa dos Leads
   const leadsFiltrados = useMemo(() => {
     return allLeads.filter(lead => {
-      // Filtro por Nicho
       if (filtroNicho !== 'todos') {
         const nichoLead = getLeadNichoCalculado(lead);
-        if (nichoLead !== filtroNicho) return false;
+        if (nichoLead.toLowerCase() !== filtroNicho.toLowerCase()) return false;
       }
 
-      // Filtro por Cidade
       if (filtroCidade !== 'todos') {
         const cidadeLead = lead.buscas?.cidade || lead.cidade;
         if (cidadeLead !== filtroCidade) return false;
       }
 
-      // Filtro por Nível
       if (filtroNivel !== 'todos') {
         if (lead.score_nivel !== filtroNivel) return false;
       }
 
-      // Filtro por Status
       if (filtroStatus !== 'todos') {
         if (lead.status_funil !== filtroStatus) return false;
       }
 
-      // Busca por Nome
       if (buscaTexto.trim()) {
         const texto = buscaTexto.toLowerCase();
         if (!lead.nome.toLowerCase().includes(texto)) return false;
@@ -112,7 +109,7 @@ export default function ExplorarLeadsPage() {
     });
   }, [allLeads, filtroNicho, filtroCidade, filtroNivel, filtroStatus, buscaTexto]);
 
-  // 5. Paginação dos Resultados Filtrados
+  // 5. Paginação dos Resultados
   const totalCount = leadsFiltrados.length;
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
   const leadsPaginados = useMemo(() => {
@@ -158,7 +155,7 @@ export default function ExplorarLeadsPage() {
           />
         </div>
 
-        {/* Filtro Nicho / Segmento Rígido */}
+        {/* Filtro Nicho / Segmento Fiel ao Robô */}
         <select
           value={filtroNicho}
           onChange={(e) => {
