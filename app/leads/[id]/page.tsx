@@ -5,11 +5,13 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeft, Copy, Check, Send, FileText, Save, 
-  Phone, Globe, AlertCircle, MessageSquare
+  Phone, Globe, AlertCircle, MessageSquare, Sparkles
 } from 'lucide-react';
 import { getLocalLeads, saveLocalLead } from '@/lib/storage';
 import { getLeadBySlugOrIdFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
 import { enviarMensagemEvolutionAPI } from '@/lib/evolution-service';
+import { gerarMensagemAbordagemIA } from '@/lib/openai-service';
+import { gerarMensagemPadrao } from '@/lib/mensagem-template';
 import { Lead, StatusFunil } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
 
@@ -24,27 +26,34 @@ export default function LeadDetalhesPage() {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   
-  // Estado para disparo via Evolution API
+  // Estados de IA e Disparo
+  const [generatingIA, setGeneratingIA] = useState(false);
   const [sendingEvolution, setSendingEvolution] = useState(false);
   const [evolutionFeedback, setEvolutionFeedback] = useState<{ success: boolean; msg: string } | null>(null);
 
   useEffect(() => {
     async function loadLead() {
-      const sbLead = await getLeadBySlugOrIdFromSupabase(leadId);
-      if (sbLead) {
-        setLead(sbLead);
-        setMensagemText(sbLead.mensagem_editada || sbLead.mensagem_sugerida || '');
-        setNotasText(sbLead.notas || '');
-        setStatusFunil(sbLead.status_funil);
-      } else {
+      let targetLead: Lead | null = await getLeadBySlugOrIdFromSupabase(leadId);
+      
+      if (!targetLead) {
         const allLeads = getLocalLeads();
-        const found = allLeads.find(l => l.id === leadId);
-        if (found) {
-          setLead(found);
-          setMensagemText(found.mensagem_editada || found.mensagem_sugerida || '');
-          setNotasText(found.notas || '');
-          setStatusFunil(found.status_funil);
+        targetLead = allLeads.find(l => l.id === leadId) || null;
+      }
+
+      if (targetLead) {
+        setLead(targetLead);
+        setNotasText(targetLead.notas || '');
+        setStatusFunil(targetLead.status_funil);
+
+        // Se já existe mensagem editada ou sugerida, usar ela
+        let msg = targetLead.mensagem_editada || targetLead.mensagem_sugerida;
+        
+        // Se vier nula ou vazia do banco, gerar automaticamente!
+        if (!msg || !msg.trim()) {
+          msg = gerarMensagemPadrao(targetLead, targetLead.buscas?.nicho, targetLead.buscas?.cidade);
         }
+
+        setMensagemText(msg);
       }
     }
     loadLead();
@@ -58,13 +67,20 @@ export default function LeadDetalhesPage() {
     );
   }
 
+  // Regerar mensagem usando IA / OpenAI
+  const handleRegerarComIA = async () => {
+    setGeneratingIA(true);
+    const novaMsg = await gerarMensagemAbordagemIA(lead, lead.buscas?.nicho, lead.buscas?.cidade);
+    setMensagemText(novaMsg);
+    setGeneratingIA(false);
+  };
+
   const handleCopiarMensagem = () => {
     navigator.clipboard.writeText(mensagemText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Disparo direto via Evolution API
   const handleEnviarEvolution = async () => {
     if (!lead.telefone) {
       setEvolutionFeedback({ success: false, msg: 'Este lead não possui telefone cadastrado.' });
@@ -79,12 +95,11 @@ export default function LeadDetalhesPage() {
 
     if (res.success) {
       setEvolutionFeedback({ success: true, msg: res.message || 'Mensagem enviada com sucesso!' });
-      // Atualizar status para Contatado
       handleMarcarComoEnviado();
     } else {
       setEvolutionFeedback({ 
         success: false, 
-        msg: res.error || 'Erro ao conectar à Evolution API. Verifique as credenciais no .env' 
+        msg: res.error || 'Erro ao conectar à Evolution API. Verifique as credenciais.' 
       });
     }
   };
@@ -98,10 +113,8 @@ export default function LeadDetalhesPage() {
       data_contato: dataContato
     };
 
-    // Tenta atualizar no Supabase
     await updateLeadInSupabase(lead.id, updates);
 
-    // Atualiza localmente
     const updated: Lead = {
       ...lead,
       ...updates
@@ -182,7 +195,7 @@ export default function LeadDetalhesPage() {
         </div>
       </div>
 
-      {/* Grid com Indicadores e Editor de Mensagem */}
+      {/* Grid de Indicadores e Editor */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Coluna 1: Indicadores e Falhas */}
@@ -249,14 +262,26 @@ export default function LeadDetalhesPage() {
                 <p className="text-xs text-slate-400">Edite a mensagem antes de disparar pelo WhatsApp.</p>
               </div>
               
-              <Link
-                href={`/diagnostico/${lead.slug}`}
-                target="_blank"
-                className="flex items-center gap-1.5 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Ver Diagnóstico Web</span>
-              </Link>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleRegerarComIA}
+                  disabled={generatingIA}
+                  className="flex items-center gap-1.5 bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                  title="Gerar nova copy com OpenAI / ChatGPT"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <span>{generatingIA ? 'Gerando IA...' : 'Regerar com IA'}</span>
+                </button>
+
+                <Link
+                  href={`/diagnostico/${lead.slug}`}
+                  target="_blank"
+                  className="flex items-center gap-1.5 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Ver Diagnóstico Web</span>
+                </Link>
+              </div>
             </div>
 
             <textarea
