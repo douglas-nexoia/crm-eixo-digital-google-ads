@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  ArrowLeft, Copy, Check, FileText, Save, 
-  Phone, Globe, AlertCircle, MessageSquare, Sparkles, Clock, PlusCircle
+  ArrowLeft, FileText, Save, 
+  Phone, Globe, AlertCircle, MessageSquare, Sparkles, Clock, PlusCircle, Send
 } from 'lucide-react';
 import { getLocalLeads, saveLocalLead } from '@/lib/storage';
 import { getLeadBySlugOrIdFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
@@ -24,13 +24,15 @@ export default function LeadDetalhesPage() {
   const [historicoNotas, setHistoricoNotas] = useState<string>('');
   const [novaNota, setNovaNota] = useState<string>('');
   const [statusFunil, setStatusFunil] = useState<StatusFunil>('Novo');
-  const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   
-  // Estados de IA e Disparo
+  // Estados de IA e Disparos
   const [generatingIA, setGeneratingIA] = useState(false);
   const [sendingEvolution, setSendingEvolution] = useState(false);
+  const [sendingDiagnostico, setSendingDiagnostico] = useState(false);
   const [evolutionFeedback, setEvolutionFeedback] = useState<{ success: boolean; msg: string } | null>(null);
+
+  const BASE_APP_URL = typeof window !== 'undefined' ? window.location.origin : 'https://crm.eixodigitalbr.com.br';
 
   useEffect(() => {
     async function loadLead() {
@@ -65,8 +67,9 @@ export default function LeadDetalhesPage() {
     );
   }
 
-  // Garantir link válido de diagnóstico (se slug for nulo, usar ID)
-  const diagnosticoPath = `/diagnostico/${lead.slug && lead.slug !== 'null' ? lead.slug : lead.id}`;
+  const slugValido = lead.slug && lead.slug !== 'null' ? lead.slug : lead.id;
+  const diagnosticoRelativePath = `/diagnostico/${slugValido}`;
+  const diagnosticoPublicUrl = `${BASE_APP_URL}${diagnosticoRelativePath}`;
 
   const handleRegerarComIA = async () => {
     setGeneratingIA(true);
@@ -75,12 +78,7 @@ export default function LeadDetalhesPage() {
     setGeneratingIA(false);
   };
 
-  const handleCopiarMensagem = () => {
-    navigator.clipboard.writeText(mensagemText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
+  // 1. Disparar Mensagem de Abordagem Comercial
   const handleEnviarEvolution = async () => {
     if (!lead.telefone) {
       setEvolutionFeedback({ success: false, msg: 'Este lead não possui telefone cadastrado.' });
@@ -100,7 +98,7 @@ export default function LeadDetalhesPage() {
       const dataFormatada = agora.toLocaleDateString('pt-BR');
       const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       
-      const registroAutomatico = `[${dataFormatada} às ${horaFormatada}] Mensagem enviada pelo WhatsApp`;
+      const registroAutomatico = `[${dataFormatada} às ${horaFormatada}] Mensagem de Abordagem enviada pelo WhatsApp`;
       const novoHistorico = historicoNotas ? `${registroAutomatico}\n${historicoNotas}` : registroAutomatico;
 
       const dataContato = agora.toISOString();
@@ -113,10 +111,7 @@ export default function LeadDetalhesPage() {
 
       await updateLeadInSupabase(lead.id, updates);
 
-      const updated: Lead = {
-        ...lead,
-        ...updates
-      };
+      const updated: Lead = { ...lead, ...updates };
       saveLocalLead(updated);
       setLead(updated);
       setHistoricoNotas(novoHistorico);
@@ -124,7 +119,52 @@ export default function LeadDetalhesPage() {
     } else {
       setEvolutionFeedback({ 
         success: false, 
-        msg: res.error || 'Erro ao conectar ao servidor do WhatsApp. Verifique as credenciais.' 
+        msg: res.error || 'Erro ao conectar ao servidor do WhatsApp.' 
+      });
+    }
+  };
+
+  // 2. Disparar Link do Diagnóstico Público no WhatsApp
+  const handleEnviarDiagnosticoWhatsApp = async () => {
+    if (!lead.telefone) {
+      setEvolutionFeedback({ success: false, msg: 'Este lead não possui telefone cadastrado.' });
+      return;
+    }
+
+    setSendingDiagnostico(true);
+    setEvolutionFeedback(null);
+
+    const mensagemDiagnostico = `Olá! Preparei um diagnóstico exclusivo sobre a presença digital da *${lead.nome}* no Google em relação aos seus concorrentes da região.\n\nVocê pode visualizar o relatório completo e interativo neste link:\n${diagnosticoPublicUrl}`;
+
+    const res = await enviarMensagemEvolutionAPI(lead.telefone, mensagemDiagnostico);
+    setSendingDiagnostico(false);
+
+    if (res.success) {
+      setEvolutionFeedback({ success: true, msg: 'Relatório de Diagnóstico enviado no WhatsApp!' });
+      
+      const agora = new Date();
+      const dataFormatada = agora.toLocaleDateString('pt-BR');
+      const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      
+      const registroAutomatico = `[${dataFormatada} às ${horaFormatada}] Link do Diagnóstico Público enviado pelo WhatsApp\n(${diagnosticoPublicUrl})`;
+      const novoHistorico = historicoNotas ? `${registroAutomatico}\n${historicoNotas}` : registroAutomatico;
+
+      const updates = {
+        notas: novoHistorico,
+        status_funil: 'Aceitou Diagnóstico' as StatusFunil
+      };
+
+      await updateLeadInSupabase(lead.id, updates);
+
+      const updated: Lead = { ...lead, ...updates };
+      saveLocalLead(updated);
+      setLead(updated);
+      setHistoricoNotas(novoHistorico);
+      setStatusFunil('Aceitou Diagnóstico');
+    } else {
+      setEvolutionFeedback({ 
+        success: false, 
+        msg: res.error || 'Erro ao enviar o diagnóstico pelo WhatsApp.' 
       });
     }
   };
@@ -146,10 +186,7 @@ export default function LeadDetalhesPage() {
 
     await updateLeadInSupabase(lead.id, updates);
 
-    const updated: Lead = {
-      ...lead,
-      ...updates
-    };
+    const updated: Lead = { ...lead, ...updates };
     saveLocalLead(updated);
     setLead(updated);
     setHistoricoNotas(novoHistorico);
@@ -167,10 +204,7 @@ export default function LeadDetalhesPage() {
 
     await updateLeadInSupabase(lead.id, updates);
 
-    const updated: Lead = {
-      ...lead,
-      ...updates
-    };
+    const updated: Lead = { ...lead, ...updates };
     saveLocalLead(updated);
     setLead(updated);
     setSaved(true);
@@ -306,7 +340,7 @@ export default function LeadDetalhesPage() {
                 </button>
 
                 <Link
-                  href={diagnosticoPath}
+                  href={diagnosticoRelativePath}
                   target="_blank"
                   className="flex items-center gap-1.5 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
                 >
@@ -338,23 +372,27 @@ export default function LeadDetalhesPage() {
             {/* Painel de Botões de Ação */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2.5">
                 
+                {/* Botão 1: Enviar Mensagem do Texto no WhatsApp */}
                 <button
                   onClick={handleEnviarEvolution}
-                  disabled={sendingEvolution}
-                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 text-white font-bold px-5 py-2.5 rounded-lg text-xs transition-all shadow-lg shadow-emerald-600/20"
+                  disabled={sendingEvolution || sendingDiagnostico}
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-lg text-xs transition-all shadow-lg shadow-emerald-600/20"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>{sendingEvolution ? 'Disparando...' : 'Enviar pelo WhatsApp'}</span>
                 </button>
 
+                {/* Botão 2 (Novo): Enviar Link do Diagnóstico no WhatsApp */}
                 <button
-                  onClick={handleCopiarMensagem}
-                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-2 rounded-lg text-xs transition-colors"
+                  onClick={handleEnviarDiagnosticoWhatsApp}
+                  disabled={sendingEvolution || sendingDiagnostico}
+                  className="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-lg text-xs transition-all shadow-lg shadow-cyan-600/20"
+                  title="Envia a mensagem com o link oficial do Diagnóstico Web no WhatsApp do lead"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-blue-400" />}
-                  <span>{copied ? 'Copiado!' : 'Copiar Texto'}</span>
+                  <Send className="w-4 h-4" />
+                  <span>{sendingDiagnostico ? 'Enviando Relatório...' : 'Enviar Diagnóstico no WhatsApp'}</span>
                 </button>
 
               </div>
