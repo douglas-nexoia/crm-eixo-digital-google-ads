@@ -2,59 +2,60 @@ import { Lead } from './types';
 import { gerarMensagemPadrao } from './mensagem-template';
 
 /**
- * Gera mensagem de abordagem usando OpenAI GPT-4o-mini ou Fallback para template
+ * Chama o backend proxy server-side do Next.js para gerar mensagem com OpenAI (evita CORS)
  */
-export async function gerarMensagemAbordagemIA(lead: Partial<Lead>, nicho?: string, cidade?: string): Promise<string> {
-  const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+export async function gerarMensagemAbordagemIA(
+  lead: Lead,
+  nichoParam?: string,
+  cidadeParam?: string
+): Promise<string> {
+  const nomeEmpresa = lead.nome;
+  const nicho = lead.nicho || nichoParam || lead.buscas?.nicho || 'serviços';
+  const cidade = lead.cidade || cidadeParam || lead.buscas?.cidade || 'sua cidade';
+  const posicao = lead.posicao_maps ? `${lead.posicao_maps}ª` : '4ª';
+  const nota = lead.gmb_nota ? String(lead.gmb_nota) : '4.0';
 
-  // Se não houver chave da OpenAI configurada, usar o gerador de template nativo
-  if (!apiKey) {
-    return gerarMensagemPadrao(lead, nicho, cidade);
-  }
+  const falhasTexto = lead.score_detalhes && lead.score_detalhes.length > 0
+    ? lead.score_detalhes.join(', ')
+    : 'Poucas avaliações e perfil do Google desatualizado';
 
-  const prompt = `Você é um especialista em prospecção da agência "Eixo Digital" (especialista em colocar empresas locais no topo do Google).
-Escreva uma mensagem curta, direta e amigável para envio pelo WhatsApp abordando a empresa "${lead.nome || 'Empresa'}".
+  const prompt = `Crie uma mensagem persuasiva e amigável de abordagem comercial via WhatsApp para um cliente em potencial de ${nicho} na cidade de ${cidade}.
 
-Dados da empresa prospectada:
-- Cidade/Nicho: ${cidade || 'sua região'} / ${nicho || 'serviços'}
-- Posição no Google Maps: ${lead.posicao_maps ? `${lead.posicao_maps}ª posição` : 'fora das primeiras posições'}
-- Nota no Google (GMB): ${lead.gmb_nota || 'sem nota'}
-- Principais falhas no perfil/site: ${lead.score_detalhes ? lead.score_detalhes.join(', ') : 'sem site/sem otimização'}
+Dados da empresa:
+- Nome da empresa: ${nomeEmpresa}
+- Posição atual no Google Maps: ${posicao} posição (fora do Top 3 que recebe 80% das chamadas)
+- Nota no Google: ${nota}
+- Cidade: ${cidade}
+- Principais falhas identificadas: ${falhasTexto}
 
-Instruções da mensagem:
-1. Comece cumprimentando amigavelmente.
-2. Mencione que notou a posição dela no Google Maps de forma construtiva (ex: "vi que sua empresa está na Xª posição, fora do Top 3 que atrai a maioria das chamadas").
-3. Ofereça um relatório/diagnóstico comparativo gratuito com os concorrentes locais.
-4. Termine com uma pergunta simples para ela responder se deseja receber.
-5. Não use termos técnicos em inglês nem códigos como #4.
-6. Texto formatado para WhatsApp (máximo 4 a 5 parágrafos curtos).`;
+Regras da mensagem:
+1. Comece com uma saudação amigável.
+2. Destaque que a empresa ${nomeEmpresa} está na ${posicao} posição nas buscas do Google em ${cidade}.
+3. Mencione com tato 1 ou 2 falhas identificadas que os concorrentes estão usando para passar na frente.
+4. Termine convidando o cliente para ver o relatório de diagnóstico digital gratuito.
+5. Use emojis de forma sutil e profissional.
+6. A mensagem DEVE ser em português do Brasil e pronta para colar no WhatsApp.`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('/api/openai/generate', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 300
-      })
+      body: JSON.stringify({ prompt })
     });
 
-    if (!response.ok) {
-      console.warn('Falha na resposta da OpenAI. Usando gerador padrao.');
-      return gerarMensagemPadrao(lead, nicho, cidade);
+    const data = await response.json();
+
+    if (response.ok && data.success && data.text) {
+      return data.text;
     }
 
-    const data = await response.json();
-    const mensagemIA = data.choices?.[0]?.message?.content?.trim();
-    
-    return mensagemIA || gerarMensagemPadrao(lead, nicho, cidade);
-  } catch (err) {
-    console.error('Erro de integração OpenAI:', err);
+    console.warn('OpenAI fallback ativado:', data.error);
+    return gerarMensagemPadrao(lead, nicho, cidade);
+
+  } catch (error) {
+    console.error('Erro de conexão ao regerar com IA:', error);
     return gerarMensagemPadrao(lead, nicho, cidade);
   }
 }
