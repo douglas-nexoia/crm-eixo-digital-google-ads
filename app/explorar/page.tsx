@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, Copy, Check, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getLeadsPaginadosFromSupabase, getNichosECidadesUnicosFromSupabase } from '@/lib/supabase-service';
@@ -10,9 +10,8 @@ import { ScoreBadge } from '@/components/ScoreBadge';
 import { FunnelBadge } from '@/components/FunnelBadge';
 
 export default function ExplorarLeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [nichosDisponiveis, setNichosDisponiveis] = useState<string[]>([]);
-  const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   
   // Filtros
   const [filtroNicho, setFiltroNicho] = useState<string>('todos');
@@ -20,94 +19,106 @@ export default function ExplorarLeadsPage() {
   const [filtroNivel, setFiltroNivel] = useState<string>('todos');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [buscaTexto, setBuscaTexto] = useState<string>('');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   
-  // Estados de Paginação
+  // Paginação
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(20);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  // Analisador inteligente de Nichos a partir dos Leads
-  const detectarNichosDosLeads = (listaLeads: Lead[], nichosDoBanco: string[]) => {
-    const setNichos = new Set<string>(nichosDoBanco);
-    const setCidades = new Set<string>();
-
-    listaLeads.forEach((lead) => {
-      const nomeLower = (lead.nome || '').toLowerCase();
-      
-      // Categorização inteligente por palavras-chave caso o banco esteja sem a FK
-      if (nomeLower.includes('auto') || nomeLower.includes('mecânica') || nomeLower.includes('oficina') || nomeLower.includes('câmbio') || nomeLower.includes('óleo')) {
-        setNichos.add('Centro Automotivo / Mecânica');
-      } else if (nomeLower.includes('detail') || nomeLower.includes('estética automotiva') || nomeLower.includes('garage')) {
-        setNichos.add('Estética Automotiva');
-      } else if (nomeLower.includes('odonto') || nomeLower.includes('sorriso') || nomeLower.includes('dentista')) {
-        setNichos.add('Odontologia');
-      } else if (lead.buscas?.nicho) {
-        setNichos.add(lead.buscas.nicho);
-      }
-
-      if (lead.buscas?.cidade) {
-        setCidades.add(lead.buscas.cidade);
-      }
-    });
-
-    // Se o banco tiver apenas odontologia e os leads forem automotivos, garantir os nichos automotivos
-    if (setNichos.size === 0 || (setNichos.size === 1 && setNichos.has('odontologia'))) {
-      setNichos.add('Centro Automotivo / Mecânica');
-      setNichos.add('Estética Automotiva');
-    }
-
-    setNichosDisponiveis(Array.from(setNichos).filter(Boolean).sort());
-    if (setCidades.size > 0) {
-      setCidadesDisponiveis(Array.from(setCidades).filter(Boolean).sort());
-    }
-  };
-
+  // 1. Carregar Todos os Leads do Supabase/Local sem limitação
   useEffect(() => {
-    async function loadFiltrosIniciais() {
-      const { nichos, cidades } = await getNichosECidadesUnicosFromSupabase();
-      
-      // Garantir nichos padrões do CRM
-      const nichosIniciais = new Set<string>([...nichos, 'Odontologia', 'Centro Automotivo / Mecânica', 'Estética Automotiva']);
-      setNichosDisponiveis(Array.from(nichosIniciais).sort());
-      
-      if (cidades.length > 0) setCidadesDisponiveis(cidades);
+    async function loadData() {
+      setLoading(true);
+      const res = await getLeadsPaginadosFromSupabase({ page: 1, pageSize: 500 });
+      if (res.leads.length > 0) {
+        setAllLeads(res.leads);
+      } else {
+        setAllLeads(getLocalLeads());
+      }
+      setLoading(false);
     }
-    loadFiltrosIniciais();
+    loadData();
   }, []);
 
-  const fetchLeads = async () => {
-    setLoading(true);
-    const result = await getLeadsPaginadosFromSupabase({
-      page,
-      pageSize,
-      nicho: filtroNicho,
-      cidade: filtroCidade,
-      scoreNivel: filtroNivel,
-      statusFunil: filtroStatus,
-      buscaTexto
-    });
+  // 2. Classificação RÍGIDA e Automática de Nicho por Lead
+  const getLeadNichoCalculado = (lead: Lead): string => {
+    const nomeLower = (lead.nome || '').toLowerCase();
+    const nichoBanco = (lead.buscas?.nicho || '').toLowerCase();
 
-    if (result.leads.length > 0 || result.totalCount > 0) {
-      setLeads(result.leads);
-      setTotalCount(result.totalCount);
-      setTotalPages(result.totalPages || 1);
-      detectarNichosDosLeads(result.leads, nichosDisponiveis);
-    } else {
-      const local = getLocalLeads();
-      setLeads(local);
-      setTotalCount(local.length);
-      setTotalPages(1);
-      detectarNichosDosLeads(local, nichosDisponiveis);
+    if (nomeLower.includes('detail') || nomeLower.includes('estética automotiva') || nomeLower.includes('garage detail') || nichoBanco.includes('estética automotiva')) {
+      return 'Estética Automotiva';
     }
-    setLoading(false);
+    if (nomeLower.includes('auto') || nomeLower.includes('mecânica') || nomeLower.includes('oficina') || nomeLower.includes('câmbio') || nomeLower.includes('óleo') || nomeLower.includes('center') || nichoBanco.includes('mecânica') || nichoBanco.includes('automotivo')) {
+      return 'Centro Automotivo / Mecânica';
+    }
+    if (nomeLower.includes('odonto') || nomeLower.includes('sorriso') || nomeLower.includes('dentista') || nomeLower.includes('orto') || nichoBanco.includes('odonto')) {
+      return 'Odontologia';
+    }
+    
+    return lead.buscas?.nicho || 'Outros';
   };
 
-  useEffect(() => {
-    fetchLeads();
-  }, [page, filtroNicho, filtroCidade, filtroNivel, filtroStatus, buscaTexto]);
+  // 3. Nichos e Cidades Únicos Calculados
+  const { nichosDisponiveis, cidadesDisponiveis } = useMemo(() => {
+    const nichosSet = new Set<string>();
+    const cidadesSet = new Set<string>();
+
+    allLeads.forEach(lead => {
+      const nicho = getLeadNichoCalculado(lead);
+      if (nicho) nichosSet.add(nicho);
+      
+      const cidade = lead.buscas?.cidade || lead.cidade;
+      if (cidade) cidadesSet.add(cidade);
+    });
+
+    return {
+      nichosDisponiveis: Array.from(nichosSet).sort(),
+      cidadesDisponiveis: Array.from(cidadesSet).sort()
+    };
+  }, [allLeads]);
+
+  // 4. Filtragem Precisa e Rígida dos Leads
+  const leadsFiltrados = useMemo(() => {
+    return allLeads.filter(lead => {
+      // Filtro por Nicho
+      if (filtroNicho !== 'todos') {
+        const nichoLead = getLeadNichoCalculado(lead);
+        if (nichoLead !== filtroNicho) return false;
+      }
+
+      // Filtro por Cidade
+      if (filtroCidade !== 'todos') {
+        const cidadeLead = lead.buscas?.cidade || lead.cidade;
+        if (cidadeLead !== filtroCidade) return false;
+      }
+
+      // Filtro por Nível
+      if (filtroNivel !== 'todos') {
+        if (lead.score_nivel !== filtroNivel) return false;
+      }
+
+      // Filtro por Status
+      if (filtroStatus !== 'todos') {
+        if (lead.status_funil !== filtroStatus) return false;
+      }
+
+      // Busca por Nome
+      if (buscaTexto.trim()) {
+        const texto = buscaTexto.toLowerCase();
+        if (!lead.nome.toLowerCase().includes(texto)) return false;
+      }
+
+      return true;
+    });
+  }, [allLeads, filtroNicho, filtroCidade, filtroNivel, filtroStatus, buscaTexto]);
+
+  // 5. Paginação dos Resultados Filtrados
+  const totalCount = leadsFiltrados.length;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+  const leadsPaginados = useMemo(() => {
+    const from = (page - 1) * pageSize;
+    return leadsFiltrados.slice(from, from + pageSize);
+  }, [leadsFiltrados, page, pageSize]);
 
   const handleCopiarMensagem = (lead: Lead) => {
     const texto = lead.mensagem_editada || lead.mensagem_sugerida || '';
@@ -124,7 +135,7 @@ export default function ExplorarLeadsPage() {
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Explorar Leads</h1>
           <p className="text-slate-400 text-sm mt-1">
-            Empresas capturadas pelo EIXO-SCOUT no Google Maps ({totalCount} registros).
+            Empresas capturadas pelo EIXO-SCOUT no Google Maps ({totalCount} registros nesta visualização).
           </p>
         </div>
       </div>
@@ -147,7 +158,7 @@ export default function ExplorarLeadsPage() {
           />
         </div>
 
-        {/* Filtro Nicho / Segmento com Garantia Total de Opções */}
+        {/* Filtro Nicho / Segmento Rígido */}
         <select
           value={filtroNicho}
           onChange={(e) => {
@@ -238,14 +249,14 @@ export default function ExplorarLeadsPage() {
                     Carregando leads do Supabase...
                   </td>
                 </tr>
-              ) : leads.length === 0 ? (
+              ) : leadsPaginados.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                     Nenhum lead encontrado para os filtros selecionados.
                   </td>
                 </tr>
               ) : (
-                leads.map((lead) => {
+                leadsPaginados.map((lead) => {
                   const pathDiagnostico = `/diagnostico/${lead.slug && lead.slug !== 'null' ? lead.slug : lead.id}`;
                   return (
                     <tr key={lead.id} className="hover:bg-slate-900/50 transition-colors">
@@ -331,7 +342,7 @@ export default function ExplorarLeadsPage() {
         {/* Rodapé de Paginação */}
         <div className="bg-slate-950/80 px-4 py-3 flex items-center justify-between border-t border-slate-800 text-xs text-slate-400">
           <div>
-            Mostrando <span className="font-semibold text-slate-200">{leads.length}</span> de{' '}
+            Mostrando <span className="font-semibold text-slate-200">{leadsPaginados.length}</span> de{' '}
             <span className="font-semibold text-slate-200">{totalCount}</span> registros (Página {page} de {totalPages})
           </div>
 
