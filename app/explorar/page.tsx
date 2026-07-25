@@ -29,19 +29,31 @@ export default function ExplorarLeadsPage() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadFiltrosOpcoes() {
-      const { nichos, cidades } = await getNichosECidadesUnicosFromSupabase();
-      if (nichos.length > 0 || cidades.length > 0) {
-        setNichosDisponiveis(nichos);
-        setCidadesDisponiveis(cidades);
-      } else {
-        const local = getLocalBuscas();
-        setNichosDisponiveis(Array.from(new Set(local.map(b => b.nicho))));
-        setCidadesDisponiveis(Array.from(new Set(local.map(b => b.cidade))));
+  // Função para extrair nichos dinamicamente a partir dos leads recebidos
+  const extrairOpcoesDeFiltro = (listaLeads: Lead[], nichosBanco: string[], cidadesBanco: string[]) => {
+    const nichosSet = new Set<string>(nichosBanco);
+    const cidadesSet = new Set<string>(cidadesBanco);
+
+    listaLeads.forEach((l) => {
+      if (l.buscas?.nicho?.trim()) {
+        nichosSet.add(l.buscas.nicho.trim());
       }
+      if (l.buscas?.cidade?.trim()) {
+        cidadesSet.add(l.buscas.cidade.trim());
+      }
+    });
+
+    setNichosDisponiveis(Array.from(nichosSet).filter(Boolean).sort());
+    setCidadesDisponiveis(Array.from(cidadesSet).filter(Boolean).sort());
+  };
+
+  useEffect(() => {
+    async function initFiltros() {
+      const { nichos, cidades } = await getNichosECidadesUnicosFromSupabase();
+      setNichosDisponiveis(nichos);
+      setCidadesDisponiveis(cidades);
     }
-    loadFiltrosOpcoes();
+    initFiltros();
   }, []);
 
   const fetchLeads = async () => {
@@ -60,11 +72,13 @@ export default function ExplorarLeadsPage() {
       setLeads(result.leads);
       setTotalCount(result.totalCount);
       setTotalPages(result.totalPages || 1);
+      extrairOpcoesDeFiltro(result.leads, nichosDisponiveis, cidadesDisponiveis);
     } else {
       const local = getLocalLeads();
       setLeads(local);
       setTotalCount(local.length);
       setTotalPages(1);
+      extrairOpcoesDeFiltro(local, nichosDisponiveis, cidadesDisponiveis);
     }
     setLoading(false);
   };
@@ -111,7 +125,7 @@ export default function ExplorarLeadsPage() {
           />
         </div>
 
-        {/* Filtro Nicho / Segmento */}
+        {/* Filtro Nicho / Segmento Dinâmico */}
         <select
           value={filtroNicho}
           onChange={(e) => {
@@ -120,7 +134,7 @@ export default function ExplorarLeadsPage() {
           }}
           className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 capitalize focus:outline-none focus:border-blue-500"
         >
-          <option value="todos">Todos os Segmentos</option>
+          <option value="todos">Todos Os Segmentos ({nichosDisponiveis.length})</option>
           {nichosDisponiveis.map((nicho) => (
             <option key={nicho} value={nicho} className="capitalize">
               {nicho}
@@ -310,7 +324,7 @@ export default function ExplorarLeadsPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages || loading}
-              className="p-1.5 rounded bg-slate-900 border border-slate-800 disabled:opacity-40 hover:bg-slate-800 text-slate-200"
+              className="p-1.5 rounded bg-slate-950 border border-slate-800 disabled:opacity-40 hover:bg-slate-800 text-slate-200"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
