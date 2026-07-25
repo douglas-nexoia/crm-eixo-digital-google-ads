@@ -2,39 +2,53 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, Copy, Check, FileText, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { getLeadsPaginadosFromSupabase, getNichosECidadesUnicosFromSupabase } from '@/lib/supabase-service';
-import { getLocalLeads } from '@/lib/storage';
-import { Lead } from '@/lib/types';
+import { 
+  Search, Copy, Check, FileText, ChevronLeft, ChevronRight, 
+  ArrowUpDown, ArrowUp, ArrowDown, MessageSquare, Send, Sparkles, AlertCircle
+} from 'lucide-react';
+import { getLeadsPaginadosFromSupabase, getNichosECidadesUnicosFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
+import { enviarMensagemEvolutionAPI } from '@/lib/evolution-service';
+import { gerarMensagemPadrao } from '@/lib/mensagem-template';
+import { getLocalLeads, saveLocalLead } from '@/lib/storage';
+import { Lead, StatusFunil } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { FunnelBadge } from '@/components/FunnelBadge';
 
 type SortField = 'nome' | 'nicho' | 'posicao_maps' | 'gmb_nota' | 'gmb_avaliacoes' | 'score_pontos' | 'status_funil';
 type SortOrder = 'asc' | 'desc';
+type TabEstagio = 'todos' | 'Novo' | 'Contatado' | 'Aceitou Diagnóstico' | 'Em Negociação / Cliente';
 
 export default function ExplorarLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [nichosDisponiveis, setNichosDisponiveis] = useState<string[]>([]);
   const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  
-  // Filtros Nativa do Supabase
+
+  // Sub-Aba de Estágio Selecionada
+  const [tabEstagio, setTabEstagio] = useState<TabEstagio>('todos');
+
+  // Filtros
   const [filtroNicho, setFiltroNicho] = useState<string>('todos');
   const [filtroCidade, setFiltroCidade] = useState<string>('todos');
   const [filtroNivel, setFiltroNivel] = useState<string>('todos');
-  const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [buscaTexto, setBuscaTexto] = useState<string>('');
   
-  // Ordenação por Coluna
+  // Ordenação
   const [sortField, setSortField] = useState<SortField>('posicao_maps');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
-  // Paginação Server-side do Supabase
+  // Paginação
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(20);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
+
+  // Estados de Disparo Direto da Lista
+  const [sendingLeadId, setSendingLeadId] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<{ leadId: string; success: boolean; msg: string } | null>(null);
+
+  const BASE_APP_URL = typeof window !== 'undefined' ? window.location.origin : 'https://crm.eixodigitalbr.com.br';
 
   useEffect(() => {
     async function loadFiltros() {
@@ -47,13 +61,18 @@ export default function ExplorarLeadsPage() {
 
   const fetchLeads = async () => {
     setLoading(true);
+    let statusParam = 'todos';
+    if (tabEstagio === 'Novo') statusParam = 'Novo';
+    else if (tabEstagio === 'Contatado') statusParam = 'Contatado';
+    else if (tabEstagio === 'Aceitou Diagnóstico') statusParam = 'Aceitou Diagnóstico';
+
     const result = await getLeadsPaginadosFromSupabase({
       page,
       pageSize,
       nicho: filtroNicho,
       cidade: filtroCidade,
       scoreNivel: filtroNivel,
-      statusFunil: filtroStatus,
+      statusFunil: statusParam !== 'todos' ? statusParam : undefined,
       buscaTexto
     });
 
@@ -72,9 +91,95 @@ export default function ExplorarLeadsPage() {
 
   useEffect(() => {
     fetchLeads();
-  }, [page, filtroNicho, filtroCidade, filtroNivel, filtroStatus, buscaTexto]);
+  }, [page, tabEstagio, filtroNicho, filtroCidade, filtroNivel, buscaTexto]);
 
-  // Função para alternar ordenação ao clicar no cabeçalho
+  // Disparo Rápido de Abordagem Direto da Lista
+  const handleEnviarAbordagemDireta = async (lead: Lead) => {
+    if (!lead.telefone) {
+      setActionFeedback({ leadId: lead.id, success: false, msg: 'Sem telefone cadastrado' });
+      return;
+    }
+
+    setSendingLeadId(lead.id);
+    setActionFeedback(null);
+
+    let msg = lead.mensagem_editada || lead.mensagem_sugerida;
+    if (!msg || !msg.trim()) {
+      msg = gerarMensagemPadrao(lead, lead.nicho || lead.buscas?.nicho, lead.cidade || lead.buscas?.cidade);
+    }
+
+    const res = await enviarMensagemEvolutionAPI(lead.telefone, msg);
+    setSendingLeadId(null);
+
+    if (res.success) {
+      setActionFeedback({ leadId: lead.id, success: true, msg: 'Mensagem Enviada!' });
+      
+      const agora = new Date();
+      const dataFormatada = agora.toLocaleDateString('pt-BR');
+      const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const registroAutomatico = `[${dataFormatada} às ${horaFormatada}] Mensagem de Abordagem enviada diretamente da Lista`;
+      const novoHistorico = lead.notas ? `${registroAutomatico}\n${lead.notas}` : registroAutomatico;
+
+      const updates = {
+        notas: novoHistorico,
+        status_funil: 'Contatado' as StatusFunil,
+        data_contato: agora.toISOString()
+      };
+
+      await updateLeadInSupabase(lead.id, updates);
+      
+      // Atualizar no estado local da lista
+      setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
+    } else {
+      setActionFeedback({ leadId: lead.id, success: false, msg: res.error || 'Erro no envio' });
+    }
+  };
+
+  // Disparo Rápido de Diagnóstico Direto da Lista
+  const handleEnviarDiagnosticoDireto = async (lead: Lead) => {
+    if (!lead.telefone) {
+      setActionFeedback({ leadId: lead.id, success: false, msg: 'Sem telefone cadastrado' });
+      return;
+    }
+
+    setSendingLeadId(lead.id);
+    setActionFeedback(null);
+
+    const slugValido = lead.slug && lead.slug !== 'null' ? lead.slug : lead.id;
+    const diagnosticoUrl = `${BASE_APP_URL}/diagnostico/${slugValido}`;
+    const msg = `Olá! Preparei um diagnóstico exclusivo sobre a presença digital da *${lead.nome}* no Google em relação aos seus concorrentes da região.\n\nVocê pode visualizar o relatório completo aqui:\n${diagnosticoUrl}`;
+
+    const res = await enviarMensagemEvolutionAPI(lead.telefone, msg);
+    setSendingLeadId(null);
+
+    if (res.success) {
+      setActionFeedback({ leadId: lead.id, success: true, msg: 'Diagnóstico Enviado!' });
+      
+      const agora = new Date();
+      const dataFormatada = agora.toLocaleDateString('pt-BR');
+      const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const registroAutomatico = `[${dataFormatada} às ${horaFormatada}] Link do Diagnóstico enviado diretamente da Lista\n(${diagnosticoUrl})`;
+      const novoHistorico = lead.notas ? `${registroAutomatico}\n${lead.notas}` : registroAutomatico;
+
+      const updates = {
+        notas: novoHistorico,
+        status_funil: 'Aceitou Diagnóstico' as StatusFunil
+      };
+
+      await updateLeadInSupabase(lead.id, updates);
+      setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
+    } else {
+      setActionFeedback({ leadId: lead.id, success: false, msg: res.error || 'Erro no envio' });
+    }
+  };
+
+  // Mudar Status no Funil Direto da Lista
+  const handleStatusChangeDireto = async (leadId: string, novoStatus: StatusFunil) => {
+    const updates = { status_funil: novoStatus };
+    await updateLeadInSupabase(leadId, updates);
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ...updates } : l));
+  };
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -84,7 +189,6 @@ export default function ExplorarLeadsPage() {
     }
   };
 
-  // Processar Ordenação nos Leads Carregados
   const leadsOrdenados = useMemo(() => {
     return [...leads].sort((a, b) => {
       let aVal: any = a[sortField];
@@ -107,13 +211,6 @@ export default function ExplorarLeadsPage() {
     });
   }, [leads, sortField, sortOrder]);
 
-  const handleCopiarMensagem = (lead: Lead) => {
-    const texto = lead.mensagem_editada || lead.mensagem_sugerida || '';
-    navigator.clipboard.writeText(texto);
-    setCopiedId(lead.id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
   const renderSortIcon = (field: SortField) => {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 text-slate-600 inline ml-1" />;
     return sortOrder === 'asc' ? (
@@ -129,15 +226,65 @@ export default function ExplorarLeadsPage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Explorar Leads</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Explorar Leads & Disparo Rápido</h1>
           <p className="text-slate-400 text-sm mt-1">
-            Empresas capturadas pelo EIXO-SCOUT no Google Maps ({totalCount} registros encontrados).
+            Prospecção ativa e gerenciamento do funil de vendas.
           </p>
         </div>
       </div>
 
-      {/* Barra de Filtros Nativa */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      {/* SUB-ABAS POR ESTÁGIO DO FUNIL */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
+        
+        <button
+          onClick={() => { setTabEstagio('todos'); setPage(1); }}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            tabEstagio === 'todos'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+              : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
+          }`}
+        >
+          <span>🌐 Todos os Leads</span>
+        </button>
+
+        <button
+          onClick={() => { setTabEstagio('Novo'); setPage(1); }}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            tabEstagio === 'Novo'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+              : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+          <span>🔥 Novos Leads (Prospecção)</span>
+        </button>
+
+        <button
+          onClick={() => { setTabEstagio('Contatado'); setPage(1); }}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            tabEstagio === 'Contatado'
+              ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20'
+              : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
+          }`}
+        >
+          <span>📲 Contatados</span>
+        </button>
+
+        <button
+          onClick={() => { setTabEstagio('Aceitou Diagnóstico'); setPage(1); }}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            tabEstagio === 'Aceitou Diagnóstico'
+              ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20'
+              : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
+          }`}
+        >
+          <span>📊 Aceitou Diagnóstico</span>
+        </button>
+
+      </div>
+
+      {/* Barra de Filtros */}
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         
         {/* Busca por Nome */}
         <div className="relative">
@@ -203,27 +350,9 @@ export default function ExplorarLeadsPage() {
           <option value="baixo">✅ Oportunidade Baixa</option>
         </select>
 
-        {/* Filtro por Status do Funil */}
-        <select
-          value={filtroStatus}
-          onChange={(e) => {
-            setFiltroStatus(e.target.value);
-            setPage(1);
-          }}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
-        >
-          <option value="todos">Todos os Status</option>
-          <option value="Novo">Novo</option>
-          <option value="Contatado">Contatado</option>
-          <option value="Aceitou Diagnóstico">Aceitou Diagnóstico</option>
-          <option value="Em Negociação">Em Negociação</option>
-          <option value="Cliente">Cliente</option>
-          <option value="Descartado">Descartado</option>
-        </select>
-
       </div>
 
-      {/* Tabela Principal de Leads com Ordenação Interativa */}
+      {/* Tabela Principal com Disparo Direto e Ordenação */}
       <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
@@ -253,33 +382,27 @@ export default function ExplorarLeadsPage() {
                 >
                   GMB (Nota / Aval.) {renderSortIcon('gmb_nota')}
                 </th>
-                <th className="px-4 py-3.5">Site & Redes</th>
                 <th 
                   onClick={() => handleSort('score_pontos')} 
                   className="px-4 py-3.5 cursor-pointer hover:text-slate-100 transition-colors"
                 >
                   Oportunidade {renderSortIcon('score_pontos')}
                 </th>
-                <th 
-                  onClick={() => handleSort('status_funil')} 
-                  className="px-4 py-3.5 cursor-pointer hover:text-slate-100 transition-colors"
-                >
-                  Funil {renderSortIcon('status_funil')}
-                </th>
-                <th className="px-4 py-3.5 text-right">Ações</th>
+                <th className="px-4 py-3.5">Status do Funil</th>
+                <th className="px-4 py-3.5 text-right min-w-[280px]">Disparo Rápido & Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                     Carregando leads do Supabase...
                   </td>
                 </tr>
               ) : leadsOrdenados.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
-                    Nenhum lead encontrado para os filtros selecionados.
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                    Nenhum lead encontrado nesta sub-aba de estágio.
                   </td>
                 </tr>
               ) : (
@@ -287,17 +410,26 @@ export default function ExplorarLeadsPage() {
                   const pathDiagnostico = `/diagnostico/${lead.slug && lead.slug !== 'null' ? lead.slug : lead.id}`;
                   const nichoExibicao = lead.nicho || lead.buscas?.nicho || 'Geral';
                   const cidadeExibicao = lead.cidade || lead.buscas?.cidade || '';
+                  const isSending = sendingLeadId === lead.id;
+                  const feedback = actionFeedback?.leadId === lead.id ? actionFeedback : null;
 
                   return (
                     <tr key={lead.id} className="hover:bg-slate-900/50 transition-colors">
                       
-                      {/* Nome & Telefone */}
+                      {/* Empresa & Telefone */}
                       <td className="px-4 py-3.5">
                         <div className="font-bold text-slate-100">{lead.nome}</div>
                         <div className="text-xs text-slate-400">{lead.telefone || 'Sem telefone'}</div>
+                        
+                        {/* Feedback inline caso envie mensagem */}
+                        {feedback && (
+                          <div className={`text-[10px] font-bold mt-1 ${feedback.success ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {feedback.msg}
+                          </div>
+                        )}
                       </td>
 
-                      {/* Segmento & Cidade Nativos */}
+                      {/* Segmento & Cidade */}
                       <td className="px-4 py-3.5 text-xs">
                         <div className="font-semibold text-blue-400 capitalize">{nichoExibicao}</div>
                         <div className="text-slate-400 capitalize">{cidadeExibicao}</div>
@@ -314,15 +446,6 @@ export default function ExplorarLeadsPage() {
                           <span>⭐ {lead.gmb_nota || 'N/A'}</span>
                           <span className="text-xs text-slate-400">({lead.gmb_avaliacoes || 0})</span>
                         </div>
-                        <div className="text-xs text-slate-400">
-                          {lead.gmb_verificado ? '✅ Verificado' : '❌ Não verificado'}
-                        </div>
-                      </td>
-
-                      {/* Presença Web */}
-                      <td className="px-4 py-3.5 text-xs space-y-0.5">
-                        <div>Site: {lead.site ? (lead.site_https ? '✅ HTTPS' : '⚠️ HTTP') : '❌ Sem site'}</div>
-                        <div>Responsivo: {lead.site_responsivo ? '✅ Sim' : '❌ Não'}</div>
                       </td>
 
                       {/* Score */}
@@ -330,40 +453,63 @@ export default function ExplorarLeadsPage() {
                         <ScoreBadge nivel={lead.score_nivel} pontos={lead.score_pontos} />
                       </td>
 
-                      {/* Status Funil */}
+                      {/* Status do Funil com Seletor Direto */}
                       <td className="px-4 py-3.5">
-                        <FunnelBadge status={lead.status_funil} />
+                        <select
+                          value={lead.status_funil}
+                          onChange={(e) => handleStatusChangeDireto(lead.id, e.target.value as StatusFunil)}
+                          className="bg-slate-950 text-slate-200 text-xs font-bold px-2 py-1 rounded border border-slate-800 focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="Novo">Novo</option>
+                          <option value="Contatado">Contatado</option>
+                          <option value="Aceitou Diagnóstico">Aceitou Diagnóstico</option>
+                          <option value="Em Negociação">Em Negociação</option>
+                          <option value="Cliente">Cliente</option>
+                          <option value="Descartado">Descartado</option>
+                        </select>
                       </td>
 
-                      {/* Ações inline */}
-                      <td className="px-4 py-3.5 text-right space-x-2">
+                      {/* Ações de Disparo Rápido no WhatsApp (Sem precisar abrir a tela) */}
+                      <td className="px-4 py-3.5 text-right space-x-1.5">
+                        
+                        {/* Botão Disparar Abordagem */}
                         <button
-                          onClick={() => handleCopiarMensagem(lead)}
-                          title="Copiar mensagem sugerida para WhatsApp"
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 inline-flex items-center gap-1 text-xs px-2"
+                          onClick={() => handleEnviarAbordagemDireta(lead)}
+                          disabled={isSending}
+                          title="Enviar mensagem de abordagem no WhatsApp"
+                          className="p-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-800/80 inline-flex items-center gap-1 text-xs px-2.5 font-bold transition-all disabled:opacity-50"
                         >
-                          {copiedId === lead.id ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                          <span>{copiedId === lead.id ? 'Copiado' : 'Copiar'}</span>
+                          <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{isSending ? '...' : 'Abordar'}</span>
                         </button>
 
+                        {/* Botão Disparar Diagnóstico */}
+                        <button
+                          onClick={() => handleEnviarDiagnosticoDireto(lead)}
+                          disabled={isSending}
+                          title="Enviar link do Diagnóstico Web no WhatsApp"
+                          className="p-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-800/80 inline-flex items-center gap-1 text-xs px-2.5 font-bold transition-all disabled:opacity-50"
+                        >
+                          <Send className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>{isSending ? '...' : 'Enviar Diag.'}</span>
+                        </button>
+
+                        {/* Ver Diagnóstico Web */}
                         <Link
                           href={pathDiagnostico}
                           target="_blank"
-                          className="p-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-800/60 inline-flex items-center gap-1 text-xs px-2"
+                          title="Ver Diagnóstico Público Web em nova aba"
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 inline-flex items-center gap-1 text-xs px-2"
                         >
                           <FileText className="w-3.5 h-3.5" />
-                          <span>Diagnóstico</span>
                         </Link>
 
+                        {/* Editar Detalhes */}
                         <Link
                           href={`/leads/${lead.id}`}
-                          className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium inline-flex items-center gap-1 text-xs px-2.5"
+                          className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold inline-flex items-center gap-1 text-xs px-2"
                         >
-                          <span>Detalhes</span>
+                          <span>Ver</span>
                         </Link>
                       </td>
 
@@ -378,8 +524,8 @@ export default function ExplorarLeadsPage() {
         {/* Rodapé de Paginação */}
         <div className="bg-slate-950/80 px-4 py-3 flex items-center justify-between border-t border-slate-800 text-xs text-slate-400">
           <div>
-            Mostrando <span className="font-semibold text-slate-200">{leads.length}</span> de{' '}
-            <span className="font-semibold text-slate-200">{totalCount}</span> registros (Página {page} de {totalPages})
+            Mostrando <span className="font-semibold text-slate-200">{leadsPaginados.length}</span> de{' '}
+            <span className="font-semibold text-slate-200">{totalCount}</span> registros
           </div>
 
           <div className="flex items-center gap-2">
