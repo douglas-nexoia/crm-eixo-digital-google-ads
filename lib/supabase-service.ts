@@ -1,13 +1,14 @@
+// Adicionando busca paginada ao serviço do Supabase
 import { supabase } from './supabase';
 import { Busca, Lead, ScoutJSONFormat } from './types';
 import { gerarMensagemPadrao } from './mensagem-template';
 
-// Buscar todas as buscas do Supabase
-export async function getBuscasFromSupabase(): Promise<Busca[]> {
+export async function getBuscasFromSupabase(limit = 10): Promise<Busca[]> {
   const { data, error } = await supabase
     .from('buscas')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (error) {
     console.error('Erro ao buscar buscas no Supabase:', error);
@@ -16,12 +17,68 @@ export async function getBuscasFromSupabase(): Promise<Busca[]> {
   return data || [];
 }
 
-// Buscar todos os leads do Supabase
+export interface GetLeadsParams {
+  page?: number;
+  pageSize?: number;
+  nicho?: string;
+  cidade?: string;
+  scoreNivel?: string;
+  statusFunil?: string;
+  buscaTexto?: string;
+}
+
+export interface GetLeadsResponse {
+  leads: Lead[];
+  totalCount: number;
+  totalPages: number;
+}
+
+// Buscar leads com paginação e filtros diretamente no banco de dados (Server-Side)
+export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Promise<GetLeadsResponse> {
+  const page = params.page || 1;
+  const pageSize = params.pageSize || 20;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from('leads')
+    .select('*, buscas(nicho, cidade)', { count: 'exact' });
+
+  if (params.scoreNivel && params.scoreNivel !== 'todos') {
+    query = query.eq('score_nivel', params.scoreNivel);
+  }
+
+  if (params.statusFunil && params.statusFunil !== 'todos') {
+    query = query.eq('status_funil', params.statusFunil);
+  }
+
+  if (params.buscaTexto) {
+    query = query.ilike('nome', `%${params.buscaTexto}%`);
+  }
+
+  query = query.order('created_at', { ascending: false }).range(from, to);
+
+  const { data, count, error } = await query;
+
+  if (error) {
+    console.error('Erro ao buscar leads paginados no Supabase:', error);
+    return { leads: [], totalCount: 0, totalPages: 0 };
+  }
+
+  const total = count || 0;
+  return {
+    leads: data || [],
+    totalCount: total,
+    totalPages: Math.ceil(total / pageSize)
+  };
+}
+
 export async function getLeadsFromSupabase(): Promise<Lead[]> {
   const { data, error } = await supabase
     .from('leads')
     .select('*')
-    .order('posicao_maps', { ascending: true });
+    .order('posicao_maps', { ascending: true })
+    .limit(100);
 
   if (error) {
     console.error('Erro ao buscar leads no Supabase:', error);
@@ -30,13 +87,12 @@ export async function getLeadsFromSupabase(): Promise<Lead[]> {
   return data || [];
 }
 
-// Buscar um lead pelo slug ou ID no Supabase (para o diagnóstico público)
 export async function getLeadBySlugOrIdFromSupabase(slugOrId: string): Promise<Lead | null> {
   const { data, error } = await supabase
     .from('leads')
     .select('*')
     .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Erro ao buscar lead por slug:', error);
@@ -45,7 +101,6 @@ export async function getLeadBySlugOrIdFromSupabase(slugOrId: string): Promise<L
   return data;
 }
 
-// Atualizar lead no Supabase (status, mensagens, notas)
 export async function updateLeadInSupabase(id: string, updates: Partial<Lead>): Promise<Lead | null> {
   const { data, error } = await supabase
     .from('leads')
@@ -61,9 +116,7 @@ export async function updateLeadInSupabase(id: string, updates: Partial<Lead>): 
   return data;
 }
 
-// Importar resultado do EIXO-SCOUT para o Supabase
 export async function importScoutDataToSupabase(parsed: ScoutJSONFormat): Promise<{ busca: Busca; leadsCount: number }> {
-  // 1. Inserir a Busca
   const { data: buscaData, error: buscaError } = await supabase
     .from('buscas')
     .insert({
@@ -78,14 +131,13 @@ export async function importScoutDataToSupabase(parsed: ScoutJSONFormat): Promis
 
   if (buscaError) throw new Error(`Erro ao criar busca no banco: ${buscaError.message}`);
 
-  // 2. Mapear e Inserir os Leads
   const leadsToInsert = parsed.ranking.map((item, index) => {
     const slugBase = `${item.nome}-${parsed.cidade}`
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]/g, '-');
-    const slug = `${slugBase}-${Date.now().toString().slice(-4)}`;
+    const slug = `${slugBase}-${Date.now().toString().slice(-4)}-${index}`;
 
     const tempLead: Partial<Lead> = {
       nome: item.nome,

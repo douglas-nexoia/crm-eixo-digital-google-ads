@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Copy, Check, FileText } from 'lucide-react';
-import { getLeadsFromSupabase } from '@/lib/supabase-service';
+import { Search, Copy, Check, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getLeadsPaginadosFromSupabase } from '@/lib/supabase-service';
 import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
@@ -17,31 +17,43 @@ export default function ExplorarLeadsPage() {
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [buscaTexto, setBuscaTexto] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // Estados de Paginação
+  const [page, setPage] = useState<number>(1);
+  const [pageSize] = useState<number>(20);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchLeads() {
-      setLoading(true);
-      const sbLeads = await getLeadsFromSupabase();
-      if (sbLeads.length > 0) {
-        setLeads(sbLeads);
-      } else {
-        setLeads(getLocalLeads());
-      }
-      setLoading(false);
+  const fetchLeads = async () => {
+    setLoading(true);
+    const result = await getLeadsPaginadosFromSupabase({
+      page,
+      pageSize,
+      nicho: filtroNicho,
+      cidade: filtroCidade,
+      scoreNivel: filtroNivel,
+      statusFunil: filtroStatus,
+      buscaTexto
+    });
+
+    if (result.leads.length > 0 || result.totalCount > 0) {
+      setLeads(result.leads);
+      setTotalCount(result.totalCount);
+      setTotalPages(result.totalPages || 1);
+    } else {
+      // Fallback local se o banco estiver limpo
+      const local = getLocalLeads();
+      setLeads(local);
+      setTotalCount(local.length);
+      setTotalPages(1);
     }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchLeads();
-  }, []);
-
-  const nichosUnicos = Array.from(new Set(leads.map(l => l.buscas?.nicho || 'odontologia')));
-  const cidadesUnicas = Array.from(new Set(leads.map(l => l.buscas?.cidade || 'Jundiaí/SP')));
-
-  const leadsFiltrados = leads.filter((lead) => {
-    if (filtroNivel !== 'todos' && lead.score_nivel !== filtroNivel) return false;
-    if (filtroStatus !== 'todos' && lead.status_funil !== filtroStatus) return false;
-    if (buscaTexto && !lead.nome.toLowerCase().includes(buscaTexto.toLowerCase())) return false;
-    return true;
-  });
+  }, [page, filtroNivel, filtroStatus, buscaTexto]);
 
   const handleCopiarMensagem = (lead: Lead) => {
     const texto = lead.mensagem_editada || lead.mensagem_sugerida || '';
@@ -54,15 +66,17 @@ export default function ExplorarLeadsPage() {
     <div className="p-8 space-y-6 max-w-7xl mx-auto">
       
       {/* Top Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Explorar Leads</h1>
-        <p className="text-slate-400 text-sm mt-1">
-          Navegue por empresas capturadas no Google Maps, filtre por indicadores e gerencie abordagens.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Explorar Leads</h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Empresas capturadas pelo EIXO-SCOUT no Google Maps ({totalCount} registros).
+          </p>
+        </div>
       </div>
 
       {/* Barra de Filtros */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         
         {/* Busca por Nome */}
         <div className="relative">
@@ -71,7 +85,10 @@ export default function ExplorarLeadsPage() {
             type="text"
             placeholder="Buscar empresa..."
             value={buscaTexto}
-            onChange={(e) => setBuscaTexto(e.target.value)}
+            onChange={(e) => {
+              setBuscaTexto(e.target.value);
+              setPage(1);
+            }}
             className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
           />
         </div>
@@ -79,7 +96,10 @@ export default function ExplorarLeadsPage() {
         {/* Filtro Nível Score */}
         <select
           value={filtroNivel}
-          onChange={(e) => setFiltroNivel(e.target.value)}
+          onChange={(e) => {
+            setFiltroNivel(e.target.value);
+            setPage(1);
+          }}
           className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
         >
           <option value="todos">Todos os Níveis</option>
@@ -91,7 +111,10 @@ export default function ExplorarLeadsPage() {
         {/* Filtro Status Funil */}
         <select
           value={filtroStatus}
-          onChange={(e) => setFiltroStatus(e.target.value)}
+          onChange={(e) => {
+            setFiltroStatus(e.target.value);
+            setPage(1);
+          }}
           className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
         >
           <option value="todos">Todos os Status</option>
@@ -103,29 +126,12 @@ export default function ExplorarLeadsPage() {
           <option value="Descartado">Descartado</option>
         </select>
 
-        {/* Filtro Nicho */}
-        <select
-          value={filtroNicho}
-          onChange={(e) => setFiltroNicho(e.target.value)}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+        <button 
+          onClick={fetchLeads}
+          className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-lg border border-slate-700 transition-colors"
         >
-          <option value="todos">Todos os Nichos</option>
-          {nichosUnicos.map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
-
-        {/* Filtro Cidade */}
-        <select
-          value={filtroCidade}
-          onChange={(e) => setFiltroCidade(e.target.value)}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
-        >
-          <option value="todos">Todas as Cidades</option>
-          {cidadesUnicas.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
+          Atualizar Dados
+        </button>
 
       </div>
 
@@ -148,17 +154,17 @@ export default function ExplorarLeadsPage() {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
-                    Carregando leads do Supabase...
+                    Carregando leads...
                   </td>
                 </tr>
-              ) : leadsFiltrados.length === 0 ? (
+              ) : leads.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                    Nenhum lead encontrado com os filtros selecionados.
+                    Nenhum lead encontrado.
                   </td>
                 </tr>
               ) : (
-                leadsFiltrados.map((lead) => (
+                leads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-slate-900/50 transition-colors">
                     
                     {/* Nome & Telefone */}
@@ -237,6 +243,32 @@ export default function ExplorarLeadsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Rodapé de Paginação */}
+        <div className="bg-slate-950/80 px-4 py-3 flex items-center justify-between border-t border-slate-800 text-xs text-slate-400">
+          <div>
+            Mostrando <span className="font-semibold text-slate-200">{leads.length}</span> de{' '}
+            <span className="font-semibold text-slate-200">{totalCount}</span> registros (Página {page} de {totalPages})
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || loading}
+              className="p-1.5 rounded bg-slate-900 border border-slate-800 disabled:opacity-40 hover:bg-slate-800 text-slate-200"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || loading}
+              className="p-1.5 rounded bg-slate-900 border border-slate-800 disabled:opacity-40 hover:bg-slate-800 text-slate-200"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
       </div>
 
     </div>
