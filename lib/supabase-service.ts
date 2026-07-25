@@ -49,7 +49,6 @@ export interface GetLeadsResponse {
   totalPages: number;
 }
 
-// Buscar leads com paginação e filtro por segmento (nicho) e cidade no banco
 export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Promise<GetLeadsResponse> {
   const page = params.page || 1;
   const pageSize = params.pageSize || 20;
@@ -125,19 +124,25 @@ export async function getLeadBySlugOrIdFromSupabase(slugOrId: string): Promise<L
   return data;
 }
 
+// Atualização de Lead no Supabase com tratamento seguro de RLS
 export async function updateLeadInSupabase(id: string, updates: Partial<Lead>): Promise<Lead | null> {
-  const { data, error } = await supabase
-    .from('leads')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('leads')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
 
-  if (error) {
-    console.error('Erro ao atualizar lead no Supabase:', error);
+    if (error) {
+      console.warn('Supabase RLS bloqueou update direto:', error.message || error);
+      return null;
+    }
+    return data;
+  } catch (err: any) {
+    console.warn('Erro ao atualizar lead no Supabase:', err?.message || err);
     return null;
   }
-  return data;
 }
 
 export async function importScoutDataToSupabase(parsed: ScoutJSONFormat): Promise<{ busca: Busca; leadsCount: number }> {
