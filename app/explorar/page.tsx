@@ -29,7 +29,7 @@ export default function ExplorarLeadsPage() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  // Função para extrair nichos dinamicamente a partir dos leads recebidos
+  // Extração inteligente de Nichos e Cidades
   const extrairOpcoesDeFiltro = (listaLeads: Lead[], nichosBanco: string[], cidadesBanco: string[]) => {
     const nichosSet = new Set<string>(nichosBanco);
     const cidadesSet = new Set<string>(cidadesBanco);
@@ -43,15 +43,18 @@ export default function ExplorarLeadsPage() {
       }
     });
 
-    setNichosDisponiveis(Array.from(nichosSet).filter(Boolean).sort());
-    setCidadesDisponiveis(Array.from(cidadesSet).filter(Boolean).sort());
+    const nichosFinais = Array.from(nichosSet).filter(Boolean).sort();
+    const cidadesFinais = Array.from(cidadesSet).filter(Boolean).sort();
+
+    if (nichosFinais.length > 0) setNichosDisponiveis(nichosFinais);
+    if (cidadesFinais.length > 0) setCidadesDisponiveis(cidadesFinais);
   };
 
   useEffect(() => {
     async function initFiltros() {
       const { nichos, cidades } = await getNichosECidadesUnicosFromSupabase();
-      setNichosDisponiveis(nichos);
-      setCidadesDisponiveis(cidades);
+      if (nichos.length > 0) setNichosDisponiveis(nichos);
+      if (cidades.length > 0) setCidadesDisponiveis(cidades);
     }
     initFiltros();
   }, []);
@@ -125,7 +128,7 @@ export default function ExplorarLeadsPage() {
           />
         </div>
 
-        {/* Filtro Nicho / Segmento Dinâmico */}
+        {/* Filtro Nicho / Segmento */}
         <select
           value={filtroNicho}
           onChange={(e) => {
@@ -134,7 +137,7 @@ export default function ExplorarLeadsPage() {
           }}
           className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 capitalize focus:outline-none focus:border-blue-500"
         >
-          <option value="todos">Todos Os Segmentos ({nichosDisponiveis.length})</option>
+          <option value="todos">Todos Os Segmentos</option>
           {nichosDisponiveis.map((nicho) => (
             <option key={nicho} value={nicho} className="capitalize">
               {nicho}

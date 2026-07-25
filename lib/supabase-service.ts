@@ -2,18 +2,18 @@ import { supabase } from './supabase';
 import { Busca, Lead, ScoutJSONFormat } from './types';
 import { gerarMensagemPadrao } from './mensagem-template';
 
-// Buscar TODOS os nichos/segmentos e cidades através do JOIN entre buscas e leads
+// Buscar nichos e cidades únicos direto da tabela 'buscas' e da tabela 'leads'
 export async function getNichosECidadesUnicosFromSupabase(): Promise<{ nichos: string[]; cidades: string[] }> {
   try {
-    // 1. Buscar nichos e cidades diretamente da tabela de buscas
-    const { data: buscasData, error: errorBuscas } = await supabase
+    // 1. Buscar da tabela 'buscas'
+    const { data: buscasData } = await supabase
       .from('buscas')
       .select('nicho, cidade');
 
-    // 2. Buscar nichos e cidades associados via tabela de leads (caso haja inconsistência)
+    // 2. Buscar da tabela 'leads' (campo cidade)
     const { data: leadsData } = await supabase
       .from('leads')
-      .select('buscas!inner(nicho, cidade)');
+      .select('cidade');
 
     const nichosSet = new Set<string>();
     const cidadesSet = new Set<string>();
@@ -31,19 +31,18 @@ export async function getNichosECidadesUnicosFromSupabase(): Promise<{ nichos: s
 
     if (leadsData) {
       leadsData.forEach((item: any) => {
-        const n = item.buscas?.nicho;
-        const c = item.buscas?.cidade;
-        if (n && String(n).trim()) nichosSet.add(String(n).trim());
-        if (c && String(c).trim()) cidadesSet.add(String(c).trim());
+        if (item.cidade && String(item.cidade).trim()) {
+          cidadesSet.add(String(item.cidade).trim());
+        }
       });
     }
 
-    const nichos = Array.from(nichosSet).sort((a, b) => a.localeCompare(b));
-    const cidades = Array.from(cidadesSet).sort((a, b) => a.localeCompare(b));
+    const nichos = Array.from(nichosSet).filter(Boolean).sort((a, b) => a.localeCompare(b));
+    const cidades = Array.from(cidadesSet).filter(Boolean).sort((a, b) => a.localeCompare(b));
 
     return { nichos, cidades };
   } catch (err) {
-    console.error('Erro ao buscar nichos e cidades únicos no Supabase:', err);
+    console.error('Erro ao buscar nichos e cidades no Supabase:', err);
     return { nichos: [], cidades: [] };
   }
 }
@@ -89,7 +88,7 @@ export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Pro
     .select('*, buscas(nicho, cidade)', { count: 'exact' });
 
   if (params.nicho && params.nicho !== 'todos') {
-    query = query.ilike('buscas.nicho', params.nicho);
+    query = query.or(`buscas.nicho.ilike.%${params.nicho}%,nome.ilike.%${params.nicho}%`);
   }
 
   if (params.cidade && params.cidade !== 'todos') {
