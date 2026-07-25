@@ -19,27 +19,31 @@ export async function enviarMensagemEvolutionAPI(
   if (!apiUrl || !apiKey || !instance) {
     return {
       success: false,
-      error: 'Evolution API não configurada. Defina as variáveis EVOLUTION_API_URL, EVOLUTION_API_KEY e EVOLUTION_INSTANCE.'
+      error: 'Evolution API não configurada. Defina as variáveis NEXT_PUBLIC_EVOLUTION_API_URL, NEXT_PUBLIC_EVOLUTION_API_KEY e NEXT_PUBLIC_EVOLUTION_INSTANCE no .env'
     };
   }
 
-  // Limpar e formatar o número (remover não digitos)
+  // Limpar e formatar o número (remover caracteres não numéricos)
   let numeroLimpo = telefone.replace(/\D/g, '');
   
-  // Garantir código do país (55 para Brasil se não tiver)
+  // Garantir código do país (55 para Brasil)
   if (numeroLimpo.length === 10 || numeroLimpo.length === 11) {
     numeroLimpo = '55' + numeroLimpo;
   }
 
   try {
-    // Endpoint padrão da Evolution API (v1 / v2 endpoint sendText)
-    const endpoint = `${apiUrl.replace(/\/$/, '')}/message/sendText/${instance}`;
+    // Normalizar a URL removendo barras no final
+    const baseUrl = apiUrl.trim().replace(/\/+$/, '');
+    const instanceName = instance.trim();
+    
+    // Endpoint padrão da Evolution API v1 / v2
+    const endpoint = `${baseUrl}/message/sendText/${instanceName}`;
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': apiKey
+        'apikey': apiKey.trim()
       },
       body: JSON.stringify({
         number: numeroLimpo,
@@ -51,12 +55,27 @@ export async function enviarMensagemEvolutionAPI(
       })
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data: any = {};
+
+    // Tentar converter resposta para JSON com segurança
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      // Se não for JSON (ex: erro HTML ou resposta de texto)
+      if (!response.ok) {
+        return {
+          success: false,
+          error: `Erro HTTP ${response.status} ao conectar na Evolution API. Verifique a URL do servidor e o nome da Instância.`
+        };
+      }
+    }
 
     if (!response.ok) {
+      const msgErro = data?.response?.message || data?.message || data?.error || `Erro ${response.status} na Evolution API`;
       return {
         success: false,
-        error: data?.response?.message || data?.message || 'Falha no disparo via Evolution API'
+        error: Array.isArray(msgErro) ? msgErro.join(', ') : String(msgErro)
       };
     }
 
@@ -65,9 +84,10 @@ export async function enviarMensagemEvolutionAPI(
       message: 'Mensagem enviada com sucesso pelo WhatsApp!'
     };
   } catch (err: any) {
+    console.error('Erro de requisição na Evolution API:', err);
     return {
       success: false,
-      error: err.message || 'Erro de conexão com o servidor da Evolution API'
+      error: err.message || 'Falha de conexão de rede ao tentar contatar o servidor da Evolution API.'
     };
   }
 }
