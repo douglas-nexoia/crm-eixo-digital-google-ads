@@ -65,6 +65,9 @@ export default function LeadDetalhesPage() {
     );
   }
 
+  // Garantir link válido de diagnóstico (se slug for nulo, usar ID)
+  const diagnosticoPath = `/diagnostico/${lead.slug && lead.slug !== 'null' ? lead.slug : lead.id}`;
+
   const handleRegerarComIA = async () => {
     setGeneratingIA(true);
     const novaMsg = await gerarMensagemAbordagemIA(lead, lead.buscas?.nicho, lead.buscas?.cidade);
@@ -78,7 +81,6 @@ export default function LeadDetalhesPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Disparo com Registro Automático no Histórico e Funil
   const handleEnviarEvolution = async () => {
     if (!lead.telefone) {
       setEvolutionFeedback({ success: false, msg: 'Este lead não possui telefone cadastrado.' });
@@ -94,7 +96,6 @@ export default function LeadDetalhesPage() {
     if (res.success) {
       setEvolutionFeedback({ success: true, msg: res.message || 'Mensagem enviada com sucesso!' });
       
-      // Registrar no Histórico Automático
       const agora = new Date();
       const dataFormatada = agora.toLocaleDateString('pt-BR');
       const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -128,7 +129,6 @@ export default function LeadDetalhesPage() {
     }
   };
 
-  // Adicionar Nova Anotação do Vendedor
   const handleAdicionarNota = async () => {
     if (!novaNota.trim()) return;
 
@@ -306,7 +306,7 @@ export default function LeadDetalhesPage() {
                 </button>
 
                 <Link
-                  href={`/diagnostico/${lead.slug}`}
+                  href={diagnosticoPath}
                   target="_blank"
                   className="flex items-center gap-1.5 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
                 >
@@ -340,7 +340,6 @@ export default function LeadDetalhesPage() {
               
               <div className="flex flex-wrap items-center gap-2">
                 
-                {/* Botão de Envio Direto (Atualiza Status + Registra Histórico Automático) */}
                 <button
                   onClick={handleEnviarEvolution}
                   disabled={sendingEvolution}
@@ -380,7 +379,6 @@ export default function LeadDetalhesPage() {
               </h2>
             </div>
 
-            {/* Adicionar Nova Anotação */}
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -399,7 +397,6 @@ export default function LeadDetalhesPage() {
               </button>
             </div>
 
-            {/* Caixa do Histórico/Linha do Tempo */}
             <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 text-xs font-mono text-slate-300 leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
               {historicoNotas ? (
                 historicoNotas

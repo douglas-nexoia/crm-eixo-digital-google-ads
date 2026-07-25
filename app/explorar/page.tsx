@@ -29,7 +29,6 @@ export default function ExplorarLeadsPage() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  // Carregar lista de Nichos e Cidades únicos diretamente do Supabase Postgres
   useEffect(() => {
     async function loadFiltrosOpcoes() {
       const { nichos, cidades } = await getNichosECidadesUnicosFromSupabase();
@@ -210,81 +209,84 @@ export default function ExplorarLeadsPage() {
                   </td>
                 </tr>
               ) : (
-                leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-slate-900/50 transition-colors">
-                    
-                    {/* Nome & Telefone */}
-                    <td className="px-4 py-3.5">
-                      <div className="font-bold text-slate-100">{lead.nome}</div>
-                      <div className="text-xs text-slate-400">{lead.telefone || 'Sem telefone'}</div>
-                    </td>
+                leads.map((lead) => {
+                  const pathDiagnostico = `/diagnostico/${lead.slug && lead.slug !== 'null' ? lead.slug : lead.id}`;
+                  return (
+                    <tr key={lead.id} className="hover:bg-slate-900/50 transition-colors">
+                      
+                      {/* Nome & Telefone */}
+                      <td className="px-4 py-3.5">
+                        <div className="font-bold text-slate-100">{lead.nome}</div>
+                        <div className="text-xs text-slate-400">{lead.telefone || 'Sem telefone'}</div>
+                      </td>
 
-                    {/* Posição no Maps */}
-                    <td className="px-4 py-3.5 font-bold text-slate-200">
-                      #{lead.posicao_maps}
-                    </td>
+                      {/* Posição no Maps */}
+                      <td className="px-4 py-3.5 font-bold text-slate-200">
+                        #{lead.posicao_maps}
+                      </td>
 
-                    {/* Indicadores GMB */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-1 font-semibold text-slate-200">
-                        <span>⭐ {lead.gmb_nota || 'N/A'}</span>
-                        <span className="text-xs text-slate-400">({lead.gmb_avaliacoes || 0})</span>
-                      </div>
-                      <div className="text-xs text-slate-400">
-                        {lead.gmb_verificado ? '✅ Verificado' : '❌ Não verificado'}
-                      </div>
-                    </td>
+                      {/* Indicadores GMB */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1 font-semibold text-slate-200">
+                          <span>⭐ {lead.gmb_nota || 'N/A'}</span>
+                          <span className="text-xs text-slate-400">({lead.gmb_avaliacoes || 0})</span>
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {lead.gmb_verificado ? '✅ Verificado' : '❌ Não verificado'}
+                        </div>
+                      </td>
 
-                    {/* Presença Web */}
-                    <td className="px-4 py-3.5 text-xs space-y-0.5">
-                      <div>Site: {lead.site ? (lead.site_https ? '✅ HTTPS' : '⚠️ HTTP') : '❌ Sem site'}</div>
-                      <div>Responsivo: {lead.site_responsivo ? '✅ Sim' : '❌ Não'}</div>
-                    </td>
+                      {/* Presença Web */}
+                      <td className="px-4 py-3.5 text-xs space-y-0.5">
+                        <div>Site: {lead.site ? (lead.site_https ? '✅ HTTPS' : '⚠️ HTTP') : '❌ Sem site'}</div>
+                        <div>Responsivo: {lead.site_responsivo ? '✅ Sim' : '❌ Não'}</div>
+                      </td>
 
-                    {/* Score */}
-                    <td className="px-4 py-3.5">
-                      <ScoreBadge nivel={lead.score_nivel} pontos={lead.score_pontos} />
-                    </td>
+                      {/* Score */}
+                      <td className="px-4 py-3.5">
+                        <ScoreBadge nivel={lead.score_nivel} pontos={lead.score_pontos} />
+                      </td>
 
-                    {/* Status Funil */}
-                    <td className="px-4 py-3.5">
-                      <FunnelBadge status={lead.status_funil} />
-                    </td>
+                      {/* Status Funil */}
+                      <td className="px-4 py-3.5">
+                        <FunnelBadge status={lead.status_funil} />
+                      </td>
 
-                    {/* Ações inline */}
-                    <td className="px-4 py-3.5 text-right space-x-2">
-                      <button
-                        onClick={() => handleCopiarMensagem(lead)}
-                        title="Copiar mensagem sugerida para WhatsApp"
-                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 inline-flex items-center gap-1 text-xs px-2"
-                      >
-                        {copiedId === lead.id ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                        <span>{copiedId === lead.id ? 'Copiado' : 'Copiar'}</span>
-                      </button>
+                      {/* Ações inline */}
+                      <td className="px-4 py-3.5 text-right space-x-2">
+                        <button
+                          onClick={() => handleCopiarMensagem(lead)}
+                          title="Copiar mensagem sugerida para WhatsApp"
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 inline-flex items-center gap-1 text-xs px-2"
+                        >
+                          {copiedId === lead.id ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                          <span>{copiedId === lead.id ? 'Copiado' : 'Copiar'}</span>
+                        </button>
 
-                      <Link
-                        href={`/diagnostico/${lead.slug}`}
-                        target="_blank"
-                        className="p-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-800/60 inline-flex items-center gap-1 text-xs px-2"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>Diagnóstico</span>
-                      </Link>
+                        <Link
+                          href={pathDiagnostico}
+                          target="_blank"
+                          className="p-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-800/60 inline-flex items-center gap-1 text-xs px-2"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Diagnóstico</span>
+                        </Link>
 
-                      <Link
-                        href={`/leads/${lead.id}`}
-                        className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium inline-flex items-center gap-1 text-xs px-2.5"
-                      >
-                        <span>Detalhes</span>
-                      </Link>
-                    </td>
+                        <Link
+                          href={`/leads/${lead.id}`}
+                          className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium inline-flex items-center gap-1 text-xs px-2.5"
+                        >
+                          <span>Detalhes</span>
+                        </Link>
+                      </td>
 
-                  </tr>
-                ))
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
