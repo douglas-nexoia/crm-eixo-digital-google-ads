@@ -2,32 +2,40 @@ import { supabase } from './supabase';
 import { Busca, Lead, ScoutJSONFormat } from './types';
 import { gerarMensagemPadrao } from './mensagem-template';
 
+// Buscar TODOS os nichos/segmentos e cidades únicos vinculados aos leads no Supabase
 export async function getNichosECidadesUnicosFromSupabase(): Promise<{ nichos: string[]; cidades: string[] }> {
   try {
+    // 1. Buscar nichos e cidades da tabela 'buscas'
     const { data: buscasData } = await supabase
       .from('buscas')
       .select('nicho, cidade')
-      .limit(1000);
+      .not('nicho', 'is', null);
 
+    // 2. Buscar nichos e cidades associados diretamente pelos leads
     const { data: leadsData } = await supabase
       .from('leads')
-      .select('buscas(nicho, cidade)')
-      .limit(1000);
+      .select('buscas(nicho, cidade)');
 
     const nichosSet = new Set<string>();
     const cidadesSet = new Set<string>();
 
     if (buscasData) {
-      buscasData.forEach(item => {
-        if (item.nicho?.trim()) nichosSet.add(item.nicho.trim());
-        if (item.cidade?.trim()) cidadesSet.add(item.cidade.trim());
+      buscasData.forEach((item: any) => {
+        if (item.nicho && String(item.nicho).trim()) {
+          nichosSet.add(String(item.nicho).trim());
+        }
+        if (item.cidade && String(item.cidade).trim()) {
+          cidadesSet.add(String(item.cidade).trim());
+        }
       });
     }
 
     if (leadsData) {
       leadsData.forEach((item: any) => {
-        if (item.buscas?.nicho?.trim()) nichosSet.add(item.buscas.nicho.trim());
-        if (item.buscas?.cidade?.trim()) cidadesSet.add(item.buscas.cidade.trim());
+        const n = item.buscas?.nicho;
+        const c = item.buscas?.cidade;
+        if (n && String(n).trim()) nichosSet.add(String(n).trim());
+        if (c && String(c).trim()) cidadesSet.add(String(c).trim());
       });
     }
 
@@ -71,7 +79,6 @@ export interface GetLeadsResponse {
   totalPages: number;
 }
 
-// Buscar leads com consulta abrangente (Left Join e suporte a 20 por página)
 export async function getLeadsPaginadosFromSupabase(params: GetLeadsParams): Promise<GetLeadsResponse> {
   const page = params.page || 1;
   const pageSize = params.pageSize || 20;
