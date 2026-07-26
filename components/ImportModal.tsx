@@ -85,7 +85,17 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
             score_detalhes: item.score?.detalhes ?? [],
             posicao_maps: item.posicao_maps,
             status_funil: 'Novo',
-            mensagem_sugerida: item.mensagem_sugerida || gerarMensagemPadrao(item, parsed.nicho, parsed.cidade),
+            // O item do scout guarda a nota em `gmb.nota`; passar o item cru
+            // deixava `gmb_nota` undefined e a nota nunca entrava na mensagem.
+            mensagem_sugerida: item.mensagem_sugerida || gerarMensagemPadrao(
+              {
+                nome: item.nome,
+                posicao_maps: item.posicao_maps,
+                gmb_nota: item.gmb?.nota ?? null,
+              },
+              parsed.nicho,
+              parsed.cidade
+            ),
             mensagem_editada: null,
             data_contato: null,
             notas: null,

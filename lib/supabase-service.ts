@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { Lead, Busca } from './types';
+import { gerarMensagemPadrao } from './mensagem-template';
 
 // Reexportado para não quebrar quem já importava o client daqui.
 export { supabase };
@@ -92,7 +93,17 @@ export async function importScoutDataToSupabase(parsedData: any) {
     score_detalhes: item.score?.detalhes ?? [],
     posicao_maps: item.posicao_maps,
     status_funil: 'Novo',
-    mensagem_sugerida: item.mensagem_sugerida || `Olá! Vi a empresa ${item.nome} no Google.`,
+    // Antes gravava um "Olá! Vi a empresa X no Google." que ia como está para
+    // o prospect — e, por não ser vazio, nunca caía no template lá na frente.
+    mensagem_sugerida: item.mensagem_sugerida || gerarMensagemPadrao(
+      {
+        nome: item.nome,
+        posicao_maps: item.posicao_maps,
+        gmb_nota: item.gmb?.nota ?? null,
+      },
+      parsedData.nicho,
+      parsedData.cidade
+    ),
     mensagem_editada: null,
     data_contato: null,
     notas: null,
