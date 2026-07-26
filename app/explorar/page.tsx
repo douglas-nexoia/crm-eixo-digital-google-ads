@@ -200,10 +200,20 @@ export default function ExplorarLeadsPage() {
     }
   };
 
-  // O Supabase já devolve a página ordenada; isto é no-op sobre esses dados e
-  // existe para o fallback do localStorage, que vem sem ordenação.
+  // O Supabase já devolve a página ordenada; isto precisa reproduzir a mesma
+  // regra para não desfazer nada, e serve ao fallback do localStorage, que vem
+  // sem ordenação nenhuma.
   const leadsOrdenados = useMemo(() => {
     return [...leads].sort((a, b) => {
+      // Mesmo agrupamento por cidade aplicado na query: sem isto, reordenar as
+      // 20 linhas só por posição embaralharia as cidades de novo.
+      if (sortField === 'posicao_maps' && filtroCidade === 'todos') {
+        const cidadeA = a.cidade || a.buscas?.cidade || '';
+        const cidadeB = b.cidade || b.buscas?.cidade || '';
+        const porCidade = cidadeA.localeCompare(cidadeB);
+        if (porCidade !== 0) return porCidade;
+      }
+
       let aVal: any = a[sortField];
       let bVal: any = b[sortField];
 
@@ -222,7 +232,7 @@ export default function ExplorarLeadsPage() {
 
       return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
     });
-  }, [leads, sortField, sortOrder]);
+  }, [leads, sortField, sortOrder, filtroCidade]);
 
   const renderSortIcon = (field: SortField) => {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 text-slate-600 inline ml-1" />;
