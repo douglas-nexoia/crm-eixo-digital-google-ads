@@ -35,6 +35,7 @@ export default function LeadDetalhesPage() {
   const [telefoneInput, setTelefoneInput] = useState('');
   const [salvandoTelefone, setSalvandoTelefone] = useState(false);
   const [erroTelefone, setErroTelefone] = useState<string | null>(null);
+  const [erroSalvar, setErroSalvar] = useState<string | null>(null);
   
   // Estados de IA e Disparos
   const [generatingIA, setGeneratingIA] = useState(false);
@@ -119,7 +120,17 @@ export default function LeadDetalhesPage() {
         data_contato: dataContato
       };
 
-      await updateLeadInSupabase(lead.id, updates);
+      // A mensagem já saiu. Se o registro falhar, avisar sem sugerir reenvio —
+      // reenviar mandaria a mensagem duas vezes para o lead.
+      const salvo = await updateLeadInSupabase(lead.id, updates);
+
+      if (!salvo) {
+        setEvolutionFeedback({
+          success: false,
+          msg: 'Mensagem enviada, mas o registro não foi salvo. Não reenvie: atualize a página e ajuste o status à mão.'
+        });
+        return;
+      }
 
       const updated: Lead = { ...lead, ...updates };
       saveLocalLead(updated);
@@ -167,7 +178,16 @@ export default function LeadDetalhesPage() {
         status_funil: 'Aceitou Diagnóstico' as StatusFunil
       };
 
-      await updateLeadInSupabase(lead.id, updates);
+      // Mesmo caso do envio de abordagem: o diagnóstico já foi para o lead.
+      const salvo = await updateLeadInSupabase(lead.id, updates);
+
+      if (!salvo) {
+        setEvolutionFeedback({
+          success: false,
+          msg: 'Diagnóstico enviado, mas o registro não foi salvo. Não reenvie: atualize a página e ajuste o status à mão.'
+        });
+        return;
+      }
 
       const updated: Lead = { ...lead, ...updates };
       saveLocalLead(updated);
@@ -200,7 +220,14 @@ export default function LeadDetalhesPage() {
       status_funil: statusFunil
     };
 
-    await updateLeadInSupabase(lead.id, updates);
+    setErroSalvar(null);
+    const salvo = await updateLeadInSupabase(lead.id, updates);
+
+    // Não limpar o campo se falhou: a anotação digitada seria perdida.
+    if (!salvo) {
+      setErroSalvar('A anotação não foi salva. Veja o console para o motivo.');
+      return;
+    }
 
     const updated: Lead = { ...lead, ...updates };
     saveLocalLead(updated);
@@ -251,7 +278,13 @@ export default function LeadDetalhesPage() {
       status_funil: statusFunil
     };
 
-    await updateLeadInSupabase(lead.id, updates);
+    setErroSalvar(null);
+    const salvo = await updateLeadInSupabase(lead.id, updates);
+
+    if (!salvo) {
+      setErroSalvar('Não foi possível salvar. Veja o console para o motivo.');
+      return;
+    }
 
     const updated: Lead = { ...lead, ...updates };
     saveLocalLead(updated);
@@ -506,13 +539,21 @@ export default function LeadDetalhesPage() {
 
               </div>
 
-              <button
-                onClick={handleSalvarAlteracoes}
-                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>{saved ? 'Salvo!' : 'Salvar Alterações'}</span>
-              </button>
+              <div className="flex items-center gap-3">
+                {erroSalvar && (
+                  <span className="flex items-center gap-1.5 text-xs text-red-400">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {erroSalvar}
+                  </span>
+                )}
+                <button
+                  onClick={handleSalvarAlteracoes}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{saved ? 'Salvo!' : 'Salvar Alterações'}</span>
+                </button>
+              </div>
 
             </div>
           </div>
