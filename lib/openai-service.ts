@@ -1,8 +1,16 @@
 import { Lead } from './types';
+import { supabase } from './supabase';
 import { gerarMensagemPadrao } from './mensagem-template';
 
 /**
- * Chama o backend proxy server-side do Next.js para gerar mensagem com OpenAI (evita CORS)
+ * Gera a mensagem de abordagem pela Edge Function do Supabase.
+ *
+ * O invoke anexa sozinho o token da sessão atual — é ele que a função usa para
+ * confirmar que quem chama é um usuário logado, e não alguém de posse da anon
+ * key queimando créditos da OpenAI.
+ *
+ * Qualquer falha cai no template local: é melhor uma mensagem padrão do que
+ * nenhuma mensagem.
  */
 export async function gerarMensagemAbordagemIA(
   lead: Lead,
@@ -37,21 +45,20 @@ Regras da mensagem:
 6. A mensagem DEVE ser em português do Brasil e pronta para colar no WhatsApp.`;
 
   try {
-    const response = await fetch('/api/openai/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ prompt })
+    const { data, error } = await supabase.functions.invoke('openai-generate', {
+      body: { prompt }
     });
 
-    const data = await response.json();
+    if (error) {
+      console.error('Falha ao gerar mensagem com IA, usando o template:', error.message);
+      return gerarMensagemPadrao(lead, nicho, cidade);
+    }
 
-    if (response.ok && data.success && data.text) {
+    if (data?.success && data.text) {
       return data.text;
     }
 
-    console.warn('OpenAI fallback ativado:', data.error);
+    console.error('IA não retornou texto, usando o template:', data?.error);
     return gerarMensagemPadrao(lead, nicho, cidade);
 
   } catch (error) {
