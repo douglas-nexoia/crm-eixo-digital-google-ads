@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, Trophy, ShieldCheck, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -8,6 +8,22 @@ import { LayoutDashboard, Users, Trophy, ShieldCheck, ChevronLeft, ChevronRight 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Carregar o estado do sidebar do localStorage ao montar o componente
+  useEffect(() => {
+    setMounted(true);
+    const savedState = localStorage.getItem('eixo_sidebar_collapsed');
+    if (savedState !== null) {
+      setCollapsed(savedState === 'true');
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    const nextState = !collapsed;
+    setCollapsed(nextState);
+    localStorage.setItem('eixo_sidebar_collapsed', String(nextState));
+  };
 
   // Não renderizar Sidebar na rota pública de diagnóstico
   if (pathname.startsWith('/diagnostico')) {
@@ -28,7 +44,7 @@ export const Sidebar: React.FC = () => {
     >
       {/* Botão discreto para recolher/expandir posicionado no topo/borda entre as telas */}
       <button
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={toggleSidebar}
         title={collapsed ? "Expandir menu" : "Recolher menu"}
         className="absolute -right-3.5 top-6 z-20 w-7 h-7 bg-[#0E1424] hover:bg-[#10B981] border border-[rgba(255,255,255,0.12)] hover:border-[#10B981] text-[#94A3B8] hover:text-[#08130F] rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
       >

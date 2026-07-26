@@ -36,6 +36,83 @@ export async function getNichosECidadesUnicosFromSupabase() {
 }
 
 /**
+ * Busca histórico de buscas importadas
+ */
+export async function getBuscasFromSupabase(): Promise<Busca[]> {
+  try {
+    const { data, error } = await supabase
+      .from('buscas')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data as Busca[]) || [];
+  } catch (err) {
+    console.error('Erro ao buscar buscas no Supabase:', err);
+    return [];
+  }
+}
+
+/**
+ * Importa dados do JSON do EIXO-SCOUT diretamente para o Supabase
+ */
+export async function importScoutDataToSupabase(parsedData: any) {
+  const buscaId = 'busca_' + Date.now();
+  
+  // Insere a busca
+  const { data: busca, error: buscaError } = await supabase
+    .from('buscas')
+    .insert([{
+      id: buscaId,
+      nicho: parsedData.nicho,
+      cidade: parsedData.cidade,
+      data_busca: parsedData.data_busca || new Date().toISOString(),
+      total_encontradas: parsedData.total_encontradas || (parsedData.ranking?.length || 0),
+      resumo_json: parsedData.resumo || { alto: 0, medio: 0, baixo: 0 },
+      created_at: new Date().toISOString()
+    }])
+    .select();
+
+  if (buscaError) throw buscaError;
+
+  // Prepara os leads
+  const leadsToInsert = (parsedData.ranking || []).map((item: any, idx: number) => ({
+    id: 'lead_' + Date.now() + '_' + idx,
+    busca_id: buscaId,
+    nome: item.nome,
+    telefone: item.telefone,
+    site: item.site,
+    gmb_nota: item.gmb?.nota ?? null,
+    gmb_avaliacoes: item.gmb?.avaliacoes ?? 0,
+    gmb_verificado: item.gmb?.verificado ?? false,
+    site_https: item.site_auditoria?.https ?? false,
+    site_responsivo: item.site_auditoria?.responsivo ?? false,
+    instagram: item.redes_sociais?.instagram ?? null,
+    facebook: item.redes_sociais?.facebook ?? null,
+    score_pontos: item.score?.pontos ?? 0,
+    score_nivel: item.score?.nivel ?? 'medio',
+    score_detalhes: item.score?.detalhes ?? [],
+    posicao_maps: item.posicao_maps,
+    status_funil: 'Novo',
+    mensagem_sugerida: item.mensagem_sugerida || `Olá! Vi a empresa ${item.nome} no Google.`,
+    mensagem_editada: null,
+    data_contato: null,
+    notas: null,
+    slug: `${item.nome.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now().toString().slice(-4)}`,
+    created_at: new Date().toISOString()
+  }));
+
+  const { data: leads, error: leadsError } = await supabase
+    .from('leads')
+    .insert(leadsToInsert)
+    .select();
+
+  if (leadsError) throw leadsError;
+
+  return { busca: busca?.[0], leadsCount: leads?.length || 0 };
+}
+
+/**
  * Busca leads com paginação nativa e filtros no Supabase
  */
 export async function getLeadsPaginadosFromSupabase(params: {

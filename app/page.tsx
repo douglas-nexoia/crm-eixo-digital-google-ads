@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Upload, Users, Flame, AlertTriangle, CheckCircle, ArrowRight, MapPin } from 'lucide-react';
+import { Upload, Users, Flame, AlertTriangle, CheckCircle, ArrowRight, MapPin, Sparkles } from 'lucide-react';
 import { getBuscasFromSupabase, getLeadsFromSupabase } from '@/lib/supabase-service';
 import { getLocalBuscas, getLocalLeads } from '@/lib/storage';
 import { Busca, Lead, StatusFunil } from '@/lib/types';
@@ -49,96 +49,108 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-6 sm:p-8 space-y-8 max-w-[1200px] mx-auto font-inter">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[rgba(255,255,255,0.08)] pb-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Dashboard de Prospecção</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Gestão de oportunidades e diagnósticos de presença no Google.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-2.5 py-0.5 rounded-full">
+              Visão Geral
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold font-outfit tracking-tight text-white">
+            Dashboard de Prospecção
+          </h1>
+          <p className="text-[#94A3B8] text-sm mt-1">
+            Gestão estratégica de oportunidades e auditorias no Google Maps.
           </p>
         </div>
 
+        {/* Botão Primário do Design System */}
         <button
           onClick={() => setIsImportOpen(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all text-sm self-start md:self-auto"
+          className="flex items-center justify-center gap-2.5 bg-[#10B981] hover:bg-[#22C55E] text-[#08130F] font-bold px-6 py-3 rounded-[10px] shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all text-sm self-start sm:self-auto cursor-pointer"
         >
-          <Upload className="w-4 h-4" />
-          <span>Importar nova busca</span>
+          <Upload className="w-4 h-4 stroke-[2.5]" />
+          <span>Importar Nova Busca</span>
         </button>
       </div>
 
-      {/* Cards de Métricas Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Cards de Métricas Principais (Estilo Design System) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Total de Leads</span>
-            <Users className="w-4 h-4 text-blue-400" />
+        <div className="bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-5 space-y-2 shadow-lg">
+          <div className="flex items-center justify-between text-[#94A3B8]">
+            <span className="text-xs font-semibold uppercase tracking-wider font-outfit">Total de Leads</span>
+            <Users className="w-4 h-4 text-[#10B981]" />
           </div>
-          <p className="text-3xl font-black text-white">{totalLeads}</p>
-          <p className="text-xs text-slate-400">Empresas auditadas</p>
+          <p className="text-3xl font-black font-outfit text-white">{totalLeads}</p>
+          <p className="text-xs text-[#64748B]">Empresas auditadas no sistema</p>
         </div>
 
-        <div className="bg-red-950/20 border border-red-900/30 rounded-xl p-5 space-y-2">
+        <div className="bg-[#0E1424] border border-red-500/20 rounded-[16px] p-5 space-y-2 shadow-lg">
           <div className="flex items-center justify-between text-red-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Oportunidade Alta</span>
-            <Flame className="w-4 h-4 text-red-500" />
+            <span className="text-xs font-semibold uppercase tracking-wider font-outfit">Oportunidade Alta</span>
+            <Flame className="w-4 h-4 text-red-400" />
           </div>
-          <p className="text-3xl font-black text-red-400">{altoCount}</p>
-          <p className="text-xs text-slate-400">Prioridade máxima</p>
+          <p className="text-3xl font-black font-outfit text-red-400">{altoCount}</p>
+          <p className="text-xs text-[#64748B]">Leads de prioridade máxima</p>
         </div>
 
-        <div className="bg-amber-950/20 border border-amber-900/30 rounded-xl p-5 space-y-2">
+        <div className="bg-[#0E1424] border border-amber-500/20 rounded-[16px] p-5 space-y-2 shadow-lg">
           <div className="flex items-center justify-between text-amber-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Oportunidade Média</span>
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <span className="text-xs font-semibold uppercase tracking-wider font-outfit">Oportunidade Média</span>
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
-          <p className="text-3xl font-black text-amber-400">{medioCount}</p>
-          <p className="text-xs text-slate-400">Pontos a corrigir</p>
+          <p className="text-3xl font-black font-outfit text-amber-400">{medioCount}</p>
+          <p className="text-xs text-[#64748B]">Potencial de conversão intermediário</p>
         </div>
 
-        <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-xl p-5 space-y-2">
-          <div className="flex items-center justify-between text-emerald-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Oportunidade Baixa</span>
-            <CheckCircle className="w-4 h-4 text-emerald-500" />
+        <div className="bg-[#0E1424] border border-[#10B981]/20 rounded-[16px] p-5 space-y-2 shadow-lg">
+          <div className="flex items-center justify-between text-[#10B981]">
+            <span className="text-xs font-semibold uppercase tracking-wider font-outfit">Oportunidade Baixa</span>
+            <CheckCircle className="w-4 h-4 text-[#10B981]" />
           </div>
-          <p className="text-3xl font-black text-emerald-400">{baixoCount}</p>
-          <p className="text-xs text-slate-400">Presença consolidada</p>
+          <p className="text-3xl font-black font-outfit text-[#10B981]">{baixoCount}</p>
+          <p className="text-xs text-[#64748B]">Presença digital forte</p>
         </div>
 
       </div>
 
       {/* Visão do Funil */}
-      <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-6 space-y-4">
-        <h2 className="text-base font-bold text-slate-200">Estágios do Funil</h2>
+      <div className="bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base sm:text-lg font-bold font-outfit text-white">Estágios do Funil de Vendas</h2>
+          <span className="text-xs text-[#94A3B8]">Status atualizados</span>
+        </div>
         
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {(Object.keys(funilCounts) as StatusFunil[]).map((status) => (
-            <div key={status} className="bg-slate-950 border border-slate-800/80 rounded-lg p-3 text-center space-y-1">
-              <span className="text-xs text-slate-400 block font-medium truncate">{status}</span>
-              <span className="text-xl font-bold text-slate-100">{funilCounts[status]}</span>
+            <div key={status} className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[12px] p-3 text-center space-y-1 hover:border-[#10B981]/40 transition-all">
+              <span className="text-xs text-[#94A3B8] block font-medium truncate">{status}</span>
+              <span className="text-xl font-bold font-outfit text-white">{funilCounts[status]}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Tabela de Buscas Recentes */}
+      {/* Tabela de Buscas Recentes e Principais Leads */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <div className="lg:col-span-2 bg-slate-900/40 border border-slate-800/80 rounded-xl p-6 space-y-4">
+        {/* Tabela de Buscas */}
+        <div className="lg:col-span-2 bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 space-y-4 shadow-xl">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-200">Últimas Buscas Importadas</h2>
-            <Link href="/explorar" className="text-xs text-blue-400 hover:underline flex items-center gap-1">
+            <h2 className="text-lg font-bold font-outfit text-white">Últimas Buscas Importadas</h2>
+            <Link href="/explorar" className="text-xs text-[#10B981] hover:underline flex items-center gap-1 font-semibold">
               <span>Ver todas</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-300">
-              <thead className="text-xs uppercase bg-slate-950/60 text-slate-400 border-b border-slate-800">
+          <div className="overflow-x-auto rounded-[12px] border border-[rgba(255,255,255,0.06)]">
+            <table className="w-full text-left text-sm text-[#F1F5F9] border-collapse">
+              <thead className="text-xs uppercase bg-[#0B0F19] text-[#94A3B8] font-outfit font-bold tracking-wider border-b border-[rgba(255,255,255,0.08)]">
                 <tr>
                   <th className="px-4 py-3">Nicho</th>
                   <th className="px-4 py-3">Cidade</th>
@@ -146,19 +158,19 @@ export default function DashboardPage() {
                   <th className="px-4 py-3 text-right">Ação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-[rgba(255,255,255,0.06)]">
                 {buscas.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-900/50">
-                    <td className="px-4 py-3 font-semibold text-slate-100 capitalize">{b.nicho}</td>
-                    <td className="px-4 py-3 text-slate-300 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <tr key={b.id} className="hover:bg-[rgba(255,255,255,0.03)] transition-colors">
+                    <td className="px-4 py-3 font-semibold font-outfit text-white capitalize">{b.nicho}</td>
+                    <td className="px-4 py-3 text-[#94A3B8] flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#10B981]" />
                       <span>{b.cidade}</span>
                     </td>
-                    <td className="px-4 py-3">{b.total_encontradas}</td>
+                    <td className="px-4 py-3 text-[#94A3B8] font-medium">{b.total_encontradas}</td>
                     <td className="px-4 py-3 text-right">
                       <Link 
                         href={`/ranking?nicho=${encodeURIComponent(b.nicho)}&cidade=${encodeURIComponent(b.cidade)}`}
-                        className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3 py-1.5 rounded-lg border border-slate-700 transition-colors inline-block"
+                        className="text-xs bg-[rgba(255,255,255,0.04)] hover:bg-[#10B981] hover:text-[#08130F] text-[#F1F5F9] font-bold px-3 py-1.5 rounded-[8px] border border-[rgba(255,255,255,0.12)] hover:border-[#10B981] transition-all inline-block"
                       >
                         Ver Ranking
                       </Link>
@@ -171,25 +183,30 @@ export default function DashboardPage() {
         </div>
 
         {/* Principais Leads */}
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-bold text-slate-200">Principais Leads (🔥 Alto)</h2>
+        <div className="bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 space-y-4 shadow-xl">
+          <div className="flex items-center gap-2">
+            <Flame className="w-5 h-5 text-red-400" />
+            <h2 className="text-lg font-bold font-outfit text-white">Leads Prioritários (🔥 Alto)</h2>
+          </div>
+
           <div className="space-y-3">
             {leads
               .filter((l) => l.score_nivel === 'alto')
               .slice(0, 4)
               .map((lead) => (
-                <div key={lead.id} className="bg-slate-950 border border-slate-800/80 rounded-lg p-3 space-y-2 hover:border-slate-700 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-slate-200 text-sm leading-snug">{lead.nome}</h3>
-                      <p className="text-xs text-slate-400">Maps #{lead.posicao_maps} • Nota {lead.gmb_nota || 'N/A'}</p>
+                <div key={lead.id} className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[12px] p-3.5 space-y-2.5 hover:border-[#10B981]/40 transition-all">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="truncate">
+                      <h3 className="font-bold font-outfit text-white text-sm truncate leading-snug">{lead.nome}</h3>
+                      <p className="text-xs text-[#94A3B8]">Maps #{lead.posicao_maps} • Nota {lead.gmb_nota || 'N/A'}</p>
                     </div>
                     <ScoreBadge nivel={lead.score_nivel} pontos={lead.score_pontos} />
                   </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-900">
+                  <div className="flex items-center justify-between pt-2 border-t border-[rgba(255,255,255,0.06)]">
                     <FunnelBadge status={lead.status_funil} />
-                    <Link href={`/leads/${lead.id}`} className="text-xs text-blue-400 hover:underline">
-                      Gerenciar →
+                    <Link href={`/leads/${lead.id}`} className="text-xs text-[#10B981] hover:underline font-bold flex items-center gap-1">
+                      <span>Gerenciar</span>
+                      <ArrowRight className="w-3 h-3" />
                     </Link>
                   </div>
                 </div>
