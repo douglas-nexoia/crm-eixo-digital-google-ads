@@ -524,7 +524,7 @@ export default function ExplorarLeadsPage() {
         {/* Rodapé de Paginação */}
         <div className="bg-slate-950/80 px-4 py-3 flex items-center justify-between border-t border-slate-800 text-xs text-slate-400">
           <div>
-            Mostrando <span className="font-semibold text-slate-200">{leadsPaginados.length}</span> de{' '}
+            Mostrando <span className="font-semibold text-slate-200">{leadsOrdenados.length}</span> de{' '}
             <span className="font-semibold text-slate-200">{totalCount}</span> registros
           </div>
 
