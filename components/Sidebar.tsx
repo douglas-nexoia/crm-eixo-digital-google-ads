@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Trophy, BarChart3, Settings, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, Trophy, ShieldCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
 
   // Não renderizar Sidebar na rota pública de diagnóstico
   if (pathname.startsWith('/diagnostico')) {
@@ -20,17 +21,36 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-64 bg-slate-950 border-r border-slate-800 flex flex-col justify-between p-4 shrink-0 h-screen sticky top-0">
-      <div className="space-y-6">
+    <aside 
+      className={`relative bg-[#0B0F19] border-r border-[rgba(255,255,255,0.08)] flex flex-col justify-between p-4 shrink-0 h-screen sticky top-0 transition-all duration-300 ${
+        collapsed ? 'w-20' : 'w-64'
+      }`}
+    >
+      {/* Botão discreto para recolher/expandir posicionado no topo/borda entre as telas */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        title={collapsed ? "Expandir menu" : "Recolher menu"}
+        className="absolute -right-3.5 top-6 z-20 w-7 h-7 bg-[#0E1424] hover:bg-[#10B981] border border-[rgba(255,255,255,0.12)] hover:border-[#10B981] text-[#94A3B8] hover:text-[#08130F] rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
+      >
+        {collapsed ? (
+          <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+        ) : (
+          <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+        )}
+      </button>
+
+      <div className="space-y-6 overflow-hidden">
         {/* Brand Header */}
-        <div className="flex items-center gap-3 px-2 py-3 border-b border-slate-800/80">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center font-black text-slate-950 text-xl shadow-lg shadow-blue-500/20">
+        <div className={`flex items-center gap-3 py-3 border-b border-[rgba(255,255,255,0.08)] ${collapsed ? 'justify-center px-0' : 'px-2'}`}>
+          <div className="w-9 h-9 rounded-[10px] bg-[#10B981] flex items-center justify-center font-outfit font-black text-[#08130F] text-xl shadow-[0_0_15px_rgba(16,185,129,0.25)] shrink-0">
             E
           </div>
-          <div>
-            <h1 className="font-bold text-slate-100 text-base leading-tight">Eixo Digital</h1>
-            <p className="text-xs text-emerald-400 font-medium">Prospecção & CRM</p>
-          </div>
+          {!collapsed && (
+            <div className="truncate">
+              <h1 className="font-bold font-outfit text-white text-base leading-tight">Eixo Digital</h1>
+              <p className="text-xs text-[#10B981] font-medium">Prospecção & CRM</p>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}
@@ -42,14 +62,17 @@ export const Sidebar: React.FC = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                title={collapsed ? item.label : undefined}
+                className={`flex items-center gap-3 py-2.5 rounded-[10px] text-sm font-medium transition-all ${
+                  collapsed ? 'justify-center px-0' : 'px-3'
+                } ${
                   isActive
-                    ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                    ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 font-bold'
+                    : 'text-[#94A3B8] hover:text-white hover:bg-[rgba(255,255,255,0.04)]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
+                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#10B981]' : 'text-[#94A3B8]'}`} />
+                {!collapsed && <span className="truncate">{item.label}</span>}
               </Link>
             );
           })}
@@ -57,12 +80,12 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Footer info */}
-      <div className="border-t border-slate-800/80 pt-4 px-2 space-y-2">
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>Integrado ao EIXO-SCOUT</span>
+      <div className={`border-t border-[rgba(255,255,255,0.08)] pt-4 space-y-2 ${collapsed ? 'text-center px-0' : 'px-2'}`}>
+        <div className={`flex items-center gap-2 text-xs text-[#94A3B8] ${collapsed ? 'justify-center' : ''}`}>
+          <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
+          {!collapsed && <span className="truncate">Integrado ao EIXO-SCOUT</span>}
         </div>
-        <p className="text-[10px] text-slate-400">"Sua empresa no topo do Google"</p>
+        {!collapsed && <p className="text-[10px] text-[#64748B]">"Sua empresa no topo do Google"</p>}
       </div>
     </aside>
   );

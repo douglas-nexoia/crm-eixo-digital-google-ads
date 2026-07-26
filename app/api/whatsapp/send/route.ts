@@ -13,28 +13,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Configurações com fallback garantido para a Evolution GO
     const apiUrl = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || process.env.EVOLUTION_API_URL || 'http://67.205.153.151:4000/';
-    const apiKey = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || process.env.EVOLUTION_API_KEY;
-    const instanceName = process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE || 'douglas-eixo-nexo-ia';
+    const apiKey = (process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || process.env.EVOLUTION_API_KEY || '5a4366b3-1833-49b1-ba66-ef5148021386').trim();
+    const instanceName = (process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE || 'douglas-eixo-nexo-ia').trim();
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'Chave de API da Evolution não encontrada nas variáveis de ambiente.' },
-        { status: 400 }
-      );
-    }
-
-    // Formatar número de telefone (remover caracteres não numéricos)
+    // Formatar número de telefone (remover não numéricos)
     let formattedNumber = telefone.replace(/\D/g, '');
     if (!formattedNumber.startsWith('55') && formattedNumber.length >= 10) {
       formattedNumber = `55${formattedNumber}`;
     }
 
-    // Endpoint exato da Evolution GO
     const cleanBaseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
     const endpoint = `${cleanBaseUrl}/send/text`;
 
-    console.log(`Disparando WhatsApp para ${endpoint} com instância: ${instanceName}`);
+    console.log(`Disparando WhatsApp para ${endpoint} com instância ${instanceName}`);
 
     const payload = {
       instance: instanceName,
@@ -46,7 +39,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': apiKey.trim()
+        'apikey': apiKey
       },
       body: JSON.stringify(payload)
     });
@@ -60,11 +53,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (!response.ok) {
-      console.error('Erro na resposta da Evolution GO:', response.status, responseText);
+      console.error('Erro HTTP na Evolution GO:', response.status, responseText);
       return NextResponse.json(
         { 
           success: false, 
-          error: `Erro HTTP ${response.status} na Evolution GO. Verifique se a URL (${cleanBaseUrl}) e a chave API estão corretas.`,
+          error: `Erro HTTP ${response.status} na Evolution GO. Verifique a instância (${instanceName}) e a chave API.`,
           details: responseText
         },
         { status: response.status }
