@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { 
-  Search, Copy, Check, FileText, ChevronLeft, ChevronRight, 
-  ArrowUpDown, ArrowUp, ArrowDown, MessageSquare, Send, Sparkles, AlertCircle
+  Search, Copy, Check, FileText, ChevronLeft, ChevronRight,
+  ArrowUpDown, ArrowUp, ArrowDown, MessageSquare, Send, Sparkles, AlertCircle,
+  Pencil, X
 } from 'lucide-react';
 import { getLeadsPaginadosFromSupabase, getNichosECidadesUnicosFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
 import { enviarMensagemEvolutionAPI } from '@/lib/evolution-service';
@@ -23,6 +24,12 @@ export default function ExplorarLeadsPage() {
   const [nichosDisponiveis, setNichosDisponiveis] = useState<string[]>([]);
   const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Edição de telefone na própria linha: o scraper nem sempre acha o número, e
+  // sem isto era preciso abrir o lead só para cadastrá-lo. Um por vez basta.
+  const [editandoTelefoneId, setEditandoTelefoneId] = useState<string | null>(null);
+  const [telefoneInput, setTelefoneInput] = useState('');
+  const [salvandoTelefone, setSalvandoTelefone] = useState(false);
 
   // Sub-Aba de Estágio Selecionada (Inicia padrão em "Novo" para evitar abordar leads já contatados)
   const [tabEstagio, setTabEstagio] = useState<TabEstagio>('Novo');
@@ -200,6 +207,34 @@ export default function ExplorarLeadsPage() {
     } else {
       setActionFeedback({ leadId: lead.id, success: false, msg: res.error || 'Erro no envio' });
     }
+  };
+
+  // Aceita qualquer máscara; a normalização para o padrão internacional é feita
+  // na Edge Function de envio. Aqui só barramos o que nunca poderia ser válido.
+  const digitosTelefone = telefoneInput.replace(/\D/g, '');
+  const telefoneValido = digitosTelefone.length >= 10 && digitosTelefone.length <= 13;
+
+  const abrirEdicaoTelefone = (lead: Lead) => {
+    setTelefoneInput(lead.telefone || '');
+    setEditandoTelefoneId(lead.id);
+  };
+
+  const handleSalvarTelefone = async (leadId: string) => {
+    if (!telefoneValido) return;
+
+    const telefone = telefoneInput.trim();
+    setSalvandoTelefone(true);
+
+    const salvo = await updateLeadInSupabase(leadId, { telefone });
+    setSalvandoTelefone(false);
+
+    if (!salvo) {
+      setActionFeedback({ leadId, success: false, msg: 'Telefone não foi salvo. Veja o console.' });
+      return;
+    }
+
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, telefone } : l));
+    setEditandoTelefoneId(null);
   };
 
   // Mudar Status no Funil Direto da Lista
@@ -476,7 +511,49 @@ export default function ExplorarLeadsPage() {
                       {/* Empresa & Telefone */}
                       <td className="px-4 py-3.5">
                         <div className="font-bold text-slate-100">{lead.nome}</div>
-                        <div className="text-xs text-slate-400">{lead.telefone || 'Sem telefone'}</div>
+                        {editandoTelefoneId === lead.id ? (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <input
+                              autoFocus
+                              value={telefoneInput}
+                              onChange={(e) => setTelefoneInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSalvarTelefone(lead.id);
+                                if (e.key === 'Escape') setEditandoTelefoneId(null);
+                              }}
+                              placeholder="(19) 99999-9999"
+                              className="bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded px-2 py-0.5 text-xs text-slate-100 placeholder:text-slate-600 w-36 outline-none transition-colors"
+                            />
+                            <button
+                              onClick={() => handleSalvarTelefone(lead.id)}
+                              disabled={!telefoneValido || salvandoTelefone}
+                              title={telefoneValido ? 'Salvar telefone' : 'Informe de 10 a 13 dígitos'}
+                              className="p-0.5 rounded text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setEditandoTelefoneId(null)}
+                              title="Cancelar"
+                              className="p-0.5 rounded text-slate-500 hover:text-slate-300 transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-xs text-slate-400 group">
+                            <span className={lead.telefone ? '' : 'italic text-slate-500'}>
+                              {lead.telefone || 'Sem telefone'}
+                            </span>
+                            <button
+                              onClick={() => abrirEdicaoTelefone(lead)}
+                              title={lead.telefone ? 'Editar telefone' : 'Adicionar telefone'}
+                              className="p-0.5 rounded text-slate-600 hover:text-emerald-400 hover:bg-slate-800 transition-colors"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                         
                         {/* Feedback inline caso envie mensagem */}
                         {feedback && (
