@@ -9,7 +9,7 @@ import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
 import {
   AlertTriangle, MessageCircle, MapPin, Megaphone,
-  CheckCircle2, Sparkles, Zap, ArrowUpRight
+  Sparkles, Zap, ArrowUpRight
 } from 'lucide-react';
 
 type LinhaComparativo = {
@@ -179,12 +179,13 @@ export default function DiagnosticoPublicoPage() {
   const linkGeral = linkWhatsApp(
     `Olá! Vi o relatório de presença digital da empresa *${lead.nome}* no Google e gostaria de saber como colocar nossa empresa no topo do Google!`
   );
-  const linkOrganico = linkWhatsApp(
-    `Olá! Vi o diagnóstico de visibilidade da *${lead.nome}* e quero cuidar do nosso perfil no Google Meu Negócio.`
+  // Visita fria: o próximo passo é entender, não escolher um serviço. Um CTA
+  // só, e a conversa define o caminho.
+  const linkEntender = linkWhatsApp(
+    `Olá! Vi o diagnóstico de visibilidade da *${lead.nome}* e gostaria de entender melhor o que dá para melhorar na nossa presença no Google.`
   );
-  const linkPago = linkWhatsApp(
-    `Olá! Vi o diagnóstico de visibilidade da *${lead.nome}* e quero aparecer no Google agora, com site e anúncios.`
-  );
+
+  const SITE_EIXO = 'https://eixodigitalbr.com.br';
 
   return (
     <div className="min-h-screen bg-[#0B0F19] text-[#F1F5F9] antialiased font-inter pb-24 relative overflow-x-hidden selection:bg-[#10B981] selection:text-[#08130F]">
@@ -240,7 +241,7 @@ export default function DiagnosticoPublicoPage() {
       </header>
 
       {/* Conteúdo Principal (Largura Máxima 1100px centralizado) */}
-      <main className="max-w-[1100px] mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 space-y-12 relative z-10">
+      <main className="max-w-[1100px] mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 space-y-8 sm:space-y-12 relative z-10">
 
         {/* Hero Banner / Resumo executivo */}
         <section className="text-center space-y-4 max-w-3xl mx-auto pt-2">
@@ -249,7 +250,7 @@ export default function DiagnosticoPublicoPage() {
             <span>DIAGNÓSTICO EXCLUSIVO DE VISIBILIDADE DIGITAL</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-outfit text-[#F1F5F9] leading-tight tracking-tight">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold font-outfit text-[#F1F5F9] leading-tight tracking-tight text-balance">
             Análise de Desempenho no Google para <span className="text-[#10B981]">{lead.nome}</span>
           </h1>
 
@@ -332,13 +333,13 @@ export default function DiagnosticoPublicoPage() {
           </div>
 
           <div className="overflow-x-auto rounded-[16px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
-            <table className="w-full text-left text-xs sm:text-sm text-[#F1F5F9] border-collapse min-w-[500px]">
+            <table className="w-full text-left text-xs sm:text-sm text-[#F1F5F9] border-collapse min-w-[430px]">
               <thead className="bg-[#0E1424] text-[#94A3B8] font-outfit uppercase font-bold text-[11px] tracking-wider border-b border-[rgba(255,255,255,0.08)]">
                 <tr>
-                  <th className="p-4">Empresa</th>
-                  <th className="p-4 text-center">Posição</th>
-                  <th className="p-4 text-center">Nota no Google</th>
-                  <th className="p-4 text-center">Avaliações</th>
+                  <th className="p-3 sm:p-4">Empresa</th>
+                  <th className="p-3 sm:p-4 text-center">Posição</th>
+                  <th className="p-3 sm:p-4 text-center">Nota no Google</th>
+                  <th className="p-3 sm:p-4 text-center">Avaliações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[rgba(255,255,255,0.06)]">
@@ -363,9 +364,9 @@ export default function DiagnosticoPublicoPage() {
                             : 'hover:bg-[rgba(255,255,255,0.03)] transition-colors text-[#94A3B8]'
                         }
                       >
-                        <td className="p-4">
+                        <td className="p-3 sm:p-4">
                           {linha.isLead ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse" />
                               <span className="font-outfit text-base text-white">{linha.nome}</span>
                               <span className="text-[10px] bg-[#10B981] text-[#08130F] font-bold px-2 py-0.5 rounded-[999px] uppercase">
@@ -376,7 +377,7 @@ export default function DiagnosticoPublicoPage() {
                             <span className="font-medium text-slate-200">{linha.nome}</span>
                           )}
                         </td>
-                        <td className="p-4 text-center">
+                        <td className="p-3 sm:p-4 text-center">
                           {linha.isLead ? (
                             <span className="font-outfit font-black text-lg text-[#10B981]">
                               #{linha.posicao_maps || 'N/A'}
@@ -387,10 +388,10 @@ export default function DiagnosticoPublicoPage() {
                             </span>
                           )}
                         </td>
-                        <td className="p-4 text-center font-bold text-amber-400">
+                        <td className="p-3 sm:p-4 text-center font-bold text-amber-400 whitespace-nowrap">
                           ⭐ {linha.gmb_nota ? linha.gmb_nota.toFixed(1) : 'N/A'}
                         </td>
-                        <td className={`p-4 text-center ${linha.isLead ? 'text-white font-bold' : 'text-slate-300'}`}>
+                        <td className={`p-3 sm:p-4 text-center ${linha.isLead ? 'text-white font-bold' : 'text-slate-300'}`}>
                           {linha.gmb_avaliacoes !== null && linha.gmb_avaliacoes !== undefined
                             ? linha.gmb_avaliacoes
                             : <span className="text-[#64748B]">—</span>}
@@ -476,118 +477,72 @@ export default function DiagnosticoPublicoPage() {
           </div>
         </section>
 
-        {/* Seção 4: Os dois caminhos do Google — orgânico e pago, sem hierarquia */}
-        <section className="bg-[#0E1424] border border-[#10B981]/30 rounded-[20px] p-6 sm:p-10 md:p-12 space-y-8 shadow-2xl relative overflow-hidden">
+        {/* Seção 4: Os dois caminhos do Google.
+            Quem chega aqui veio de uma abordagem fria e ainda não está
+            escolhendo serviço. Os dois cards explicam; a ação é uma só, e é
+            entender — não contratar. */}
+        <section className="bg-[#0E1424] border border-[#10B981]/30 rounded-[20px] p-6 sm:p-10 md:p-12 space-y-7 sm:space-y-8 shadow-2xl relative overflow-hidden">
 
           <div className="space-y-4 max-w-2xl mx-auto text-center">
             <div className="inline-block">
               <span className="text-xs font-bold uppercase tracking-wider text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/30 px-4 py-1.5 rounded-[999px]">
-                Plano de Ação Personalizado
+                Próximo Passo
               </span>
             </div>
 
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-outfit text-white leading-tight">
-              Pronto para colocar a {lead.nome} no topo do Google?
+            <h2 className="text-xl sm:text-3xl md:text-4xl font-extrabold font-outfit text-white leading-tight">
+              Existem dois caminhos para a {lead.nome} aparecer no topo do Google
             </h2>
 
             <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
               O <strong className="text-white">anúncio</strong> é o caminho pago para aparecer primeiro.
               O <strong className="text-white">Google Meu Negócio</strong> é o caminho orgânico.
-              O melhor cenário é ocupar os dois.
+              Eles não são excludentes — o melhor cenário é ocupar os dois.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Explicação, não cardápio: sem lista de entregáveis, que a essa
+              altura soa como proposta comercial. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
 
-            {/* Caminho orgânico */}
-            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-6 flex flex-col gap-4">
+            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-5 sm:p-6 flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-[10px] bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center shrink-0">
                   <MapPin className="w-5 h-5 text-[#10B981]" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#10B981]">Caminho Orgânico</span>
-                  <h3 className="text-lg font-bold font-outfit text-white leading-tight">Gestão do Google Meu Negócio</h3>
+                  <h3 className="text-base sm:text-lg font-bold font-outfit text-white leading-tight">Google Meu Negócio</h3>
                 </div>
               </div>
 
-              <p className="text-sm text-[#94A3B8] leading-relaxed">
-                Aparecer para quem já está buscando na sua região, sem pagar por clique.
+              <p className="text-sm text-[#F1F5F9] leading-relaxed flex-1">
+                Trabalhar o seu perfil no Google — avaliações, fotos, publicações e respostas — para aparecer entre os primeiros de quem busca na sua região, sem pagar por clique.
               </p>
-
-              <ul className="space-y-2 text-sm text-[#F1F5F9] flex-1">
-                {[
-                  'Publicações e fotos semanais no perfil',
-                  'Estratégia para aumentar as avaliações',
-                  'Respostas a todos os comentários',
-                  'Perfil otimizado para a busca local',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
-                    <span className="leading-relaxed">{item}</span>
-                  </li>
-                ))}
-              </ul>
 
               <p className="text-xs text-[#64748B] leading-relaxed border-t border-[rgba(255,255,255,0.08)] pt-3">
-                Constrói ao longo dos meses e continua rendendo depois. Meta: <strong className="text-[#94A3B8]">Top 3 do Google Maps na sua região</strong>.
+                Constrói ao longo dos meses e continua rendendo depois.
               </p>
-
-              <a
-                href={linkOrganico}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 bg-[rgba(255,255,255,0.05)] hover:bg-[#10B981] hover:text-[#08130F] border border-[#10B981]/40 text-[#10B981] font-bold px-6 py-3.5 rounded-[10px] transition-all text-sm cursor-pointer"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Quero cuidar do meu perfil</span>
-              </a>
             </div>
 
-            {/* Caminho pago */}
-            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-6 flex flex-col gap-4">
+            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-5 sm:p-6 flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-[10px] bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center shrink-0">
                   <Megaphone className="w-5 h-5 text-[#10B981]" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#10B981]">Caminho Pago</span>
-                  <h3 className="text-lg font-bold font-outfit text-white leading-tight">Site + Google Ads</h3>
+                  <h3 className="text-base sm:text-lg font-bold font-outfit text-white leading-tight">Site + Google Ads</h3>
                 </div>
               </div>
 
-              <p className="text-sm text-[#94A3B8] leading-relaxed">
-                Aparecer hoje, acima de todo mundo, e trazer o cliente direto para o seu WhatsApp.
+              <p className="text-sm text-[#F1F5F9] leading-relaxed flex-1">
+                Um site que apresenta os seus trabalhos e leva direto ao WhatsApp, com anúncios que colocam a sua empresa acima de todos os resultados do mapa.
               </p>
-
-              <ul className="space-y-2 text-sm text-[#F1F5F9] flex-1">
-                {[
-                  'Site de alta conversão com seus trabalhos',
-                  'Botão direto para o WhatsApp',
-                  'Campanhas no Google Ads na sua região',
-                  'Acompanhamento de resultado por contato',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
-                    <span className="leading-relaxed">{item}</span>
-                  </li>
-                ))}
-              </ul>
 
               <p className="text-xs text-[#64748B] leading-relaxed border-t border-[rgba(255,255,255,0.08)] pt-3">
-                Resultado desde a primeira semana, com investimento que você controla. Funciona <strong className="text-[#94A3B8]">independente da posição orgânica</strong>.
+                Aparece desde a primeira semana, com investimento que você controla.
               </p>
-
-              <a
-                href={linkPago}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-[#22C55E] text-[#08130F] font-bold px-6 py-3.5 rounded-[10px] shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] transition-all text-sm cursor-pointer"
-              >
-                <MessageCircle className="w-4 h-4 fill-[#08130F]" />
-                <span>Quero aparecer no Google agora</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </a>
             </div>
 
           </div>
@@ -597,13 +552,48 @@ export default function DiagnosticoPublicoPage() {
             <span className="text-[#10B981]"> Quem faz os dois aparece duas vezes na mesma busca.</span>
           </p>
 
+          {/* Um passo só, e de baixo compromisso */}
+          <div className="flex flex-col items-center gap-3 pt-1">
+            <a
+              href={linkEntender}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#10B981] hover:bg-[#22C55E] text-[#08130F] font-bold px-6 sm:px-8 py-4 rounded-[10px] shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] transition-all text-sm sm:text-base cursor-pointer text-center"
+            >
+              <MessageCircle className="w-5 h-5 fill-[#08130F] shrink-0" />
+              <span>Quero entender como mudar isso</span>
+            </a>
+
+            <p className="text-xs text-[#64748B] text-center max-w-sm leading-relaxed">
+              Sem compromisso. A gente explica qual caminho faz sentido para a {lead.nome} e você decide depois.
+            </p>
+
+            <a
+              href={SITE_EIXO}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-[#94A3B8] hover:text-[#10B981] underline underline-offset-4 decoration-[rgba(255,255,255,0.2)] hover:decoration-[#10B981] transition-colors mt-1"
+            >
+              <span>Conhecer a Eixo Digital</span>
+              <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
+            </a>
+          </div>
+
         </section>
 
       </main>
 
       {/* Footer Estático */}
-      <footer className="text-center py-8 text-[#64748B] text-xs border-t border-[rgba(255,255,255,0.08)] mt-12">
-        <p>© Eixo Digital • Presença & Estratégia de Tração no Google</p>
+      <footer className="text-center py-8 px-4 text-[#64748B] text-xs border-t border-[rgba(255,255,255,0.08)] mt-12 space-y-2">
+        <p>© Eixo Digital • Presença &amp; Estratégia de Tração no Google</p>
+        <a
+          href={SITE_EIXO}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block text-[#64748B] hover:text-[#10B981] underline underline-offset-4 transition-colors"
+        >
+          eixodigitalbr.com.br
+        </a>
       </footer>
 
     </div>
