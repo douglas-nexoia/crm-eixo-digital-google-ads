@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { Lead, Busca } from './types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cqvixmdlrmqayukcaxch.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxdml4bWRscm1xYXl1a2NheGNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg4OTU5MDAsImV4cCI6MjA1NDQ3MTkwMH0.2oW-xY01PZ-5x7T9c3b8r-6X1m4-Z4v2b';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cqvixmdkjvlgoeqxbavf.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxdml4bWRranZsZ29lcXhiYXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5OTE2NTIsImV4cCI6MjEwMDU2NzY1Mn0.A_8wogQgOicXzK71ju_Gqes-kXdH59IR8AVtxVAErcM';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -118,57 +118,34 @@ export async function getLeadsFromSupabase(): Promise<Lead[]> {
 }
 
 /**
- * Busca os Top Concorrentes com Fallback Garantido para sempre ter comparação
+ * Busca os Top Concorrentes ESTREITAMENTE do mesmo nicho.
+ * Se não houver concorrentes suficientes do mesmo nicho, retorna apenas os que existirem.
+ * Jamais compara nichos diferentes!
  */
 export async function getTopConcorrentesDoMesmoNicho(leadAtual: Lead): Promise<Lead[]> {
   try {
     const nichoLead = leadAtual.nicho || leadAtual.buscas?.nicho || '';
     const cidadeLead = leadAtual.cidade || leadAtual.buscas?.cidade || '';
 
-    // 1. Tenta buscar empresas do mesmo nicho e cidade
+    if (!nichoLead) return [];
+
     let query = supabase
       .from('leads')
       .select('*')
-      .neq('id', leadAtual.id);
+      .neq('id', leadAtual.id)
+      .ilike('nicho', `%${nichoLead}%`);
 
-    if (nichoLead) {
-      query = query.ilike('nicho', `%${nichoLead}%`);
+    if (cidadeLead) {
+      query = query.ilike('cidade', `%${cidadeLead}%`);
     }
 
-    let { data, error } = await query
+    const { data, error } = await query
       .order('posicao_maps', { ascending: true })
       .limit(3);
 
     if (error) throw error;
 
-    let concorrentes = (data as Lead[]) || [];
-
-    // 2. Se o nicho tiver menos de 3 concorrentes, faz fallback buscando os top líderes gerais da região
-    if (concorrentes.length < 3) {
-      let fallbackQuery = supabase
-        .from('leads')
-        .select('*')
-        .neq('id', leadAtual.id);
-
-      if (cidadeLead) {
-        fallbackQuery = fallbackQuery.ilike('cidade', `%${cidadeLead}%`);
-      }
-
-      const { data: fallbackData } = await fallbackQuery
-        .order('posicao_maps', { ascending: true })
-        .limit(4);
-
-      if (fallbackData) {
-        const idsExistentes = new Set(concorrentes.map(c => c.id));
-        (fallbackData as Lead[]).forEach(item => {
-          if (!idsExistentes.has(item.id) && concorrentes.length < 3) {
-            concorrentes.push(item);
-          }
-        });
-      }
-    }
-
-    return concorrentes;
+    return (data as Lead[]) || [];
   } catch (err) {
     console.error('Erro ao buscar top concorrentes:', err);
     return [];
