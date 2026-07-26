@@ -304,10 +304,11 @@ export async function getLeadBySlugOrIdFromSupabase(slugOrId: string): Promise<L
  */
 export async function updateLeadInSupabase(leadId: string, updates: Partial<Lead>) {
   try {
-    const payload = {
-      ...updates,
-      updated_at: new Date().toISOString()
-    };
+    // Nada de updated_at aqui: a coluna não existe em `leads` (nem no schema
+    // nem no banco). Injetá-la fazia o PostgREST rejeitar o request inteiro com
+    // PGRST204, e o retorno silencioso abaixo escondia isso — toda escrita
+    // desta tela falhava sem aviso.
+    const payload = { ...updates };
 
     delete (payload as any).buscas;
 
@@ -318,10 +319,11 @@ export async function updateLeadInSupabase(leadId: string, updates: Partial<Lead
       .select();
 
     if (error) {
-      console.warn('Supabase update aviso:', error.message);
+      console.error('Falha ao atualizar lead no Supabase:', error.message);
       return null;
     }
 
+    // null aqui significa que nada foi gravado. Quem chama deve checar.
     return data?.[0] || null;
   } catch (err) {
     console.error('Erro ao atualizar lead no Supabase:', err);

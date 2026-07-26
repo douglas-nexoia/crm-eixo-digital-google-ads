@@ -34,6 +34,7 @@ export default function LeadDetalhesPage() {
   const [editandoTelefone, setEditandoTelefone] = useState(false);
   const [telefoneInput, setTelefoneInput] = useState('');
   const [salvandoTelefone, setSalvandoTelefone] = useState(false);
+  const [erroTelefone, setErroTelefone] = useState<string | null>(null);
   
   // Estados de IA e Disparos
   const [generatingIA, setGeneratingIA] = useState(false);
@@ -225,13 +226,21 @@ export default function LeadDetalhesPage() {
 
     const telefone = telefoneInput.trim();
     setSalvandoTelefone(true);
+    setErroTelefone(null);
 
-    await updateLeadInSupabase(lead.id, { telefone });
+    // updateLeadInSupabase devolve null quando nada foi gravado. Sem essa
+    // checagem a tela dava sucesso e o número sumia no refresh seguinte.
+    const salvo = await updateLeadInSupabase(lead.id, { telefone });
+    setSalvandoTelefone(false);
+
+    if (!salvo) {
+      setErroTelefone('Não foi possível salvar. Veja o console para o motivo.');
+      return;
+    }
 
     const updated: Lead = { ...lead, telefone };
     saveLocalLead(updated);
     setLead(updated);
-    setSalvandoTelefone(false);
     setEditandoTelefone(false);
   };
 
@@ -292,12 +301,18 @@ export default function LeadDetalhesPage() {
                     <Check className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => setEditandoTelefone(false)}
+                    onClick={() => { setEditandoTelefone(false); setErroTelefone(null); }}
                     title="Cancelar"
                     className="p-1 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
+                  {erroTelefone && (
+                    <span className="flex items-center gap-1 text-[11px] text-red-400">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      {erroTelefone}
+                    </span>
+                  )}
                 </>
               ) : (
                 <>
