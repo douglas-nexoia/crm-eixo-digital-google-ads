@@ -4,6 +4,16 @@ const REMETENTE = 'Douglas Alexandre';
 const AGENCIA = 'Eixo Digital';
 
 /**
+ * "Valinhos/SP" vira "Valinhos": a sigla do estado soa formal demais numa
+ * conversa de WhatsApp com um negócio da própria cidade.
+ */
+function nomeCidade(lead: Partial<Lead>, cidadeParam?: string): string {
+  return (lead.cidade || cidadeParam || lead.buscas?.cidade || '')
+    .split('/')[0]
+    .trim();
+}
+
+/**
  * Primeira mensagem de abordagem, enviada a frio no WhatsApp.
  *
  * Três decisões que sustentam o texto:
@@ -25,11 +35,7 @@ const AGENCIA = 'Eixo Digital';
 export function gerarMensagemPadrao(lead: Partial<Lead>, nichoParam?: string, cidadeParam?: string): string {
   const nomeEmpresa = lead.nome || 'sua empresa';
   const nicho = (lead.nicho || nichoParam || lead.buscas?.nicho || '').trim().toLowerCase();
-  // "Valinhos/SP" vira "Valinhos": a sigla do estado soa formal demais numa
-  // conversa de WhatsApp com um negócio da própria cidade.
-  const cidade = (lead.cidade || cidadeParam || lead.buscas?.cidade || '')
-    .split('/')[0]
-    .trim();
+  const cidade = nomeCidade(lead, cidadeParam);
   const posicao = lead.posicao_maps;
   const nota = typeof lead.gmb_nota === 'number' ? lead.gmb_nota : null;
 
@@ -63,4 +69,34 @@ export function gerarMensagemPadrao(lead: Partial<Lead>, nichoParam?: string, ci
   }
 
   return `${abertura}\n\n${observacao}\n\n${convite}`;
+}
+
+/**
+ * Segunda mensagem: entrega o link do relatório.
+ *
+ * Só sai depois que a pessoa respondeu "pode mandar" à abordagem, então abre
+ * reconhecendo esse sim em vez de cumprimentar de novo e reapresentar o que
+ * ela já aceitou receber — repetir a apresentação faz parecer robô disparando
+ * etapa.
+ *
+ * A linha descritiva não é enfeite: hoje o link chega ao WhatsApp sem cartão
+ * de preview preenchido, porque o relatório é montado no navegador e o robô do
+ * WhatsApp só recebe o esqueleto da página. Até isso ser resolvido, é esse
+ * texto que diz à pessoa o que ela vai encontrar.
+ */
+export function gerarMensagemDiagnostico(
+  lead: Partial<Lead>,
+  url: string,
+  cidadeParam?: string
+): string {
+  const nomeEmpresa = lead.nome || 'sua empresa';
+  const cidade = nomeCidade(lead, cidadeParam);
+
+  const onde = cidade ? `de ${cidade}` : 'da sua região';
+
+  return [
+    `Perfeito! Segue o comparativo da *${nomeEmpresa}* com as primeiras colocadas ${onde}:`,
+    url,
+    'Em dois minutos você vê a sua posição, a nota de cada empresa e o que está fazendo a diferença entre vocês. Qualquer dúvida em algum ponto, é só me chamar por aqui.',
+  ].join('\n\n');
 }

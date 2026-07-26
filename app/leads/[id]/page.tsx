@@ -14,7 +14,7 @@ import { getLocalLeads, saveLocalLead } from '@/lib/storage';
 import { getLeadBySlugOrIdFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
 import { enviarMensagemEvolutionAPI } from '@/lib/evolution-service';
 import { gerarMensagemAbordagemIA } from '@/lib/openai-service';
-import { gerarMensagemPadrao } from '@/lib/mensagem-template';
+import { gerarMensagemPadrao, gerarMensagemDiagnostico } from '@/lib/mensagem-template';
 import { Lead, StatusFunil } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
 
@@ -147,7 +147,7 @@ export default function LeadDetalhesPage() {
     setSendingDiagnostico(true);
     setEvolutionFeedback(null);
 
-    const mensagemDiagnostico = `Olá! Preparei um diagnóstico exclusivo sobre a presença digital da *${lead.nome}* no Google em relação aos seus concorrentes da região.\n\nVocê pode visualizar o relatório completo e interativo neste link:\n${diagnosticoPublicUrl}`;
+    const mensagemDiagnostico = gerarMensagemDiagnostico(lead, diagnosticoPublicUrl);
 
     const res = await enviarMensagemEvolutionAPI(lead.telefone, mensagemDiagnostico);
     setSendingDiagnostico(false);

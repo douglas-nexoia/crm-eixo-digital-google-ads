@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { getLeadsPaginadosFromSupabase, getNichosECidadesUnicosFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
 import { enviarMensagemEvolutionAPI } from '@/lib/evolution-service';
-import { gerarMensagemPadrao } from '@/lib/mensagem-template';
+import { gerarMensagemPadrao, gerarMensagemDiagnostico } from '@/lib/mensagem-template';
 import { getLocalLeads, saveLocalLead } from '@/lib/storage';
 import { Lead, StatusFunil } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
@@ -149,7 +149,7 @@ export default function ExplorarLeadsPage() {
 
     const slugValido = lead.slug && lead.slug !== 'null' ? lead.slug : lead.id;
     const diagnosticoUrl = `${BASE_APP_URL}/diagnostico/${slugValido}`;
-    const msg = `Olá! Preparei um diagnóstico exclusivo sobre a presença digital da *${lead.nome}* no Google em relação aos seus concorrentes da região.\n\nVocê pode visualizar o relatório completo aqui:\n${diagnosticoUrl}`;
+    const msg = gerarMensagemDiagnostico(lead, diagnosticoUrl);
 
     const res = await enviarMensagemEvolutionAPI(lead.telefone, msg);
     setSendingLeadId(null);
