@@ -1,6 +1,8 @@
 import { Lead } from './types';
 
-const REMETENTE = 'Douglas Alexandre';
+// Primeiro nome de propósito: em abordagem fria, nome completo soa cadastro
+// ou cobrança. A legitimidade quem dá é "da Eixo Digital", logo em seguida.
+const REMETENTE = 'Douglas';
 const AGENCIA = 'Eixo Digital';
 
 /**
