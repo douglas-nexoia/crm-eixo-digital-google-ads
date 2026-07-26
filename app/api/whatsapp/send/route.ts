@@ -6,39 +6,41 @@ export async function POST(req: NextRequest) {
   try {
     const { telefone, mensagem } = await req.json();
 
-    const apiUrl = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || process.env.EVOLUTION_API_URL || 'http://67.205.153.151:4000';
-    const apiKey = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || process.env.EVOLUTION_API_KEY;
-    const instance = process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE;
-
-    if (!apiKey || !instance) {
+    if (!telefone || !mensagem) {
       return NextResponse.json(
-        { success: false, error: 'Chaves da WhatsApp API não configuradas no .env' },
+        { success: false, error: 'Telefone e mensagem são obrigatórios.' },
         { status: 400 }
       );
     }
 
-    // Limpar e formatar o número (remover não dígitos)
-    let numeroLimpo = (telefone || '').replace(/\D/g, '');
-    
-    // Garantir DDI 55 se o número for do Brasil (10 ou 11 dígitos)
-    if (numeroLimpo.length === 10 || numeroLimpo.length === 11) {
-      numeroLimpo = '55' + numeroLimpo;
+    const apiUrl = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || process.env.EVOLUTION_API_URL || 'http://67.205.153.151:4000/';
+    const apiKey = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || process.env.EVOLUTION_API_KEY;
+    const instanceName = process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE || 'douglas-eixo-nexo-ia';
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { success: false, error: 'Chave de API da Evolution não encontrada nas variáveis de ambiente.' },
+        { status: 400 }
+      );
     }
 
-    const baseUrl = apiUrl.trim().replace(/\/+$/, '');
-    const instanceName = instance.trim();
+    // Formatar número de telefone (remover caracteres não numéricos)
+    let formattedNumber = telefone.replace(/\D/g, '');
+    if (!formattedNumber.startsWith('55') && formattedNumber.length >= 10) {
+      formattedNumber = `55${formattedNumber}`;
+    }
 
-    // Rota exata da Evolution GO: /send/text
-    const endpoint = `${baseUrl}/send/text`;
-
-    // Payload exato da Evolution GO
-    const payload = {
-      instance: instanceName,
-      number: numeroLimpo,
-      text: mensagem
-    };
+    // Endpoint exato da Evolution GO
+    const cleanBaseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+    const endpoint = `${cleanBaseUrl}/send/text`;
 
     console.log(`Disparando WhatsApp para ${endpoint} com instância: ${instanceName}`);
+
+    const payload = {
+      instance: instanceName,
+      number: formattedNumber,
+      text: mensagem
+    };
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -51,36 +53,35 @@ export async function POST(req: NextRequest) {
 
     const responseText = await response.text();
     let data: any = {};
-
     try {
       data = JSON.parse(responseText);
     } catch {
-      if (!response.ok) {
-        return NextResponse.json({
-          success: false,
-          error: `Erro HTTP ${response.status} na Evolution GO. Verifique se a URL (${baseUrl}) e a chave API estão corretas.`
-        }, { status: response.status });
-      }
+      data = { raw: responseText };
     }
 
     if (!response.ok) {
-      const msgErro = data?.response?.message || data?.message || data?.error || `Erro ${response.status} na API Evolution GO`;
-      return NextResponse.json({
-        success: false,
-        error: Array.isArray(msgErro) ? msgErro.join(', ') : String(msgErro)
-      }, { status: response.status });
+      console.error('Erro na resposta da Evolution GO:', response.status, responseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Erro HTTP ${response.status} na Evolution GO. Verifique se a URL (${cleanBaseUrl}) e a chave API estão corretas.`,
+          details: responseText
+        },
+        { status: response.status }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Mensagem enviada com sucesso pelo WhatsApp!'
+      message: 'Mensagem enviada com sucesso pelo WhatsApp!',
+      data
     });
 
-  } catch (err: any) {
-    console.error('Erro no servidor ao enviar WhatsApp:', err);
-    return NextResponse.json({
-      success: false,
-      error: err.message || 'Erro interno ao conectar ao servidor da Evolution GO.'
-    }, { status: 500 });
+  } catch (error: any) {
+    console.error('Erro no Proxy da Evolution API:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Erro interno ao tentar enviar a mensagem de WhatsApp.' },
+      { status: 500 }
+    );
   }
 }
