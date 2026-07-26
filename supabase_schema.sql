@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS public.buscas (
 CREATE TABLE IF NOT EXISTS public.leads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     busca_id UUID REFERENCES public.buscas(id) ON DELETE CASCADE,
+    -- Desnormalizados de `buscas`: o CRM filtra e ordena por eles direto, e a
+    -- view pública do diagnóstico precisa deles sem poder ler `buscas`.
+    nicho TEXT,
+    cidade TEXT,
     nome TEXT NOT NULL,
     telefone TEXT,
     site TEXT,
@@ -37,6 +41,10 @@ CREATE TABLE IF NOT EXISTS public.leads (
     data_contato TIMESTAMP WITH TIME ZONE,
     notas TEXT,
     slug TEXT UNIQUE,
+    -- Não existe `updated_at` aqui, e é proposital. O código já tentou gravar
+    -- essa coluna e o PostgREST rejeitava toda escrita com PGRST204 — em
+    -- silêncio, porque o erro era engolido. Se um dia ela for desejada, crie a
+    -- coluna antes de voltar a enviá-la.
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -46,16 +54,61 @@ CREATE INDEX IF NOT EXISTS idx_leads_status ON public.leads(status_funil);
 CREATE INDEX IF NOT EXISTS idx_leads_score_nivel ON public.leads(score_nivel);
 CREATE INDEX IF NOT EXISTS idx_leads_slug ON public.leads(slug);
 
--- Habilitar RLS (Row Level Security) - Leitura pública para diagnósticos, restrito para o restante
+-- ============================================================================
+-- RLS — reconciliado com o banco em 2026-07-26
+-- ============================================================================
+-- ATENÇÃO: este arquivo já divergiu do banco no passado, e os nomes das
+-- policies aqui não batiam com os reais. Antes de escrever qualquer migration,
+-- confirme o estado corrente com:
+--
+--   select tablename, policyname, cmd, roles, qual, with_check
+--   from pg_policies where schemaname = 'public';
+--
+-- Trate o retorno dessa consulta como a verdade, não este arquivo.
+-- ============================================================================
+
 ALTER TABLE public.buscas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 
--- Políticas de acesso para public.leads
-CREATE POLICY "Permitir leitura pública de diagnósticos" ON public.leads
-    FOR SELECT USING (true);
-
-CREATE POLICY "Permitir todas operações para usuários autenticados" ON public.leads
+-- Ambas as tabelas só respondem a sessões autenticadas. Não há acesso anônimo:
+-- a anon key é pública por design e viaja no bundle de toda página, então
+-- qualquer policy aberta aqui equivale a expor a base inteira na internet.
+CREATE POLICY "Todas operações para autenticados" ON public.leads
     FOR ALL USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Permitir todas operações nas buscas para autenticados" ON public.buscas
+CREATE POLICY "Todas operações nas buscas para autenticados" ON public.buscas
     FOR ALL USING (auth.role() = 'authenticated');
+
+-- ----------------------------------------------------------------------------
+-- Janela pública do diagnóstico
+-- ----------------------------------------------------------------------------
+-- O relatório em /diagnostico/[id] vai por WhatsApp para o prospect, que não
+-- tem login. Em vez de abrir a tabela, ele lê esta view — que expõe só as
+-- colunas do relatório e deixa de fora telefone, redes sociais e todo o dado
+-- comercial do funil (status_funil, notas, data_contato, mensagens).
+--
+-- A view roda com o privilégio do dono e atravessa de propósito o RLS de
+-- `leads`; é isso que a mantém legível sem sessão. O linter do Supabase
+-- sinaliza "security definer view", e aqui é intencional.
+
+CREATE OR REPLACE VIEW public.diagnosticos_publicos AS
+SELECT
+    l.id,
+    l.slug,
+    l.nome,
+    COALESCE(l.nicho,  b.nicho)  AS nicho,
+    COALESCE(l.cidade, b.cidade) AS cidade,
+    l.site,
+    l.gmb_nota,
+    l.gmb_avaliacoes,
+    l.posicao_maps,
+    l.score_pontos,
+    l.score_nivel,
+    l.score_detalhes,
+    l.busca_id
+FROM public.leads l
+LEFT JOIN public.buscas b ON b.id = l.busca_id;
+
+ALTER VIEW public.diagnosticos_publicos SET (security_invoker = off);
+
+GRANT SELECT ON public.diagnosticos_publicos TO anon, authenticated;
