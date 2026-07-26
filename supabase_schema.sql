@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS public.leads (
     telefone TEXT,
     site TEXT,
     gmb_nota NUMERIC(3, 1),
-    gmb_avaliacoes INTEGER DEFAULT 0,
+    -- Sem DEFAULT: NULL significa "não coletado", distinto de 0 avaliações reais.
+    gmb_avaliacoes INTEGER,
     gmb_verificado BOOLEAN DEFAULT FALSE,
     site_https BOOLEAN DEFAULT FALSE,
     site_responsivo BOOLEAN DEFAULT FALSE,

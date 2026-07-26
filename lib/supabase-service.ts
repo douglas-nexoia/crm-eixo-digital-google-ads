@@ -81,7 +81,7 @@ export async function importScoutDataToSupabase(parsedData: any) {
     telefone: item.telefone,
     site: item.site,
     gmb_nota: item.gmb?.nota ?? null,
-    gmb_avaliacoes: item.gmb?.avaliacoes ?? 0,
+    gmb_avaliacoes: item.gmb?.avaliacoes ?? null,
     gmb_verificado: item.gmb?.verificado ?? false,
     site_https: item.site_auditoria?.https ?? false,
     site_responsivo: item.site_auditoria?.responsivo ?? false,
@@ -121,6 +121,8 @@ export async function getLeadsPaginadosFromSupabase(params: {
   scoreNivel?: string;
   statusFunil?: string;
   buscaTexto?: string;
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
 }) {
   const {
     page = 1,
@@ -129,7 +131,9 @@ export async function getLeadsPaginadosFromSupabase(params: {
     cidade = 'todos',
     scoreNivel = 'todos',
     statusFunil = 'todos',
-    buscaTexto = ''
+    buscaTexto = '',
+    sortField = 'posicao_maps',
+    sortOrder = 'asc'
   } = params;
 
   try {
@@ -158,7 +162,11 @@ export async function getLeadsPaginadosFromSupabase(params: {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    query = query.order('posicao_maps', { ascending: true }).range(from, to);
+    // A ordenação precisa acontecer aqui, sobre o conjunto filtrado inteiro.
+    // Ordenar no cliente só reorganizaria as 20 linhas da página atual.
+    query = query
+      .order(sortField, { ascending: sortOrder === 'asc', nullsFirst: false })
+      .range(from, to);
 
     const { data, count, error } = await query;
     if (error) throw error;
@@ -202,7 +210,7 @@ export async function getTopConcorrentesDoMesmoNicho(leadAtual: Lead): Promise<L
     const nichoLead = leadAtual.nicho || leadAtual.buscas?.nicho || '';
     const cidadeLead = leadAtual.cidade || leadAtual.buscas?.cidade || '';
 
-    if (!nichoLead) return [];
+    if (!leadAtual.busca_id && !nichoLead) return [];
 
     // Roda na rota pública do diagnóstico, então lê a view — a tabela `leads`
     // não responde mais sem sessão.
@@ -210,10 +218,21 @@ export async function getTopConcorrentesDoMesmoNicho(leadAtual: Lead): Promise<L
       .from('diagnosticos_publicos')
       .select('*')
       .neq('id', leadAtual.id)
-      .ilike('nicho', `%${nichoLead}%`);
+      // Sem posição não existe comparativo, e um null quebraria a ordenação e
+      // o cálculo de lacuna da tabela.
+      .not('posicao_maps', 'is', null);
 
-    if (cidadeLead) {
-      query = query.ilike('cidade', `%${cidadeLead}%`);
+    if (leadAtual.busca_id) {
+      // `posicao_maps` só tem sentido dentro da busca que a gerou: é a posição
+      // naquele nicho *naquela cidade*. Comparar por nicho+cidade via ilike
+      // deixa passar registros de outra busca — e o relatório do cliente exibe
+      // dois "#1" lado a lado. A busca é o recorte exato.
+      query = query.eq('busca_id', leadAtual.busca_id);
+    } else {
+      query = query.ilike('nicho', `%${nichoLead}%`);
+      if (cidadeLead) {
+        query = query.ilike('cidade', `%${cidadeLead}%`);
+      }
     }
 
     const { data, error } = await query

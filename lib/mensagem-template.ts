@@ -11,7 +11,9 @@ export function gerarMensagemPadrao(lead: Partial<Lead>, nichoParam?: string, ci
 
   const falhas: string[] = [];
   
-  if (lead.gmb_avaliacoes !== undefined && lead.gmb_avaliacoes < 10) {
+  // null = a coleta não trouxe o número. Sem ele não dá para afirmar que são
+  // poucas avaliações.
+  if (lead.gmb_avaliacoes != null && lead.gmb_avaliacoes < 10) {
     falhas.push(`Poucas avaliações no GMB (${lead.gmb_avaliacoes})`);
   }
   if (!lead.site) {

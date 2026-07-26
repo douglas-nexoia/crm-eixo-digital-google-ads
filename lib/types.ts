@@ -23,8 +23,9 @@ export interface Lead {
   nome: string;
   telefone?: string;
   site?: string;
-  gmb_nota?: number;
-  gmb_avaliacoes?: number;
+  gmb_nota?: number | null;
+  // null = não coletado. Zero de verdade e "a coleta falhou" não podem ser o mesmo valor.
+  gmb_avaliacoes?: number | null;
   gmb_verificado?: boolean;
   site_https?: boolean;
   site_responsivo?: boolean;
@@ -72,7 +73,7 @@ export interface ScoutJSONFormat {
     };
     site_auditoria?: {
       https?: boolean;
-      responsivo?: border;
+      responsivo?: boolean;
     };
     redes_sociais?: {
       instagram?: string;

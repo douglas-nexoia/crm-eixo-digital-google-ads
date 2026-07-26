@@ -74,7 +74,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
             telefone: item.telefone,
             site: item.site,
             gmb_nota: item.gmb?.nota ?? null,
-            gmb_avaliacoes: item.gmb?.avaliacoes ?? 0,
+            gmb_avaliacoes: item.gmb?.avaliacoes ?? null,
             gmb_verificado: item.gmb?.verificado ?? false,
             site_https: item.site_auditoria?.https ?? false,
             site_responsivo: item.site_auditoria?.responsivo ?? false,

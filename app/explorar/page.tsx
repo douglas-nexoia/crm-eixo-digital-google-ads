@@ -73,7 +73,9 @@ export default function ExplorarLeadsPage() {
       cidade: filtroCidade,
       scoreNivel: filtroNivel,
       statusFunil: statusParam !== 'todos' ? statusParam : undefined,
-      buscaTexto
+      buscaTexto,
+      sortField,
+      sortOrder
     });
 
     if (result.leads.length > 0 || result.totalCount > 0) {
@@ -91,7 +93,7 @@ export default function ExplorarLeadsPage() {
 
   useEffect(() => {
     fetchLeads();
-  }, [page, tabEstagio, filtroNicho, filtroCidade, filtroNivel, buscaTexto]);
+  }, [page, tabEstagio, filtroNicho, filtroCidade, filtroNivel, buscaTexto, sortField, sortOrder]);
 
   // Disparo Rápido de Abordagem Direto da Lista
   const handleEnviarAbordagemDireta = async (lead: Lead) => {
@@ -181,6 +183,10 @@ export default function ExplorarLeadsPage() {
   };
 
   const handleSort = (field: SortField) => {
+    // A ordenação vale para o conjunto inteiro, então continuar na página 5
+    // deixaria o usuário no meio de uma lista que acabou de ser reordenada.
+    setPage(1);
+
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -189,6 +195,8 @@ export default function ExplorarLeadsPage() {
     }
   };
 
+  // O Supabase já devolve a página ordenada; isto é no-op sobre esses dados e
+  // existe para o fallback do localStorage, que vem sem ordenação.
   const leadsOrdenados = useMemo(() => {
     return [...leads].sort((a, b) => {
       let aVal: any = a[sortField];
