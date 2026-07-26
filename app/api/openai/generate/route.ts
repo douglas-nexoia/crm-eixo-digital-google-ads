@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
-
 export async function POST(req: NextRequest) {
   try {
     const { prompt } = await req.json();
@@ -10,7 +8,7 @@ export async function POST(req: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { success: false, error: 'OPENAI_API_KEY não configurada no .env' },
+        { success: false, error: 'OPENAI_API_KEY não configurada' },
         { status: 400 }
       );
     }
