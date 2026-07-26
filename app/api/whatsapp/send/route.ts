@@ -13,10 +13,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Configurações com fallback garantido para a Evolution GO
-    const apiUrl = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || process.env.EVOLUTION_API_URL || 'http://67.205.153.151:4000/';
-    const apiKey = (process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || process.env.EVOLUTION_API_KEY || '5a4366b3-1833-49b1-ba66-ef5148021386').trim();
-    const instanceName = (process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE || 'douglas-eixo-nexo-ia').trim();
+    // Credenciais server-side apenas: nunca usar NEXT_PUBLIC_, que vaza no bundle do cliente.
+    const apiUrl = process.env.EVOLUTION_API_URL?.trim();
+    const apiKey = process.env.EVOLUTION_API_KEY?.trim();
+    const instanceName = process.env.EVOLUTION_INSTANCE?.trim();
+
+    if (!apiUrl || !apiKey || !instanceName) {
+      console.error('Evolution não configurada: defina EVOLUTION_API_URL, EVOLUTION_API_KEY e EVOLUTION_INSTANCE.');
+      return NextResponse.json(
+        { success: false, error: 'Integração de WhatsApp não configurada no servidor.' },
+        { status: 500 }
+      );
+    }
 
     // Formatar número de telefone (remover não numéricos)
     let formattedNumber = telefone.replace(/\D/g, '');

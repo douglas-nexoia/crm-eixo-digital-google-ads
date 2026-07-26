@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Trophy, ShieldCheck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { LayoutDashboard, Users, Trophy, ShieldCheck, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -25,8 +27,13 @@ export const Sidebar: React.FC = () => {
     localStorage.setItem('eixo_sidebar_collapsed', String(nextState));
   };
 
-  // Não renderizar Sidebar na rota pública de diagnóstico
-  if (pathname.startsWith('/diagnostico')) {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
+  };
+
+  // Não renderizar Sidebar nas rotas sem sessão (diagnóstico público e login)
+  if (pathname.startsWith('/diagnostico') || pathname === '/login') {
     return null;
   }
 
@@ -97,7 +104,19 @@ export const Sidebar: React.FC = () => {
 
       {/* Footer info */}
       <div className={`border-t border-[rgba(255,255,255,0.08)] pt-4 space-y-2 ${collapsed ? 'text-center px-0' : 'px-2'}`}>
+        <button
+          onClick={handleLogout}
+          title={collapsed ? 'Sair' : undefined}
+          className={`w-full flex items-center gap-3 py-2.5 rounded-[10px] text-sm font-medium text-[#94A3B8] hover:text-white hover:bg-[rgba(255,255,255,0.04)] transition-all cursor-pointer ${
+            collapsed ? 'justify-center px-0' : 'px-3'
+          }`}
+        >
+          <LogOut className="w-5 h-5 shrink-0" />
+          {!collapsed && <span className="truncate">Sair</span>}
+        </button>
+
         <div className={`flex items-center gap-2 text-xs text-[#94A3B8] ${collapsed ? 'justify-center' : ''}`}>
+
           <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
           {!collapsed && <span className="truncate">Integrado ao EIXO-SCOUT</span>}
         </div>

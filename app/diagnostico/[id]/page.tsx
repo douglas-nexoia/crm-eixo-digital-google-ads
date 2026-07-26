@@ -4,7 +4,7 @@ export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { getLeadBySlugOrIdFromSupabase, getTopConcorrentesDoMesmoNicho } from '@/lib/supabase-service';
+import { getDiagnosticoPublicoBySlugOrId, getTopConcorrentesDoMesmoNicho } from '@/lib/supabase-service';
 import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
 import { 
@@ -31,7 +31,7 @@ export default function DiagnosticoPublicoPage() {
 
       setLoading(true);
       
-      let found: Lead | null = await getLeadBySlugOrIdFromSupabase(slugParam);
+      let found: Lead | null = await getDiagnosticoPublicoBySlugOrId(slugParam);
       
       if (!found) {
         const allLocal = getLocalLeads();

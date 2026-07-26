@@ -6,7 +6,8 @@ export async function POST(req: NextRequest) {
   try {
     const { prompt } = await req.json();
 
-    const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+    // Credencial server-side apenas: NEXT_PUBLIC_ vazaria a chave no bundle do cliente.
+    const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(

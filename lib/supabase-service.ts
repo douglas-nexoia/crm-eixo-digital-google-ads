@@ -1,10 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 import { Lead, Busca } from './types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cqvixmdkjvlgoeqxbavf.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxdml4bWRranZsZ29lcXhiYXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5OTE2NTIsImV4cCI6MjEwMDU2NzY1Mn0.A_8wogQgOicXzK71ju_Gqes-kXdH59IR8AVtxVAErcM';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Reexportado para não quebrar quem já importava o client daqui.
+export { supabase };
 
 /**
  * Busca Nichos e Cidades Únicos diretamente da tabela leads
@@ -206,8 +204,10 @@ export async function getTopConcorrentesDoMesmoNicho(leadAtual: Lead): Promise<L
 
     if (!nichoLead) return [];
 
+    // Roda na rota pública do diagnóstico, então lê a view — a tabela `leads`
+    // não responde mais sem sessão.
     let query = supabase
-      .from('leads')
+      .from('diagnosticos_publicos')
       .select('*')
       .neq('id', leadAtual.id)
       .ilike('nicho', `%${nichoLead}%`);
@@ -230,7 +230,34 @@ export async function getTopConcorrentesDoMesmoNicho(leadAtual: Lead): Promise<L
 }
 
 /**
- * Busca lead por ID ou por Slug
+ * Leitura pública do diagnóstico.
+ *
+ * Usa a view `diagnosticos_publicos`, que expõe só as colunas do relatório —
+ * sem telefone, redes sociais nem dado comercial do funil. É a única porta de
+ * leitura sem sessão que sobrou depois do passo 2 do RLS.
+ *
+ * O CRM autenticado continua usando getLeadBySlugOrIdFromSupabase, que lê a
+ * tabela inteira.
+ */
+export async function getDiagnosticoPublicoBySlugOrId(slugOrId: string): Promise<Lead | null> {
+  try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+
+    let query = supabase.from('diagnosticos_publicos').select('*');
+    query = isUuid ? query.eq('id', slugOrId) : query.eq('slug', slugOrId);
+
+    const { data, error } = await query.single();
+    if (error || !data) return null;
+
+    return data as Lead;
+  } catch (err) {
+    console.error('Erro ao buscar diagnóstico público:', err);
+    return null;
+  }
+}
+
+/**
+ * Busca lead por ID ou por Slug (tabela completa, exige sessão autenticada)
  */
 export async function getLeadBySlugOrIdFromSupabase(slugOrId: string): Promise<Lead | null> {
   try {
