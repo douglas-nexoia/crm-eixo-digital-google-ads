@@ -133,7 +133,18 @@ export default function ExplorarLeadsPage() {
         data_contato: agora.toISOString()
       };
 
-      await updateLeadInSupabase(lead.id, updates);
+      // A mensagem já saiu. Falha aqui é só do registro, e reenviar mandaria
+      // a mensagem duas vezes para o lead.
+      const salvo = await updateLeadInSupabase(lead.id, updates);
+
+      if (!salvo) {
+        setActionFeedback({
+          leadId: lead.id,
+          success: false,
+          msg: 'Enviada, mas o registro não salvou. Não reenvie.'
+        });
+        return;
+      }
       
       // Atualizar no estado local da lista
       setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
@@ -173,7 +184,18 @@ export default function ExplorarLeadsPage() {
         status_funil: 'Aceitou Diagnóstico' as StatusFunil
       };
 
-      await updateLeadInSupabase(lead.id, updates);
+      // Mesmo caso: o diagnóstico já foi para o lead.
+      const salvo = await updateLeadInSupabase(lead.id, updates);
+
+      if (!salvo) {
+        setActionFeedback({
+          leadId: lead.id,
+          success: false,
+          msg: 'Enviado, mas o registro não salvou. Não reenvie.'
+        });
+        return;
+      }
+
       setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
     } else {
       setActionFeedback({ leadId: lead.id, success: false, msg: res.error || 'Erro no envio' });
@@ -183,7 +205,18 @@ export default function ExplorarLeadsPage() {
   // Mudar Status no Funil Direto da Lista
   const handleStatusChangeDireto = async (leadId: string, novoStatus: StatusFunil) => {
     const updates = { status_funil: novoStatus };
-    await updateLeadInSupabase(leadId, updates);
+    const salvo = await updateLeadInSupabase(leadId, updates);
+
+    // Sem isto o select da lista mudava na tela e voltava sozinho no refresh.
+    if (!salvo) {
+      setActionFeedback({
+        leadId,
+        success: false,
+        msg: 'Status não foi salvo. Veja o console.'
+      });
+      return;
+    }
+
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ...updates } : l));
   };
 
