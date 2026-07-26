@@ -24,6 +24,29 @@ const json = (corpo: unknown, status = 200) =>
     headers: { ...CORS, 'Content-Type': 'application/json' },
   });
 
+/**
+ * Normaliza para o formato internacional que o WhatsApp espera.
+ *
+ * Os telefones vêm do scraper com o zero de tronco nacional na frente
+ * ("011991053149"). Prefixar 55 sem removê-lo gera "55011991053149", que o
+ * WhatsApp não resolve — é a origem do "no LID found ... from server".
+ *
+ * O teste de DDI é preso ao comprimento (12 ou 13) de propósito: 55 também é
+ * o DDD do Rio Grande do Sul, e um celular de lá sem DDI ("55991053149", 11
+ * dígitos) precisa receber o 55 na frente, não ser confundido com um número
+ * que já está internacionalizado.
+ */
+function formatarNumero(bruto: string): string | null {
+  let n = String(bruto).replace(/\D/g, '');
+
+  if (n.startsWith('00')) n = n.slice(2);          // saída internacional 00XX
+  if (n.startsWith('55') && (n.length === 12 || n.length === 13)) return n;
+  n = n.replace(/^0+/, '');                        // zero de tronco
+
+  // DDD (2) + assinante (8 fixo, 9 celular)
+  return n.length === 10 || n.length === 11 ? `55${n}` : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS });
@@ -66,9 +89,13 @@ Deno.serve(async (req) => {
       return json({ success: false, error: 'Telefone e mensagem são obrigatórios.' }, 400);
     }
 
-    let numero = String(telefone).replace(/\D/g, '');
-    if (!numero.startsWith('55') && numero.length >= 10) {
-      numero = `55${numero}`;
+    const numero = formatarNumero(telefone);
+
+    if (!numero) {
+      return json(
+        { success: false, error: `Telefone em formato não reconhecido: ${telefone}` },
+        400
+      );
     }
 
     // 4. Envio ---------------------------------------------------------------
@@ -89,11 +116,14 @@ Deno.serve(async (req) => {
     }
 
     if (!resposta.ok) {
-      console.error('Evolution GO respondeu', resposta.status, texto);
+      console.error('Evolution GO respondeu', resposta.status, 'para', numero, texto);
+      // O motivo real vem no corpo; sem ele a tela mostrava só "Erro HTTP 500"
+      // e não dava para saber se era número, instância ou credencial.
+      const motivo = (dados as { error?: string })?.error ?? texto.slice(0, 200);
       return json(
         {
           success: false,
-          error: `Erro HTTP ${resposta.status} na Evolution GO.`,
+          error: `Evolution recusou o envio (HTTP ${resposta.status}): ${motivo}`,
           details: texto,
         },
         resposta.status
