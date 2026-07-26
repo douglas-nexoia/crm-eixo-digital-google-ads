@@ -173,6 +173,14 @@ export async function getLeadsPaginadosFromSupabase(params: {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
+    // `posicao_maps` só existe dentro de uma busca (segmento + cidade), então
+    // ordenar por ela com várias cidades juntas empilha o #1 de cada uma como
+    // se estivessem empatadas. Agrupar por cidade antes mantém cada ranking
+    // inteiro e legível.
+    if (sortField === 'posicao_maps' && cidade === 'todos') {
+      query = query.order('cidade', { ascending: true, nullsFirst: false });
+    }
+
     // A ordenação precisa acontecer aqui, sobre o conjunto filtrado inteiro.
     // Ordenar no cliente só reorganizaria as 20 linhas da página atual.
     query = query

@@ -33,6 +33,64 @@ function rotuloPosicao(posicao?: number): string | null {
   return '⚠️ Fora da primeira página';
 }
 
+/**
+ * Nota no Google exige pelo menos uma avaliação, então "5.0 com 0 opiniões" é
+ * dado inválido — venha do robô ou de correção manual. Exibir isso no
+ * relatório do cliente derruba a credibilidade de todas as outras linhas.
+ *
+ * Avaliações em null é caso diferente: significa "não coletado", e aí não dá
+ * para invalidar a nota.
+ */
+function notaValida(nota?: number | null, avaliacoes?: number | null): number | null {
+  if (typeof nota !== 'number') return null;
+  if (avaliacoes === 0) return null;
+  return nota;
+}
+
+/**
+ * Os gargalos chegam do robô em linguagem de qualificação interna ("Sem
+ * Facebook", "Nota GMB muito baixa"). Isso é vocabulário seu, não do dono do
+ * negócio, e lido em sequência vira boletim de notas — fecha a pessoa em vez
+ * de abrir. Aqui cada um vira a consequência que ele causa.
+ *
+ * O texto original passa direto quando nenhum padrão bate: melhor um item em
+ * linguagem técnica do que um item sumido.
+ */
+const TRADUCAO_GARGALOS: Array<{ padrao: RegExp; texto: string }> = [
+  {
+    padrao: /sem site/i,
+    texto: 'Sem site próprio: quem pesquisa antes de contratar não encontra seus trabalhos e acaba no concorrente que tem.',
+  },
+  {
+    padrao: /https|certificado/i,
+    texto: 'Site sem certificado de segurança: o navegador avisa "site não seguro" antes da pessoa ver qualquer coisa.',
+  },
+  {
+    padrao: /responsiv|celular/i,
+    texto: 'Site não adaptado ao celular: é de onde vem a maior parte das buscas por serviço local.',
+  },
+  {
+    padrao: /nota.*baix|baix.*nota/i,
+    texto: 'Nota abaixo da dos líderes: é o primeiro número que aparece na busca, antes do nome e do telefone.',
+  },
+  {
+    padrao: /poucas avalia/i,
+    texto: 'Poucas avaliações: nota alta apoiada em poucas opiniões não convence quem está escolhendo entre três empresas.',
+  },
+  {
+    padrao: /n[ãa]o verificad/i,
+    texto: 'Perfil não verificado: o Google limita o alcance de perfis sem verificação na busca local.',
+  },
+  {
+    padrao: /instagram|facebook|rede/i,
+    texto: 'Sem presença nas redes sociais: quem pesquisa o nome da empresa antes de ligar não encontra nada além do mapa.',
+  },
+];
+
+function traduzirGargalo(bruto: string): string {
+  return TRADUCAO_GARGALOS.find(t => t.padrao.test(bruto))?.texto ?? bruto;
+}
+
 export default function DiagnosticoPublicoPage() {
   const params = useParams();
   const slugParam = (params.id as string) || '';
@@ -118,6 +176,40 @@ export default function DiagnosticoPublicoPage() {
   // afirmar algo que o dono sabe ser falso, e derruba o relatório inteiro.
   const temAvaliacoes = lead.gmb_avaliacoes !== null && lead.gmb_avaliacoes !== undefined;
 
+  const notaLead = notaValida(lead.gmb_nota, lead.gmb_avaliacoes);
+
+  const cidadeLead = lead.cidade || lead.buscas?.cidade;
+
+  /**
+   * Termo, local e data da coleta. Cada parte só entra se existir, para a
+   * frase nunca ficar com buraco — e some inteira se não houver nada, em vez
+   * de exibir uma linha pela metade.
+   */
+  const contextoBusca = (() => {
+    const partes: string[] = [];
+
+    if (nichoLead && cidadeLead) {
+      partes.push(`Posição para a busca por "${nichoLead} em ${cidadeLead}" no Google Maps`);
+    } else if (cidadeLead) {
+      partes.push(`Posição nas buscas do Google Maps em ${cidadeLead}`);
+    }
+
+    if (lead.data_busca) {
+      const data = new Date(lead.data_busca);
+      if (!Number.isNaN(data.getTime())) {
+        partes.push(`dados coletados em ${data.toLocaleDateString('pt-BR')}`);
+      }
+    }
+
+    return partes.length > 0 ? `${partes.join(' · ')}.` : null;
+  })();
+
+  const gargalos = Array.from(
+    // Instagram e Facebook chegam como dois itens e traduzem para a mesma
+    // consequência; sem o Set o relatório repetiria o cartão.
+    new Set((lead.score_detalhes ?? []).map(traduzirGargalo))
+  );
+
   /**
    * Todos na mesma tabela, ordenados pela posição real. O lead não é mais
    * fixado no topo: se ele está em #6, aparece abaixo dos líderes — é essa
@@ -128,7 +220,7 @@ export default function DiagnosticoPublicoPage() {
       id: lead.id,
       nome: lead.nome,
       posicao_maps: lead.posicao_maps,
-      gmb_nota: lead.gmb_nota,
+      gmb_nota: notaLead,
       gmb_avaliacoes: lead.gmb_avaliacoes,
       isLead: true,
     },
@@ -136,7 +228,7 @@ export default function DiagnosticoPublicoPage() {
       id: c.id,
       nome: c.nome,
       posicao_maps: c.posicao_maps,
-      gmb_nota: c.gmb_nota,
+      gmb_nota: notaValida(c.gmb_nota, c.gmb_avaliacoes),
       gmb_avaliacoes: c.gmb_avaliacoes,
       isLead: false,
     })),
@@ -159,13 +251,35 @@ export default function DiagnosticoPublicoPage() {
   // primeiro item da lista e chegava a chamar o #2 de líder.
   const primeiroColocado = concorrentesTop.find(c => c.posicao_maps === 1) || null;
 
+  const notaPrimeiro = primeiroColocado
+    ? notaValida(primeiroColocado.gmb_nota, primeiroColocado.gmb_avaliacoes)
+    : null;
+
   // Afirmar "nota inferior à sua" exige os dois números na mão: antes isso
   // imprimia "nota undefined" quando o concorrente vinha sem nota coletada.
   const lideraComNotaMenor =
     primeiroColocado !== null &&
-    typeof primeiroColocado.gmb_nota === 'number' &&
-    typeof lead.gmb_nota === 'number' &&
-    primeiroColocado.gmb_nota < lead.gmb_nota;
+    notaPrimeiro !== null &&
+    notaLead !== null &&
+    notaPrimeiro < notaLead;
+
+  /**
+   * Nota alta apoiada em 2 opiniões não vale o mesmo que a mesma nota apoiada
+   * em 30. Quando o lead tem volume e os líderes não, essa é a carta mais
+   * forte da página — e só apareceu depois que a coluna de avaliações passou a
+   * trazer número.
+   */
+  const avaliacoesLead = lead.gmb_avaliacoes ?? null;
+  const lideresComMenosOpinioes = concorrentesTop.filter(
+    c => typeof c.gmb_avaliacoes === 'number' &&
+         avaliacoesLead !== null &&
+         c.gmb_avaliacoes < avaliacoesLead
+  );
+  const reputacaoMaisSolida =
+    notaLead !== null &&
+    avaliacoesLead !== null &&
+    avaliacoesLead >= 10 &&
+    lideresComMenosOpinioes.length >= 2;
 
   // Quem já está no Top 3 não tem o que "entrar"; a meta dele é subir dentro dele.
   const metaPosicional = lead.posicao_maps && lead.posicao_maps <= 3
@@ -255,8 +369,17 @@ export default function DiagnosticoPublicoPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed max-w-2xl mx-auto font-inter">
-            Comparações em tempo real de posicionamento no Google Maps, nota de clientes, estrutura de site e oportunidades de crescimento na sua região.
+            Comparação de posicionamento no Google Maps, nota de clientes, estrutura de site e oportunidades de crescimento na sua região.
           </p>
+
+          {/* Sem declarar termo, local e data, o dono confere do próprio
+              celular — logado e com outra geolocalização —, vê outra posição e
+              conclui que o relatório é inventado. */}
+          {contextoBusca && (
+            <p className="text-xs text-[#64748B] leading-relaxed max-w-2xl mx-auto pt-1">
+              {contextoBusca}
+            </p>
+          )}
         </section>
 
         {/* Seção 1: Posição Atual no Google */}
@@ -295,11 +418,11 @@ export default function DiagnosticoPublicoPage() {
             <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-5 rounded-[16px] space-y-2 text-center flex flex-col justify-center">
               <span className="text-xs text-[#94A3B8] uppercase font-semibold tracking-wider">Nota de Avaliação</span>
               <div className="text-4xl font-extrabold font-outfit text-amber-400 flex items-center justify-center gap-1">
-                <span>{lead.gmb_nota ? lead.gmb_nota.toFixed(1) : 'N/A'}</span>
+                <span>{notaLead !== null ? notaLead.toFixed(1) : 'N/A'}</span>
               </div>
               <div className="flex justify-center text-amber-400 text-sm">
-                {'★'.repeat(Math.round(lead.gmb_nota || 0))}
-                <span className="text-slate-700">{'★'.repeat(5 - Math.round(lead.gmb_nota || 0))}</span>
+                {'★'.repeat(Math.round(notaLead ?? 0))}
+                <span className="text-slate-700">{'★'.repeat(5 - Math.round(notaLead ?? 0))}</span>
               </div>
             </div>
 
@@ -389,7 +512,9 @@ export default function DiagnosticoPublicoPage() {
                           )}
                         </td>
                         <td className="p-3 sm:p-4 text-center font-bold text-amber-400 whitespace-nowrap">
-                          ⭐ {linha.gmb_nota ? linha.gmb_nota.toFixed(1) : 'N/A'}
+                          {linha.gmb_nota !== null && linha.gmb_nota !== undefined
+                            ? `⭐ ${linha.gmb_nota.toFixed(1)}`
+                            : <span className="text-[#64748B]">—</span>}
                         </td>
                         <td className={`p-3 sm:p-4 text-center ${linha.isLead ? 'text-white font-bold' : 'text-slate-300'}`}>
                           {linha.gmb_avaliacoes !== null && linha.gmb_avaliacoes !== undefined
@@ -437,11 +562,33 @@ export default function DiagnosticoPublicoPage() {
               </div>
               <p className="text-[#94A3B8] leading-relaxed">
                 O <strong className="text-white">1º colocado ({primeiroColocado.nome})</strong> está no topo com nota{' '}
-                {primeiroColocado.gmb_nota?.toFixed(1)} — <strong className="text-white">abaixo da sua, {lead.gmb_nota?.toFixed(1)}</strong>.
-                A diferença não está na satisfação dos seus clientes, e sim na otimização do perfil no Google.
+                {notaPrimeiro?.toFixed(1)} — <strong className="text-white">abaixo da sua, {notaLead?.toFixed(1)}</strong>.
+                A diferença não está na satisfação dos seus clientes: a posição no mapa depende de como o perfil
+                está configurado e de como o Google entende a sua área de atendimento.
               </p>
               <p className="text-[#10B981] font-semibold">
-                👉 Quem seus clientes avaliam melhor é a {lead.nome}. Com o perfil trabalhado, sua empresa tem plenas condições {metaPosicional}.
+                👉 Quem seus clientes avaliam melhor é a {lead.nome}. Com o perfil trabalhado, sua empresa tem espaço {metaPosicional}.
+              </p>
+            </div>
+          )}
+
+          {/* Volume de avaliações: nota alta apoiada em 2 opiniões não vale o
+              mesmo que a mesma nota apoiada em 30. */}
+          {reputacaoMaisSolida && (
+            <div className="bg-[#0E1424] border border-[#10B981]/30 rounded-[16px] p-5 space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-[#10B981] font-bold font-outfit uppercase tracking-wider">
+                <Zap className="w-4 h-4 text-[#10B981] shrink-0" />
+                <span>A sua reputação é a mais sólida da tabela</span>
+              </div>
+              <p className="text-[#94A3B8] leading-relaxed">
+                A nota {notaLead?.toFixed(1)} da <strong className="text-white">{lead.nome}</strong> está apoiada
+                em <strong className="text-white">{avaliacoesLead} avaliações</strong>.
+                {' '}{lideresComMenosOpinioes.length === 1 ? 'Um dos líderes' : `${lideresComMenosOpinioes.length} dos líderes`}
+                {' '}que aparecem à frente sustentam a nota deles em bem menos opiniões.
+              </p>
+              <p className="text-[#10B981] font-semibold">
+                👉 Nota alta com poucas avaliações não convence quem está decidindo entre três empresas. Reputação
+                a {lead.nome} já tem — o que falta é o perfil trabalhar a favor dela na hora da busca.
               </p>
             </div>
           )}
@@ -459,8 +606,8 @@ export default function DiagnosticoPublicoPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {lead.score_detalhes && lead.score_detalhes.length > 0 ? (
-              lead.score_detalhes.map((falha, idx) => (
+            {gargalos.length > 0 ? (
+              gargalos.map((falha, idx) => (
                 <div
                   key={idx}
                   className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-4 rounded-[16px] text-xs sm:text-sm text-[#F1F5F9] flex items-start gap-3 hover:border-red-500/40 transition-all"

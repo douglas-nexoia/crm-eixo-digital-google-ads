@@ -24,8 +24,8 @@ export default function ExplorarLeadsPage() {
   const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Sub-Aba de Estágio Selecionada
-  const [tabEstagio, setTabEstagio] = useState<TabEstagio>('todos');
+  // Sub-Aba de Estágio Selecionada (Inicia padrão em "Novo" para evitar abordar leads já contatados)
+  const [tabEstagio, setTabEstagio] = useState<TabEstagio>('Novo');
 
   // Filtros
   const [filtroNicho, setFiltroNicho] = useState<string>('todos');
@@ -61,10 +61,12 @@ export default function ExplorarLeadsPage() {
 
   const fetchLeads = async () => {
     setLoading(true);
-    let statusParam = 'todos';
+    let statusParam: string | undefined = undefined;
+    
     if (tabEstagio === 'Novo') statusParam = 'Novo';
     else if (tabEstagio === 'Contatado') statusParam = 'Contatado';
     else if (tabEstagio === 'Aceitou Diagnóstico') statusParam = 'Aceitou Diagnóstico';
+    else if (tabEstagio === 'Em Negociação / Cliente') statusParam = 'Em Negociação';
 
     const result = await getLeadsPaginadosFromSupabase({
       page,
@@ -72,7 +74,7 @@ export default function ExplorarLeadsPage() {
       nicho: filtroNicho,
       cidade: filtroCidade,
       scoreNivel: filtroNivel,
-      statusFunil: statusParam !== 'todos' ? statusParam : undefined,
+      statusFunil: statusParam,
       buscaTexto,
       sortField,
       sortOrder
@@ -83,7 +85,10 @@ export default function ExplorarLeadsPage() {
       setTotalCount(result.totalCount);
       setTotalPages(result.totalPages || 1);
     } else {
-      const local = getLocalLeads();
+      let local = getLocalLeads();
+      if (statusParam) {
+        local = local.filter(l => l.status_funil === statusParam);
+      }
       setLeads(local);
       setTotalCount(local.length);
       setTotalPages(1);
@@ -378,11 +383,12 @@ export default function ExplorarLeadsPage() {
                 >
                   Segmento / Cidade {renderSortIcon('nicho')}
                 </th>
-                <th 
-                  onClick={() => handleSort('posicao_maps')} 
+                <th
+                  onClick={() => handleSort('posicao_maps')}
+                  title="Posição dentro da busca daquele segmento naquela cidade. Empresas de cidades diferentes têm cada uma o seu #1."
                   className="px-4 py-3.5 cursor-pointer hover:text-slate-100 transition-colors"
                 >
-                  Maps {renderSortIcon('posicao_maps')}
+                  Posição na Cidade {renderSortIcon('posicao_maps')}
                 </th>
                 <th 
                   onClick={() => handleSort('gmb_nota')} 

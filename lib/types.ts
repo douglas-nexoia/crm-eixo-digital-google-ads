@@ -43,6 +43,9 @@ export interface Lead {
   slug?: string;
   created_at?: string;
   updated_at?: string;
+  // Vem da view `diagnosticos_publicos` (data da coleta do ranking), não da
+  // tabela `leads`.
+  data_busca?: string | null;
   
   // Relacionamento opcional de busca pai
   buscas?: {
