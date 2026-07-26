@@ -5,9 +5,10 @@ export const runtime = 'edge';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  ArrowLeft, FileText, Save, 
-  Phone, Globe, AlertCircle, MessageSquare, Sparkles, Clock, PlusCircle, Send, Check
+import {
+  ArrowLeft, FileText, Save,
+  Phone, Globe, AlertCircle, MessageSquare, Sparkles, Clock, PlusCircle, Send, Check,
+  Pencil, X
 } from 'lucide-react';
 import { getLocalLeads, saveLocalLead } from '@/lib/storage';
 import { getLeadBySlugOrIdFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
@@ -27,6 +28,12 @@ export default function LeadDetalhesPage() {
   const [novaNota, setNovaNota] = useState<string>('');
   const [statusFunil, setStatusFunil] = useState<StatusFunil>('Novo');
   const [saved, setSaved] = useState(false);
+
+  // Edição do telefone: o scraper nem sempre acha o número, e ele costuma ser
+  // encontrado à mão depois.
+  const [editandoTelefone, setEditandoTelefone] = useState(false);
+  const [telefoneInput, setTelefoneInput] = useState('');
+  const [salvandoTelefone, setSalvandoTelefone] = useState(false);
   
   // Estados de IA e Disparos
   const [generatingIA, setGeneratingIA] = useState(false);
@@ -203,6 +210,31 @@ export default function LeadDetalhesPage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
+  // Aceita qualquer máscara; a normalização para o padrão internacional é feita
+  // na Edge Function de envio. Aqui só barramos o que nunca poderia ser válido.
+  const digitosTelefone = telefoneInput.replace(/\D/g, '');
+  const telefoneValido = digitosTelefone.length >= 10 && digitosTelefone.length <= 13;
+
+  const abrirEdicaoTelefone = () => {
+    setTelefoneInput(lead.telefone || '');
+    setEditandoTelefone(true);
+  };
+
+  const handleSalvarTelefone = async () => {
+    if (!telefoneValido) return;
+
+    const telefone = telefoneInput.trim();
+    setSalvandoTelefone(true);
+
+    await updateLeadInSupabase(lead.id, { telefone });
+
+    const updated: Lead = { ...lead, telefone };
+    saveLocalLead(updated);
+    setLead(updated);
+    setSalvandoTelefone(false);
+    setEditandoTelefone(false);
+  };
+
   const handleSalvarAlteracoes = async () => {
     const updates = {
       mensagem_editada: mensagemText,
@@ -236,9 +268,51 @@ export default function LeadDetalhesPage() {
             <ScoreBadge nivel={lead.score_nivel} pontos={lead.score_pontos} />
           </div>
           <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
-            <span className="flex items-center gap-1">
-              <Phone className="w-3.5 h-3.5 text-slate-400" />
-              {lead.telefone || 'Sem telefone'}
+            <span className="flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              {editandoTelefone ? (
+                <>
+                  <input
+                    autoFocus
+                    value={telefoneInput}
+                    onChange={(e) => setTelefoneInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSalvarTelefone();
+                      if (e.key === 'Escape') setEditandoTelefone(false);
+                    }}
+                    placeholder="(19) 99999-9999"
+                    className="bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded px-2 py-1 text-xs text-slate-100 placeholder:text-slate-600 w-40 outline-none transition-colors"
+                  />
+                  <button
+                    onClick={handleSalvarTelefone}
+                    disabled={!telefoneValido || salvandoTelefone}
+                    title={telefoneValido ? 'Salvar telefone' : 'Informe de 10 a 13 dígitos'}
+                    className="p-1 rounded text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setEditandoTelefone(false)}
+                    title="Cancelar"
+                    className="p-1 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className={lead.telefone ? '' : 'italic text-slate-500'}>
+                    {lead.telefone || 'Sem telefone'}
+                  </span>
+                  <button
+                    onClick={abrirEdicaoTelefone}
+                    title={lead.telefone ? 'Editar telefone' : 'Adicionar telefone'}
+                    className="p-1 rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </>
+              )}
             </span>
             <span className="flex items-center gap-1">
               <Globe className="w-3.5 h-3.5 text-slate-400" />
