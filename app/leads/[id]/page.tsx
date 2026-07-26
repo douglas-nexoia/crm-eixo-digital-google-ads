@@ -32,7 +32,7 @@ export default function LeadDetalhesPage() {
   const [generatingIA, setGeneratingIA] = useState(false);
   const [sendingEvolution, setSendingEvolution] = useState(false);
   const [sendingDiagnostico, setSendingDiagnostico] = useState(false);
-  const [evolutionFeedback, setEvolutionFeedback] = useState<{ success: boolean; msg: string } | null>(null);
+  const [evolutionFeedback, setEvolutionFeedback] = useState<{ success: boolean; msg: string; manualLink?: string } | null>(null);
 
   const BASE_APP_URL = typeof window !== 'undefined' ? window.location.origin : 'https://crm.eixodigitalbr.com.br';
 
@@ -119,9 +119,12 @@ export default function LeadDetalhesPage() {
       setHistoricoNotas(novoHistorico);
       setStatusFunil('Contatado');
     } else {
+      const cleanPhone = lead.telefone.replace(/\D/g, '');
+      const waLink = `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(mensagemText)}`;
       setEvolutionFeedback({ 
         success: false, 
-        msg: res.error || 'Erro ao conectar ao servidor do WhatsApp.' 
+        msg: `Erro no envio automático. Deseja enviar de forma manual?`,
+        manualLink: waLink
       });
     }
   };
@@ -164,9 +167,12 @@ export default function LeadDetalhesPage() {
       setHistoricoNotas(novoHistorico);
       setStatusFunil('Aceitou Diagnóstico');
     } else {
+      const cleanPhone = lead.telefone.replace(/\D/g, '');
+      const waLink = `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(mensagemDiagnostico)}`;
       setEvolutionFeedback({ 
         success: false, 
-        msg: res.error || 'Erro ao enviar o diagnóstico pelo WhatsApp.' 
+        msg: `Erro no envio automático. Deseja enviar de forma manual?`,
+        manualLink: waLink
       });
     }
   };
@@ -359,17 +365,29 @@ export default function LeadDetalhesPage() {
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500 leading-relaxed font-sans"
             />
 
-            {/* Banner de Feedback */}
-            {evolutionFeedback && (
-              <div className={`p-3 rounded-lg flex items-center gap-2 text-xs ${
-                evolutionFeedback.success 
-                  ? 'bg-emerald-950/60 border border-emerald-800 text-emerald-300' 
-                  : 'bg-red-950/60 border border-red-800 text-red-300'
-              }`}>
-                {evolutionFeedback.success ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
-                <span>{evolutionFeedback.msg}</span>
-              </div>
-            )}
+             {/* Banner de Feedback */}
+             {evolutionFeedback && (
+               <div className={`p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                 evolutionFeedback.success 
+                   ? 'bg-emerald-950/60 border border-emerald-800 text-emerald-300' 
+                   : 'bg-red-950/60 border border-red-800 text-red-300'
+               }`}>
+                 <div className="flex items-center gap-2">
+                   {evolutionFeedback.success ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
+                   <span>{evolutionFeedback.msg}</span>
+                 </div>
+                 {evolutionFeedback.manualLink && (
+                   <a 
+                     href={evolutionFeedback.manualLink}
+                     target="_blank"
+                     rel="noreferrer"
+                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-[11px] uppercase tracking-wider text-center shrink-0 transition-colors"
+                   >
+                     Enviar Manualmente (WhatsApp Web)
+                   </a>
+                 )}
+               </div>
+             )}
 
             {/* Painel de Botões de Ação */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">

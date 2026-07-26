@@ -43,7 +43,7 @@ export default function DiagnosticoPublicoPage() {
         
         try {
           if (found.busca_id) {
-            const topConcorrentes = await getTopConcorrentesDoMesmoNicho(found.busca_id, found.id);
+            const topConcorrentes = await getTopConcorrentesDoMesmoNicho(found);
             setConcorrentesTop(topConcorrentes);
           } else {
             const allLocal = getLocalLeads();

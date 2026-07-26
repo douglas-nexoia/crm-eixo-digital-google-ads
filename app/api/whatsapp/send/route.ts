@@ -13,10 +13,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Configurações com fallback garantido para a Evolution GO
     const apiUrl = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || process.env.EVOLUTION_API_URL || 'http://67.205.153.151:4000/';
     const apiKey = (process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || process.env.EVOLUTION_API_KEY || '5a4366b3-1833-49b1-ba66-ef5148021386').trim();
     const instanceName = (process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE || 'douglas-eixo-nexo-ia').trim();
 
+    // Formatar número de telefone (remover não numéricos)
     let formattedNumber = telefone.replace(/\D/g, '');
     if (!formattedNumber.startsWith('55') && formattedNumber.length >= 10) {
       formattedNumber = `55${formattedNumber}`;
@@ -31,11 +33,13 @@ export async function POST(req: NextRequest) {
       text: mensagem
     };
 
+    // Fazer requisição com User-Agent de navegador para evitar bloqueios de WAF da Evolution
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': apiKey
+        'apikey': apiKey,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       },
       body: JSON.stringify(payload)
     });
@@ -53,7 +57,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { 
           success: false, 
-          error: `Erro HTTP ${response.status} na Evolution GO. Verifique a instância (${instanceName}) e a chave API.`,
+          error: `Erro HTTP ${response.status} na Evolution GO.`,
           details: responseText
         },
         { status: response.status }
