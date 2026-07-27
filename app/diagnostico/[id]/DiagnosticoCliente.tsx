@@ -700,6 +700,15 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             <span className="text-[#10B981]"> Quem faz os dois aparece duas vezes na mesma busca.</span>
           </p>
 
+          {/* Até aqui a seção explicava o mercado, não a oferta: dava para ler
+              tudo sem descobrir que a Eixo Digital faz os dois. Dizer o que se
+              faz é diferente de pedir que a pessoa escolha — a escolha continua
+              adiada para a conversa, que é o que o botão abaixo propõe. */}
+          <p className="text-center text-sm text-[#94A3B8] max-w-2xl mx-auto leading-relaxed">
+            A <strong className="text-white">Eixo Digital</strong> cuida dos dois caminhos. Dá para começar
+            por um só ou fazer os dois juntos — o que faz sentido depende de onde a {lead.nome} está hoje.
+          </p>
+
           {/* Um passo só, e de baixo compromisso */}
           <div className="flex flex-col items-center gap-3 pt-1">
             <a
