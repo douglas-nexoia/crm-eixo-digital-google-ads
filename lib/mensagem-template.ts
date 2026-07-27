@@ -43,31 +43,42 @@ export function gerarMensagemPadrao(lead: Partial<Lead>, nichoParam?: string, ci
 
   const abertura = `Olá, tudo bem? Aqui é o ${REMETENTE}, da ${AGENCIA}.`;
 
-  // "Levantei" soa pesquisa; "notei" soa vigilância.
+  // "Estava vendo" soa conversa; "levantei" soa relatório de consultoria.
+  // "em {cidade}" e não "de {cidade}": dois "de" seguidos tropeçam na leitura
+  // ("empresas de estética de Jundiaí").
   const levantamento = nicho && cidade
-    ? `Levantei as empresas de ${nicho} de ${cidade} no Google Maps`
+    ? `Estava vendo as empresas de ${nicho} em ${cidade} no Google Maps`
     : cidade
-      ? `Levantei as empresas do seu segmento em ${cidade} no Google Maps`
-      : 'Levantei as empresas do seu segmento no Google Maps';
+      ? `Estava vendo as empresas do seu segmento em ${cidade} no Google Maps`
+      : 'Estava vendo as empresas do seu segmento no Google Maps';
 
+  const comNota = nota !== null ? `, com nota ${nota.toFixed(1)}` : '';
+
+  // Fechar sempre com "o link aqui": diz o que chega e promete que não sai da
+  // conversa — sem e-mail, sem cadastro, sem ligação.
   let observacao: string;
   let convite: string;
 
-  if (posicao && posicao <= 3) {
-    // Já está no Top 3: o gancho deixa de ser a posição e passa a ser a
-    // distância para quem está à frente.
-    const comNota = nota !== null ? `, com nota ${nota.toFixed(1)}` : '';
-    observacao = `${levantamento} e a ${nomeEmpresa} aparece na ${posicao}ª posição${comNota} — bem posicionada.`;
-    convite = 'Montei um comparativo gratuito com quem está à frente mostrando o que separa vocês do primeiro lugar. Posso te mandar?';
+  if (posicao === 1) {
+    // Líder: não há o que subir. O gancho é o que está em risco — e o
+    // relatório sustenta isso, porque quem vem atrás costuma ter nota melhor.
+    observacao = `${levantamento} e a ${nomeEmpresa} aparece em 1º lugar${comNota} — parabéns, é a posição que recebe a maior parte dos contatos.`;
+    convite = 'Montei um comparativo gratuito com quem vem logo atrás, mostrando onde eles estão mais fortes que vocês hoje. Posso te mandar o link aqui?';
+  } else if (posicao && posicao <= 3) {
+    // Dentro do bloco de destaque, mas com alguém na frente. Só 2 e 3 caem
+    // aqui, então são no máximo duas empresas à frente.
+    const quemEstaNaFrente = posicao === 2 ? 'a que está à frente' : 'as duas que estão à frente';
+    observacao = `${levantamento} e a ${nomeEmpresa} aparece na ${posicao}ª posição${comNota} — bem posicionada, dentro do bloco que recebe a maior parte dos contatos.`;
+    convite = `Montei um comparativo gratuito com ${quemEstaNaFrente} mostrando o que separa vocês do primeiro lugar. Posso te mandar o link aqui?`;
   } else if (posicao) {
     observacao = nota !== null && nota >= 4
-      ? `${levantamento} e a ${nomeEmpresa} me chamou atenção: nota ${nota.toFixed(1)}, bem avaliada pelos clientes, mas aparecendo na ${posicao}ª posição — enquanto as três primeiras ficam com a maior parte dos contatos.`
-      : `${levantamento} e vi que a ${nomeEmpresa} aparece na ${posicao}ª posição — enquanto as três primeiras ficam com a maior parte dos contatos.`;
-    convite = 'Montei um comparativo gratuito com as primeiras colocadas mostrando o que está fazendo essa diferença. Posso te mandar o link?';
+      ? `${levantamento} e a ${nomeEmpresa} me chamou atenção: nota ${nota.toFixed(1)}, bem avaliada pelos clientes, mas aparecendo na ${posicao}ª posição — enquanto as três primeiras colocadas ficam com a maior parte dos contatos.`
+      : `${levantamento} e vi que a ${nomeEmpresa} aparece na ${posicao}ª posição — enquanto as três primeiras colocadas ficam com a maior parte dos contatos.`;
+    convite = 'Montei um comparativo gratuito com as primeiras colocadas mostrando o que está fazendo essa diferença. Posso te mandar o link aqui?';
   } else {
     // Sem posição não dá para afirmar nada sobre ranking.
     observacao = `${levantamento} e a ${nomeEmpresa} apareceu no levantamento.`;
-    convite = 'Montei um comparativo gratuito com as primeiras colocadas da região. Posso te mandar o link?';
+    convite = 'Montei um comparativo gratuito com as primeiras colocadas da região. Posso te mandar o link aqui?';
   }
 
   return `${abertura}\n\n${observacao}\n\n${convite}`;
