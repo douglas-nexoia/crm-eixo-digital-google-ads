@@ -1,12 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getDiagnosticoPublicoBySlugOrId, getTopConcorrentesDoMesmoNicho } from '@/lib/supabase-service';
+import {
+  getDiagnosticoPublicoBySlugOrId,
+  getTopConcorrentesDoMesmoNicho,
+  solicitarDiagnosticoAvancado,
+} from '@/lib/supabase-service';
 import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
 import {
   AlertTriangle, MessageCircle, MapPin, Megaphone,
-  Sparkles, Zap, ArrowUpRight
+  Sparkles, Zap, ArrowUpRight, CheckCircle2
 } from 'lucide-react';
 
 type LinhaComparativo = {
@@ -87,6 +91,13 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const [lead, setLead] = useState<Lead | null>(null);
   const [concorrentesTop, setConcorrentesTop] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // O estado do pedido não vem do banco: `status_funil` é dado interno do
+  // funil e fica de fora da view pública de propósito. Recarregar a página
+  // mostra o botão de novo, mas um segundo clique não reenvia nada — a Edge
+  // Function é idempotente e devolve `jaSolicitado`.
+  const [pedido, setPedido] = useState<'idle' | 'enviando' | 'feito' | 'erro'>('idle');
+  const [erroPedido, setErroPedido] = useState<string | null>(null);
 
   const MEU_NUMERO_WHATSAPP = '5511944530448';
 
@@ -270,6 +281,25 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const metaPosicional = lead.posicao_maps && lead.posicao_maps <= 3
     ? 'de disputar as primeiras posições da região'
     : 'de entrar no Top 3 da região';
+
+  async function handleSolicitarAvancado() {
+    if (!lead || pedido === 'enviando' || pedido === 'feito') return;
+
+    setPedido('enviando');
+    setErroPedido(null);
+
+    // O slug pode não existir em registros antigos; o id sempre existe.
+    const resultado = await solicitarDiagnosticoAvancado(lead.slug || lead.id);
+
+    // `jaSolicitado` também cai aqui: para quem clicou, o resultado é o mesmo,
+    // e nada é reenviado.
+    if (resultado.success) {
+      setPedido('feito');
+    } else {
+      setPedido('erro');
+      setErroPedido(resultado.error ?? null);
+    }
+  }
 
   function linkWhatsApp(mensagem: string): string {
     return `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
@@ -728,30 +758,65 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             por um só ou fazer os dois juntos — o que faz sentido depende de onde a {lead.nome} está hoje.
           </p>
 
-          {/* Um passo só, e de baixo compromisso */}
+          {/* O passo principal é pedir a análise, não falar com vendedor:
+              "quero saber mais sobre a minha empresa" é um sim muito mais
+              barato que "vamos conversar sobre contratar". Quem já quer
+              conversar tem o WhatsApp logo abaixo. */}
           <div className="flex flex-col items-center gap-3 pt-1">
+            {pedido === 'feito' ? (
+              <div className="w-full max-w-md bg-[#10B981]/10 border border-[#10B981]/40 rounded-[16px] p-5 text-center space-y-2">
+                <div className="flex items-center justify-center gap-2 text-[#10B981] font-bold font-outfit">
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                  <span>Pedido registrado</span>
+                </div>
+                <p className="text-sm text-[#94A3B8] leading-relaxed">
+                  Vamos preparar a análise detalhada da {lead.nome} e enviar no seu WhatsApp.
+                  Você já deve ter recebido a confirmação por lá.
+                </p>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleSolicitarAvancado}
+                  disabled={pedido === 'enviando'}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#10B981] hover:bg-[#22C55E] disabled:opacity-60 disabled:cursor-not-allowed text-[#08130F] font-bold px-6 sm:px-8 py-4 rounded-[10px] shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] transition-all text-sm sm:text-base cursor-pointer text-center"
+                >
+                  <Sparkles className="w-5 h-5 shrink-0" />
+                  <span>{pedido === 'enviando' ? 'Enviando pedido...' : 'Quero a análise avançada'}</span>
+                </button>
+
+                <p className="text-xs text-[#64748B] text-center max-w-sm leading-relaxed">
+                  Gratuita e sem compromisso. É um estudo mais fundo, só da {lead.nome}, e a gente
+                  manda no seu WhatsApp quando ficar pronto.
+                </p>
+
+                {pedido === 'erro' && (
+                  <p className="text-xs text-red-400 text-center max-w-sm leading-relaxed">
+                    {erroPedido || 'Não foi possível registrar o pedido.'} Se preferir, fale com a gente
+                    direto no WhatsApp pelo link abaixo.
+                  </p>
+                )}
+              </>
+            )}
+
             <a
               href={linkEntender}
               target="_blank"
               rel="noreferrer"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#10B981] hover:bg-[#22C55E] text-[#08130F] font-bold px-6 sm:px-8 py-4 rounded-[10px] shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] transition-all text-sm sm:text-base cursor-pointer text-center"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-[#94A3B8] hover:text-[#10B981] underline underline-offset-4 decoration-[rgba(255,255,255,0.2)] hover:decoration-[#10B981] transition-colors mt-1"
             >
-              <MessageCircle className="w-5 h-5 fill-[#08130F] shrink-0" />
-              <span>Quero entender como mudar isso</span>
+              <MessageCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>Prefiro falar direto no WhatsApp</span>
             </a>
-
-            <p className="text-xs text-[#64748B] text-center max-w-sm leading-relaxed">
-              Sem compromisso. A gente explica qual caminho faz sentido para a {lead.nome} e você decide depois.
-            </p>
 
             <a
               href={SITE_EIXO}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-[#94A3B8] hover:text-[#10B981] underline underline-offset-4 decoration-[rgba(255,255,255,0.2)] hover:decoration-[#10B981] transition-colors mt-1"
+              className="inline-flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#10B981] underline underline-offset-4 decoration-[rgba(255,255,255,0.15)] hover:decoration-[#10B981] transition-colors"
             >
               <span>Conhecer a Eixo Digital</span>
-              <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
+              <ArrowUpRight className="w-3 h-3 shrink-0" />
             </a>
           </div>
 

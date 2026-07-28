@@ -35,7 +35,10 @@ CREATE TABLE IF NOT EXISTS public.leads (
     score_nivel TEXT CHECK (score_nivel IN ('baixo', 'medio', 'alto')),
     score_detalhes TEXT[],
     posicao_maps INTEGER,
-    status_funil TEXT DEFAULT 'Novo' CHECK (status_funil IN ('Novo', 'Contatado', 'Aceitou Diagnóstico', 'Em Negociação', 'Cliente', 'Descartado')),
+    -- "Diagnóstico Enviado" é ação sua; "Aceitou Diagnóstico" é ação do
+    -- prospect (pediu a análise avançada na página). Separados de propósito:
+    -- antes o envio contava como aceite e o funil media esforço, não resultado.
+    status_funil TEXT DEFAULT 'Novo' CHECK (status_funil IN ('Novo', 'Contatado', 'Diagnóstico Enviado', 'Aceitou Diagnóstico', 'Em Negociação', 'Cliente', 'Descartado')),
     mensagem_sugerida TEXT,
     mensagem_editada TEXT,
     data_contato TIMESTAMP WITH TIME ZONE,

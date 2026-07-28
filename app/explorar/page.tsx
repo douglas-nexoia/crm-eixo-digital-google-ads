@@ -17,7 +17,7 @@ import { FunnelBadge } from '@/components/FunnelBadge';
 
 type SortField = 'nome' | 'nicho' | 'posicao_maps' | 'gmb_nota' | 'gmb_avaliacoes' | 'score_pontos' | 'status_funil';
 type SortOrder = 'asc' | 'desc';
-type TabEstagio = 'todos' | 'Novo' | 'Contatado' | 'Aceitou Diagnóstico' | 'Em Negociação / Cliente';
+type TabEstagio = 'todos' | 'Novo' | 'Contatado' | 'Diagnóstico Enviado' | 'Aceitou Diagnóstico' | 'Em Negociação / Cliente';
 
 export default function ExplorarLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -72,6 +72,7 @@ export default function ExplorarLeadsPage() {
     
     if (tabEstagio === 'Novo') statusParam = 'Novo';
     else if (tabEstagio === 'Contatado') statusParam = 'Contatado';
+    else if (tabEstagio === 'Diagnóstico Enviado') statusParam = 'Diagnóstico Enviado';
     else if (tabEstagio === 'Aceitou Diagnóstico') statusParam = 'Aceitou Diagnóstico';
     else if (tabEstagio === 'Em Negociação / Cliente') statusParam = 'Em Negociação';
 
@@ -186,9 +187,11 @@ export default function ExplorarLeadsPage() {
       const registroAutomatico = `[${dataFormatada} às ${horaFormatada}] Link do Diagnóstico enviado diretamente da Lista\n(${diagnosticoUrl})`;
       const novoHistorico = lead.notas ? `${registroAutomatico}\n${lead.notas}` : registroAutomatico;
 
+      // Enviar o link não é o prospect aceitar nada — isso é ação sua. O
+      // aceite só existe quando ele pede o diagnóstico avançado na página.
       const updates = {
         notas: novoHistorico,
-        status_funil: 'Aceitou Diagnóstico' as StatusFunil
+        status_funil: 'Diagnóstico Enviado' as StatusFunil
       };
 
       // Mesmo caso: o diagnóstico já foi para o lead.
@@ -362,6 +365,19 @@ export default function ExplorarLeadsPage() {
         </button>
 
         <button
+          onClick={() => { setTabEstagio('Diagnóstico Enviado'); setPage(1); }}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            tabEstagio === 'Diagnóstico Enviado'
+              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
+              : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
+          }`}
+        >
+          <span>📄 Diagnóstico Enviado</span>
+        </button>
+
+        {/* Único estágio movido pelo prospect, e não por você: é a aba que
+            merece ser olhada primeiro. */}
+        <button
           onClick={() => { setTabEstagio('Aceitou Diagnóstico'); setPage(1); }}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
             tabEstagio === 'Aceitou Diagnóstico'
@@ -369,7 +385,7 @@ export default function ExplorarLeadsPage() {
               : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
           }`}
         >
-          <span>📊 Aceitou Diagnóstico</span>
+          <span>🙋 Pediu Análise Avançada</span>
         </button>
 
       </div>
@@ -596,6 +612,7 @@ export default function ExplorarLeadsPage() {
                         >
                           <option value="Novo">Novo</option>
                           <option value="Contatado">Contatado</option>
+                          <option value="Diagnóstico Enviado">Diagnóstico Enviado</option>
                           <option value="Aceitou Diagnóstico">Aceitou Diagnóstico</option>
                           <option value="Em Negociação">Em Negociação</option>
                           <option value="Cliente">Cliente</option>

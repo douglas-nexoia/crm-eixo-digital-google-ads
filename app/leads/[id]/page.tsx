@@ -173,9 +173,11 @@ export default function LeadDetalhesPage() {
       const registroAutomatico = `[${dataFormatada} às ${horaFormatada}] Link do Diagnóstico Público enviado pelo WhatsApp\n(${diagnosticoPublicUrl})`;
       const novoHistorico = historicoNotas ? `${registroAutomatico}\n${historicoNotas}` : registroAutomatico;
 
+      // Enviar o link não é o prospect aceitar nada — isso é ação sua. O
+      // aceite só existe quando ele pede o diagnóstico avançado na página.
       const updates = {
         notas: novoHistorico,
-        status_funil: 'Aceitou Diagnóstico' as StatusFunil
+        status_funil: 'Diagnóstico Enviado' as StatusFunil
       };
 
       // Mesmo caso do envio de abordagem: o diagnóstico já foi para o lead.
@@ -193,7 +195,7 @@ export default function LeadDetalhesPage() {
       saveLocalLead(updated);
       setLead(updated);
       setHistoricoNotas(novoHistorico);
-      setStatusFunil('Aceitou Diagnóstico');
+      setStatusFunil('Diagnóstico Enviado');
     } else {
       const cleanPhone = lead.telefone.replace(/\D/g, '');
       const waLink = `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(mensagemDiagnostico)}`;
@@ -383,6 +385,7 @@ export default function LeadDetalhesPage() {
           >
             <option value="Novo">Novo</option>
             <option value="Contatado">Contatado</option>
+            <option value="Diagnóstico Enviado">Diagnóstico Enviado</option>
             <option value="Aceitou Diagnóstico">Aceitou Diagnóstico</option>
             <option value="Em Negociação">Em Negociação</option>
             <option value="Cliente">Cliente</option>

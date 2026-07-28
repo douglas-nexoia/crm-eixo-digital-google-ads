@@ -268,6 +268,42 @@ export async function getTopConcorrentesDoMesmoNicho(leadAtual: Lead): Promise<L
 }
 
 /**
+ * Pedido de diagnóstico avançado, feito pelo prospect na página do relatório.
+ *
+ * Roda sem sessão, então toda a lógica sensível fica na Edge Function: aqui só
+ * vai o identificador do lead. O telefone nunca sai do servidor — é o que
+ * impede a instância de WhatsApp de virar relay para número arbitrário.
+ */
+export async function solicitarDiagnosticoAvancado(
+  leadId: string
+): Promise<{ success: boolean; jaSolicitado?: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('solicitar-diagnostico', {
+      body: { leadId },
+    });
+
+    if (error) {
+      let detalhe = error.message;
+      try {
+        const corpo = await (error as { context?: Response }).context?.json();
+        if (corpo?.error) detalhe = corpo.error;
+      } catch {
+        // sem corpo legível: fica o error.message
+      }
+      return { success: false, error: detalhe };
+    }
+
+    return data ?? { success: false, error: 'Resposta vazia do servidor.' };
+  } catch (err) {
+    console.error('Erro ao solicitar diagnóstico avançado:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Falha de conexão.',
+    };
+  }
+}
+
+/**
  * Leitura pública do diagnóstico.
  *
  * Usa a view `diagnosticos_publicos`, que expõe só as colunas do relatório —

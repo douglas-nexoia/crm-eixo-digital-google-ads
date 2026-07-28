@@ -1,5 +1,18 @@
 export type ScoreNivel = 'alto' | 'medio' | 'baixo';
-export type StatusFunil = 'Novo' | 'Contatado' | 'Aceitou Diagnóstico' | 'Em Negociação' | 'Cliente' | 'Descartado';
+/**
+ * `Diagnóstico Enviado` e `Aceitou Diagnóstico` são etapas distintas de
+ * propósito: a primeira é ação sua (mandou o link), a segunda é ação do
+ * prospect (pediu o diagnóstico avançado na própria página). Antes as duas
+ * eram a mesma coisa, e o funil contava envio como aceite.
+ */
+export type StatusFunil =
+  | 'Novo'
+  | 'Contatado'
+  | 'Diagnóstico Enviado'
+  | 'Aceitou Diagnóstico'
+  | 'Em Negociação'
+  | 'Cliente'
+  | 'Descartado';
 
 export interface Busca {
   id: string;

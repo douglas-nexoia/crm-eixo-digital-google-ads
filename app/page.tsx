@@ -42,6 +42,7 @@ export default function DashboardPage() {
   const funilCounts: Record<StatusFunil, number> = {
     'Novo': leads.filter(l => l.status_funil === 'Novo').length,
     'Contatado': leads.filter(l => l.status_funil === 'Contatado').length,
+    'Diagnóstico Enviado': leads.filter(l => l.status_funil === 'Diagnóstico Enviado').length,
     'Aceitou Diagnóstico': leads.filter(l => l.status_funil === 'Aceitou Diagnóstico').length,
     'Em Negociação': leads.filter(l => l.status_funil === 'Em Negociação').length,
     'Cliente': leads.filter(l => l.status_funil === 'Cliente').length,

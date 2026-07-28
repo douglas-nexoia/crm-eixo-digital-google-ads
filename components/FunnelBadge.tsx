@@ -9,7 +9,9 @@ export const FunnelBadge: React.FC<FunnelBadgeProps> = ({ status }) => {
   const styles: Record<StatusFunil, string> = {
     'Novo': 'bg-blue-950/60 text-blue-400 border-blue-800/60',
     'Contatado': 'bg-purple-950/60 text-purple-400 border-purple-800/60',
-    'Aceitou Diagnóstico': 'bg-cyan-950/60 text-cyan-400 border-cyan-800/60',
+    'Diagnóstico Enviado': 'bg-sky-950/60 text-sky-400 border-sky-800/60',
+    // Único estágio que vem de uma ação do prospect: merece destaque próprio.
+    'Aceitou Diagnóstico': 'bg-cyan-950/60 text-cyan-300 border-cyan-600/60',
     'Em Negociação': 'bg-yellow-950/60 text-yellow-400 border-yellow-800/60',
     'Cliente': 'bg-emerald-950/60 text-emerald-400 border-emerald-800/60',
     'Descartado': 'bg-slate-800/60 text-slate-400 border-slate-700/60',
