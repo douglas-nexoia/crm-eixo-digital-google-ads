@@ -32,36 +32,79 @@
 export type DemandaBusca = {
   /** Buscas mensais na cidade. Medido, nunca calculado. */
   buscasMensais: number;
-  /** Mês e ano da consulta. O dado envelhece e a página precisa poder dizer quando. */
+  /**
+   * Mês e ano da consulta. O dado envelhece e a página precisa poder dizer
+   * quando foi medido.
+   */
   medidoEm: string;
 };
 
 /**
- * Vazio de propósito. Enquanto um par não estiver aqui, o relatório
- * simplesmente não fala de volume — melhor um bloco a menos do que um número
- * que não sobrevive à pergunta "de onde você tirou isso?".
+ * Catálogo de nichos: a categoria interna → como o cliente chama a coisa.
  *
- * Exemplo do formato:
- *   'climatizacao|jundiai': { buscasMensais: 2100, medidoEm: 'julho de 2026' },
+ * "Climatização" e "odontologia" são as suas gavetas; ninguém digita isso no
+ * Google. As pessoas procuram "ar condicionado" e "dentista". Esse mapa é o
+ * que faz o relatório e a abordagem falarem a língua de quem lê, e é o mesmo
+ * termo consultado no Planejador — então o volume sempre corresponde à frase
+ * escrita ao lado dele.
+ *
+ * Vale como padrão para as próximas buscas: cadastre o nicho aqui antes de
+ * importar, e a mensagem, o relatório e o volume saem consistentes sozinhos.
+ * Nicho fora do catálogo não quebra nada — o texto cai no nome cru.
+ *
+ * A chave é o nicho normalizado por `normalizar`.
+ */
+const NICHOS: Record<string, string> = {
+  'climatizacao': 'ar condicionado',
+  'odontologia': 'dentista',
+  'centro automotivo': 'oficina mecânica',
+  'marcenaria': 'móveis planejados',
+  'estetica automotiva': 'estética automotiva',
+};
+
+/**
+ * Volume medido, por nicho e cidade.
+ *
+ * Enquanto um par não estiver aqui, o relatório simplesmente não fala de
+ * volume — melhor um bloco a menos do que um número que não sobrevive à
+ * pergunta "de onde você tirou isso?".
  */
 const TABELA: Record<string, DemandaBusca> = {
+  'climatizacao|jundiai': { buscasMensais: 1900, medidoEm: 'julho de 2026' },
+  'climatizacao|campinas': { buscasMensais: 5400, medidoEm: 'julho de 2026' },
+  'climatizacao|valinhos': { buscasMensais: 390, medidoEm: 'julho de 2026' },
+  'climatizacao|vinhedo': { buscasMensais: 210, medidoEm: 'julho de 2026' },
+  'odontologia|jundiai': { buscasMensais: 2400, medidoEm: 'julho de 2026' },
+  'centro automotivo|jundiai': { buscasMensais: 1600, medidoEm: 'julho de 2026' },
+  'marcenaria|jundiai': { buscasMensais: 720, medidoEm: 'julho de 2026' },
+
+  // 'estetica automotiva|jundiai' entra quando o volume for remedido: as 1.300
+  // buscas foram levantadas sob o nicho genérico "estética", que no Planejador
+  // devolve clínica de estética e harmonização — outro mercado.
 };
 
 export const FONTE_DEMANDA = 'Planejador de Palavras-chave do Google';
 
+/** Como o cliente chama o nicho. Cai no nome cru se não estiver no catálogo. */
+export function termoDoNicho(nicho?: string | null): string | null {
+  if (!nicho) return null;
+  return NICHOS[normalizar(nicho)] ?? nicho.trim().toLowerCase();
+}
+
 /** Sem acento, minúsculo, sem "/SP" — o banco guarda em formatos variados. */
+function normalizar(valor: string): string {
+  return valor
+    .split('/')[0]
+    .normalize('NFD')
+    // \p{Diacritic} em vez da faixa U+0300–U+036F escrita à mão: caractere
+    // combinante solto no código-fonte é frágil e some numa reformatação.
+    .replace(/\p{Diacritic}/gu, '')
+    .trim()
+    .toLowerCase();
+}
+
 export function chaveDemanda(nicho?: string | null, cidade?: string | null): string | null {
   if (!nicho || !cidade) return null;
-
-  const normalizar = (valor: string) =>
-    valor
-      .split('/')[0]
-      .normalize('NFD')
-      // \p{Diacritic} em vez da faixa U+0300–U+036F escrita à mão: caractere
-      // combinante solto no código-fonte é frágil e some numa reformatação.
-      .replace(/\p{Diacritic}/gu, '')
-      .trim()
-      .toLowerCase();
 
   const n = normalizar(nicho);
   const c = normalizar(cidade);
@@ -89,5 +132,7 @@ export function fraseDemanda(nicho?: string | null, cidade?: string | null): str
   const cidadeLimpa = (cidade || '').split('/')[0].trim();
   const volume = demanda.buscasMensais.toLocaleString('pt-BR');
 
-  return `Cerca de ${volume} pessoas procuram ${String(nicho).toLowerCase()} em ${cidadeLimpa} todo mês no Google.`;
+  // O termo do catálogo, não o nicho do banco: é o que faz o número
+  // corresponder à frase, já que foi ele que o Planejador mediu.
+  return `Cerca de ${volume} pessoas procuram ${termoDoNicho(nicho)} em ${cidadeLimpa} todo mês no Google.`;
 }

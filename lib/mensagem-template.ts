@@ -1,4 +1,5 @@
 import { Lead } from './types';
+import { termoDoNicho } from './demanda-busca';
 
 // Primeiro nome de propósito: em abordagem fria, nome completo soa cadastro
 // ou cobrança. A legitimidade quem dá é "da Eixo Digital", logo em seguida.
@@ -36,7 +37,10 @@ function nomeCidade(lead: Partial<Lead>, cidadeParam?: string): string {
  */
 export function gerarMensagemPadrao(lead: Partial<Lead>, nichoParam?: string, cidadeParam?: string): string {
   const nomeEmpresa = lead.nome || 'sua empresa';
-  const nicho = (lead.nicho || nichoParam || lead.buscas?.nicho || '').trim().toLowerCase();
+  // O catálogo traduz a gaveta interna para o que o cliente chama: "ar
+  // condicionado" e não "climatização". Um dono de empresa de detailing lendo
+  // "empresas de estética" entende salão de beleza.
+  const nicho = termoDoNicho(lead.nicho || nichoParam || lead.buscas?.nicho) ?? '';
   const cidade = nomeCidade(lead, cidadeParam);
   const posicao = lead.posicao_maps;
   const nota = typeof lead.gmb_nota === 'number' ? lead.gmb_nota : null;
