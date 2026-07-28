@@ -19,18 +19,6 @@ type LinhaComparativo = {
 };
 
 /**
- * O bloco local do Google mostra 3 resultados: o limiar comercial é o Top 3,
- * não o 1º lugar. Posição 4 a 10 ainda está na primeira página — afirmar o
- * contrário é um erro que o dono do negócio confere em 10 segundos.
- */
-function rotuloPosicao(posicao?: number): string | null {
-  if (!posicao) return null;
-  if (posicao <= 3) return '🎉 No Top 3 de destaque';
-  if (posicao <= 10) return '⚠️ Primeira página, fora do Top 3';
-  return '⚠️ Fora da primeira página';
-}
-
-/**
  * Nota no Google exige pelo menos uma avaliação, então "5.0 com 0 opiniões" é
  * dado inválido — venha do robô ou de correção manual. Exibir isso no
  * relatório do cliente derruba a credibilidade de todas as outras linhas.
@@ -172,10 +160,6 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   // A view pública já entrega `nicho` resolvido; `buscas` é o formato antigo,
   // que ainda chega pelo fallback do localStorage.
   const nichoLead = lead.nicho || lead.buscas?.nicho;
-
-  // null/undefined = a coleta não trouxe o dado. Mostrar "0" nesse caso é
-  // afirmar algo que o dono sabe ser falso, e derruba o relatório inteiro.
-  const temAvaliacoes = lead.gmb_avaliacoes !== null && lead.gmb_avaliacoes !== undefined;
 
   const notaLead = notaValida(lead.gmb_nota, lead.gmb_avaliacoes);
 
@@ -381,74 +365,27 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
               {contextoBusca}
             </p>
           )}
+
+          {/* A credencial rende mais aqui do que numa seção de venda: a
+              primeira dúvida de quem recebe uma análise que não pediu é "de
+              onde você tirou isso?". */}
+          <p className="text-xs text-[#64748B] leading-relaxed max-w-2xl mx-auto">
+            Nossos aplicativos são aprovados pelo Google e usam as APIs oficiais —
+            os números deste relatório vêm direto da fonte.
+          </p>
         </section>
 
-        {/* Seção 1: Posição Atual no Google */}
-        <section className="bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 sm:p-8 space-y-6 shadow-xl">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold font-outfit tracking-wider uppercase text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-3 py-1 rounded-[999px]">
-              01. Posição Atual
-            </span>
-            <h2 className="text-xl sm:text-2xl font-bold font-outfit text-white">
-              Sua Presença no Google Maps
-            </h2>
-          </div>
+        {/* A antiga seção 01 (posição, nota e opiniões em três cards) saiu
+            daqui: repetia o que a tabela abaixo já mostra, e mostra melhor,
+            porque número isolado não diz nada — número ao lado do concorrente
+            diz tudo. A página estava longa demais para o celular. */}
 
-          <div className={`grid grid-cols-1 gap-4 ${temAvaliacoes ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
-
-            {/* Metric 1 */}
-            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-5 rounded-[16px] space-y-2 text-center flex flex-col justify-center">
-              <span className="text-xs text-[#94A3B8] uppercase font-semibold tracking-wider">Posição no Maps</span>
-              <div className="text-4xl font-extrabold font-outfit flex items-center justify-center gap-1">
-                {lead.posicao_maps ? (
-                  <span className={lead.posicao_maps <= 3 ? 'text-[#10B981]' : 'text-amber-400'}>
-                    #{lead.posicao_maps}
-                  </span>
-                ) : (
-                  <span className="text-[#64748B] text-2xl">N/A</span>
-                )}
-              </div>
-              {rotuloPosicao(lead.posicao_maps) && (
-                <span className="text-xs text-[#64748B]">
-                  {rotuloPosicao(lead.posicao_maps)}
-                </span>
-              )}
-            </div>
-
-            {/* Metric 2 */}
-            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-5 rounded-[16px] space-y-2 text-center flex flex-col justify-center">
-              <span className="text-xs text-[#94A3B8] uppercase font-semibold tracking-wider">Nota de Avaliação</span>
-              <div className="text-4xl font-extrabold font-outfit text-amber-400 flex items-center justify-center gap-1">
-                <span>{notaLead !== null ? notaLead.toFixed(1) : 'N/A'}</span>
-              </div>
-              <div className="flex justify-center text-amber-400 text-sm">
-                {'★'.repeat(Math.round(notaLead ?? 0))}
-                <span className="text-slate-700">{'★'.repeat(5 - Math.round(notaLead ?? 0))}</span>
-              </div>
-            </div>
-
-            {/* Metric 3 — só existe quando a coleta trouxe o número */}
-            {temAvaliacoes && (
-              <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-5 rounded-[16px] space-y-2 text-center flex flex-col justify-center">
-                <span className="text-xs text-[#94A3B8] uppercase font-semibold tracking-wider">Total de Opiniões</span>
-                <div className="text-4xl font-extrabold font-outfit text-[#F1F5F9]">
-                  {lead.gmb_avaliacoes}
-                </div>
-                <span className="text-xs text-[#64748B]">
-                  Comentários verificados
-                </span>
-              </div>
-            )}
-
-          </div>
-        </section>
-
-        {/* Seção 2: Comparativo com Líderes do Nicho */}
+        {/* Seção 1: Comparativo com Líderes do Nicho */}
         <section className="bg-[#0B0F19] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 sm:p-8 space-y-6 shadow-xl">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold font-outfit tracking-wider uppercase text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-3 py-1 rounded-[999px]">
-                02. Concorrência
+                01. Concorrência
               </span>
               <h2 className="text-xl sm:text-2xl font-bold font-outfit text-white">
                 Comparativo com os Líderes da Região
@@ -595,37 +532,119 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
           )}
         </section>
 
-        {/* Seção 3: Falhas Identificadas */}
+        {/* Seção 2: Por que eles aparecem na frente.
+            Substitui a antiga lista de gargalos. Aquela versão lia como
+            boletim de notas — cinco linhas de "Sem isso, sem aquilo" fecham a
+            pessoa em vez de abrir. O enquadramento aqui é outro: a posição não
+            é um ranking de qualidade, e isso é verdade e verificável. Tira o
+            ferrão sem tirar o problema, e transforma a distância em algo
+            corrigível em vez de merecido. */}
         <section className="bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 sm:p-8 space-y-6 shadow-xl">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold font-outfit tracking-wider uppercase text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-[999px]">
-              03. Oportunidades
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs font-bold font-outfit tracking-wider uppercase text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-3 py-1 rounded-[999px]">
+              02. O que decide
             </span>
             <h2 className="text-xl sm:text-2xl font-bold font-outfit text-white">
-              Gargalos de Visibilidade a Corrigir
+              Por que eles aparecem na frente
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {gargalos.length > 0 ? (
-              gargalos.map((falha, idx) => (
-                <div
-                  key={idx}
-                  className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-4 rounded-[16px] text-xs sm:text-sm text-[#F1F5F9] flex items-start gap-3 hover:border-red-500/40 transition-all"
-                >
-                  <div className="w-2 h-2 rounded-full bg-red-500 shrink-0 mt-1.5 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
-                  <span className="font-medium leading-relaxed">{falha}</span>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-2 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-5 rounded-[16px] text-center text-sm text-[#94A3B8]">
-                Seu perfil possui boas configurações base, mas pode multiplicar o volume de clientes com tráfego pago e SEO local avançado.
+          <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed max-w-3xl">
+            A ordem do Google Maps não é um ranking de qualidade. Ela se decide por coisas
+            que a maioria dos donos de negócio nunca ouviu falar:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              'Com que frequência o perfil recebe publicações e fotos novas',
+              'Se as avaliações são respondidas, e em quanto tempo',
+              'As palavras usadas no nome, na descrição e nas categorias',
+              'A distância entre a empresa e quem está fazendo a busca',
+            ].map((fator) => (
+              <div
+                key={fator}
+                className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-4 rounded-[16px] text-xs sm:text-sm text-[#F1F5F9] flex items-start gap-3"
+              >
+                <div className="w-2 h-2 rounded-full bg-[#10B981] shrink-0 mt-1.5 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                <span className="font-medium leading-relaxed">{fator}</span>
               </div>
-            )}
+            ))}
           </div>
+
+          <div className="bg-[rgba(16,185,129,0.06)] border border-[#10B981]/20 rounded-[16px] p-5">
+            <p className="text-sm sm:text-base text-[#F1F5F9] leading-relaxed">
+              <strong className="text-white">Nada disso mede a qualidade do seu serviço.</strong>{' '}
+              Mede quanta atenção o perfil recebe. Uma empresa menos preparada que a {lead.nome}{' '}
+              pode estar na frente apenas por cuidar disso todo mês.
+            </p>
+          </div>
+
+          {gargalos.length > 0 && (
+            <div className="space-y-3 pt-1">
+              <h3 className="text-sm font-bold font-outfit text-white uppercase tracking-wider">
+                No perfil da {lead.nome}, o que está pesando hoje
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {gargalos.map((falha, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-4 rounded-[16px] text-xs sm:text-sm text-[#F1F5F9] flex items-start gap-3 hover:border-amber-500/40 transition-all"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1.5 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                    <span className="font-medium leading-relaxed">{falha}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
-        {/* Seção 4: Os dois caminhos do Google.
+        {/* Bloco do site — só para quem não tem.
+            Cuidado deliberado com a redação: a tabela acima mostra líderes sem
+            site, então afirmar que site melhora a posição no mapa seria
+            desmentido pela própria página. O argumento é outro: site soma com
+            o resto, e numa região onde ninguém tem, diferencia. */}
+        {!lead.site && (
+          <section className="bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 sm:p-8 space-y-4 shadow-xl">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-xs font-bold font-outfit tracking-wider uppercase text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-3 py-1 rounded-[999px]">
+                Sobre não ter site
+              </span>
+            </div>
+
+            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
+              Você provavelmente já ouviu que hoje não precisa de site, que o perfil do Google resolve.
+              Isso era verdade há alguns anos.
+            </p>
+
+            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
+              O perfil é um espaço emprestado: o formato, a ordem e o que aparece são decisão do Google.
+              O site é o único lugar onde a <strong className="text-white">{lead.nome}</strong> conta a
+              própria história do seu jeito, com as suas fotos e os seus argumentos.
+            </p>
+
+            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
+              E hoje quem lê isso não são só pessoas. Quando alguém pergunta a uma inteligência artificial
+              qual a melhor {nichoLead || 'empresa'} {cidadeLead ? `de ${cidadeLead}` : 'da região'}, a resposta se monta
+              a partir do que está escrito na internet sobre cada uma. Quem não tem site não tem o que ser lido.
+            </p>
+
+            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
+              Site sozinho não muda posição. Mas soma com o resto: dá ao Google mais material sobre o que
+              a empresa faz e onde atende, é para onde o anúncio manda quem clica, e é o que sustenta a
+              sua presença fora do mapa.
+            </p>
+
+            {lideresSemSite && (
+              <p className="text-sm sm:text-base text-[#10B981] font-semibold leading-relaxed">
+                👉 Numa região onde nenhum dos líderes tem site, quem fizer — junto com a otimização do
+                perfil — se destaca sozinho.
+              </p>
+            )}
+          </section>
+        )}
+
+        {/* Seção 3: Os dois caminhos do Google.
             Quem chega aqui veio de uma abordagem fria e ainda não está
             escolhendo serviço. Os dois cards explicam; a ação é uma só, e é
             entender — não contratar. */}
