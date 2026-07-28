@@ -59,7 +59,7 @@ const NICHOS: Record<string, string> = {
   'odontologia': 'dentista',
   'centro automotivo': 'oficina mecânica',
   'marcenaria': 'móveis planejados',
-  'estetica automotiva': 'estética automotiva',
+  'estetica': 'estética',
 };
 
 /**
@@ -77,10 +77,7 @@ const TABELA: Record<string, DemandaBusca> = {
   'odontologia|jundiai': { buscasMensais: 2400, medidoEm: 'julho de 2026' },
   'centro automotivo|jundiai': { buscasMensais: 1600, medidoEm: 'julho de 2026' },
   'marcenaria|jundiai': { buscasMensais: 720, medidoEm: 'julho de 2026' },
-
-  // 'estetica automotiva|jundiai' entra quando o volume for remedido: as 1.300
-  // buscas foram levantadas sob o nicho genérico "estética", que no Planejador
-  // devolve clínica de estética e harmonização — outro mercado.
+  'estetica|jundiai': { buscasMensais: 1300, medidoEm: 'julho de 2026' },
 };
 
 export const FONTE_DEMANDA = 'Planejador de Palavras-chave do Google';
