@@ -8,6 +8,7 @@ import {
 } from '@/lib/supabase-service';
 import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
+import { buscarDemanda, fraseDemanda, FONTE_DEMANDA } from '@/lib/demanda-busca';
 import {
   AlertTriangle, MessageCircle, MapPin, Megaphone,
   Sparkles, Zap, ArrowUpRight, CheckCircle2
@@ -175,6 +176,11 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const notaLead = notaValida(lead.gmb_nota, lead.gmb_avaliacoes);
 
   const cidadeLead = lead.cidade || lead.buscas?.cidade;
+
+  // Só aparece quando o par nicho+cidade foi medido de verdade no Planejador.
+  // Sem dado, o bloco inteiro some — nenhum número é inferido.
+  const demanda = buscarDemanda(nichoLead, cidadeLead);
+  const textoDemanda = fraseDemanda(nichoLead, cidadeLead);
 
   /**
    * Termo, local e data da coleta. Cada parte só entra se existir, para a
@@ -496,6 +502,27 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
               </tbody>
             </table>
           </div>
+
+          {/* O que a posição significa em gente procurando.
+              Fica colado na tabela de propósito: "#9" sozinho é placar, e
+              placar não move ninguém. Com o volume ao lado, vira consequência.
+
+              O número é medido, a fonte é declarada e a data também — é o que
+              permite responder "de onde você tirou isso?", que é a única
+              pergunta que importa aqui. A fatia dos primeiros fica qualitativa
+              porque CTR exato varia, e um percentual cravado teria o mesmo
+              problema de credibilidade que uma estimativa disfarçada. */}
+          {textoDemanda && demanda && (
+            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-5 space-y-2">
+              <p className="text-sm sm:text-base text-[#F1F5F9] leading-relaxed">
+                <strong className="text-white">{textoDemanda}</strong>{' '}
+                A maior parte desses cliques fica com as três primeiras posições.
+              </p>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                {FONTE_DEMANDA}, {demanda.medidoEm}.
+              </p>
+            </div>
+          )}
 
           {/* Card de Insight: o espaço do tráfego pago está vazio na região */}
           {lideresSemSite && (
