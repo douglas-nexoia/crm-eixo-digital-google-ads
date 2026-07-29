@@ -11,8 +11,21 @@ import { Lead } from '@/lib/types';
 import { buscarDemanda, fraseDemanda, FONTE_DEMANDA } from '@/lib/demanda-busca';
 import {
   AlertTriangle, MessageCircle, MapPin, Megaphone,
-  Sparkles, Zap, ArrowUpRight, CheckCircle2
+  ArrowUpRight, CheckCircle2, Printer,
 } from 'lucide-react';
+
+/**
+ * Este relatório é um DOCUMENTO, não uma tela de produto.
+ *
+ * O CRM é ferramenta e continua escuro. Aqui o registro é outro: fundo claro,
+ * medida de leitura curta, hierarquia por tamanho em vez de por caixa, e uma
+ * capa. É o que faz alguém imprimir e guardar — e o que separa "relatório" de
+ * "site de agência", que era a leitura que a versão anterior provocava.
+ *
+ * Cor: um acento (verde da marca) e neutros. A versão anterior tinha verde,
+ * âmbar, vermelho, ciano e azul significando coisas diferentes em lugares
+ * diferentes; documento sério usa peso e tamanho, não mais uma cor.
+ */
 
 type LinhaComparativo = {
   id: string;
@@ -35,6 +48,18 @@ function notaValida(nota?: number | null, avaliacoes?: number | null): number | 
   if (typeof nota !== 'number') return null;
   if (avaliacoes === 0) return null;
   return nota;
+}
+
+/**
+ * Nomes de perfil do Google vêm cheios de sufixo de SEO — "Dra. Maria Cecília
+ * Molina - Odontologia Estética e Funcional". Repetido oito vezes em corpo
+ * grande, isso sozinho destrói a diagramação: no título ocupava quatro linhas.
+ * O nome completo aparece uma vez, na capa; o resto do documento usa o curto.
+ */
+function nomeCurto(nome: string): string {
+  const antesDoSufixo = nome.split(/\s[-–—|]\s/)[0].trim();
+  const base = antesDoSufixo.length >= 3 ? antesDoSufixo : nome.trim();
+  return base.length > 40 ? `${base.slice(0, 40).trim()}…` : base;
 }
 
 /**
@@ -79,6 +104,134 @@ const TRADUCAO_GARGALOS: Array<{ padrao: RegExp; texto: string }> = [
 
 function traduzirGargalo(bruto: string): string {
   return TRADUCAO_GARGALOS.find(t => t.padrao.test(bruto))?.texto ?? bruto;
+}
+
+/** Cabeçalho de seção: número, título e um filete. Define começo e fim. */
+function TituloSecao({ numero, children }: { numero: string; children: React.ReactNode }) {
+  return (
+    <div className="border-b border-zinc-200 pb-3 mb-6">
+      <span className="block text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-800 mb-1">
+        {numero}
+      </span>
+      <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 leading-tight">
+        {children}
+      </h2>
+    </div>
+  );
+}
+
+/**
+ * Régua de posição.
+ *
+ * Mostra a faixa de destaque (as três primeiras) e onde a empresa está. É a
+ * distância que comunica, e distância se lê melhor desenhada do que escrita.
+ */
+function ReguaPosicao({ posicao }: { posicao: number }) {
+  const limite = Math.max(10, posicao);
+  const pct = ((posicao - 0.5) / limite) * 100;
+  const faixaTop3 = (3 / limite) * 100;
+  const dentroDoTop3 = posicao <= 3;
+
+  /**
+   * O rótulo não pode ser centrado no marcador: perto das pontas, metade dele
+   * sai da tela — que foi o que estourou a margem no celular. Nas bordas ele
+   * ancora pelo lado de dentro.
+   */
+  const naBordaDireita = pct > 70;
+  const naBordaEsquerda = pct < 30;
+
+  const posicaoRotulo: React.CSSProperties = naBordaDireita
+    ? { right: 0 }
+    : naBordaEsquerda
+      ? { left: 0 }
+      : { left: `${pct}%`, transform: 'translateX(-50%)' };
+
+  return (
+    <figure className="my-6">
+      <div className="relative h-4">
+        <div className="absolute inset-x-0 top-1 h-2 rounded-full bg-zinc-200" />
+        <div
+          className="absolute top-1 left-0 h-2 rounded-l-full bg-emerald-200"
+          style={{ width: `${faixaTop3}%` }}
+        />
+        <div
+          className="absolute top-0 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-emerald-800 ring-2 ring-white"
+          style={{ left: `${pct}%` }}
+        />
+      </div>
+
+      {/* Sem o nome da empresa: ele já aparece na capa, no veredito e na
+          tabela, e aqui só criava risco de estouro sem informar nada novo. */}
+      <div className="relative h-5 mt-1.5">
+        <span
+          className="absolute text-[11px] font-bold text-emerald-900 whitespace-nowrap"
+          style={posicaoRotulo}
+        >
+          você está aqui · {posicao}º
+        </span>
+      </div>
+
+      <figcaption className="flex justify-between gap-3 text-[11px] text-zinc-500 mt-1">
+        <span className={dentroDoTop3 ? 'font-semibold text-emerald-800' : ''}>
+          1º ao 3º — a faixa de destaque
+        </span>
+        <span className="shrink-0">{limite}º</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+/**
+ * Barras de avaliações.
+ *
+ * A cor não carrega informação: cada barra tem o nome ao lado e o número na
+ * ponta. O verde é ênfase, e a diferença para o cinza é de luminosidade — o
+ * que a mantém legível em qualquer tipo de daltonismo e no papel.
+ */
+function BarrasAvaliacoes({ linhas }: { linhas: LinhaComparativo[] }) {
+  const comDado = linhas.filter(
+    l => typeof l.gmb_avaliacoes === 'number'
+  ) as Array<LinhaComparativo & { gmb_avaliacoes: number }>;
+
+  if (comDado.length < 2) return null;
+
+  const maximo = Math.max(...comDado.map(l => l.gmb_avaliacoes), 1);
+
+  return (
+    <figure className="mt-8">
+      <figcaption className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500 mb-4">
+        Avaliações acumuladas
+      </figcaption>
+      <div className="space-y-3">
+        {comDado.map(linha => (
+          <div key={linha.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 items-center">
+            <div className="min-w-0">
+              <div
+                className={`text-[13px] truncate mb-1.5 ${
+                  linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-600'
+                }`}
+              >
+                {nomeCurto(linha.nome)}
+              </div>
+              <div className="h-2.5 w-full">
+                <div
+                  className={`h-2.5 rounded-r-sm ${linha.isLead ? 'bg-emerald-800' : 'bg-zinc-300'}`}
+                  style={{ width: `${Math.max((linha.gmb_avaliacoes / maximo) * 100, 1.5)}%` }}
+                />
+              </div>
+            </div>
+            <span
+              className={`text-sm tabular-nums self-end pb-0.5 ${
+                linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-500'
+              }`}
+            >
+              {linha.gmb_avaliacoes}
+            </span>
+          </div>
+        ))}
+      </div>
+    </figure>
+  );
 }
 
 /**
@@ -146,22 +299,22 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0F19] text-[#F1F5F9] flex flex-col items-center justify-center p-6 space-y-4 font-inter">
-        <div className="w-12 h-12 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-[#94A3B8] text-sm font-medium">Gerando diagnóstico de visibilidade digital...</p>
+      <div className="min-h-screen bg-zinc-100 text-zinc-700 flex flex-col items-center justify-center p-6 gap-4">
+        <div className="w-10 h-10 border-[3px] border-emerald-700 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm">Gerando diagnóstico de visibilidade digital...</p>
       </div>
     );
   }
 
   if (!lead) {
     return (
-      <div className="min-h-screen bg-[#0B0F19] text-[#F1F5F9] flex flex-col items-center justify-center p-6 text-center space-y-4 font-inter">
-        <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-amber-400">
+      <div className="min-h-screen bg-zinc-100 flex flex-col items-center justify-center p-6 text-center gap-4">
+        <div className="w-14 h-14 rounded-full bg-white border border-zinc-200 flex items-center justify-center text-amber-600">
           <AlertTriangle className="w-7 h-7" />
         </div>
         <div className="space-y-1 max-w-sm">
-          <h2 className="text-xl font-bold font-outfit text-white">Diagnóstico Não Encontrado</h2>
-          <p className="text-sm text-[#94A3B8]">
+          <h2 className="text-xl font-bold text-zinc-900">Diagnóstico não encontrado</h2>
+          <p className="text-sm text-zinc-600">
             Verifique se a empresa está cadastrada ou se o link enviado possui o identificador correto.
           </p>
         </div>
@@ -176,35 +329,22 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const notaLead = notaValida(lead.gmb_nota, lead.gmb_avaliacoes);
 
   const cidadeLead = lead.cidade || lead.buscas?.cidade;
+  const cidadeCurta = (cidadeLead || '').split('/')[0].trim();
+
+  const empresa = nomeCurto(lead.nome);
 
   // Só aparece quando o par nicho+cidade foi medido de verdade no Planejador.
   // Sem dado, o bloco inteiro some — nenhum número é inferido.
   const demanda = buscarDemanda(nichoLead, cidadeLead);
   const textoDemanda = fraseDemanda(nichoLead, cidadeLead);
 
-  /**
-   * Termo, local e data da coleta. Cada parte só entra se existir, para a
-   * frase nunca ficar com buraco — e some inteira se não houver nada, em vez
-   * de exibir uma linha pela metade.
-   */
-  const contextoBusca = (() => {
-    const partes: string[] = [];
-
-    if (nichoLead && cidadeLead) {
-      partes.push(`Posição para a busca por "${nichoLead} em ${cidadeLead}" no Google Maps`);
-    } else if (cidadeLead) {
-      partes.push(`Posição nas buscas do Google Maps em ${cidadeLead}`);
-    }
-
-    if (lead.data_busca) {
-      const data = new Date(lead.data_busca);
-      if (!Number.isNaN(data.getTime())) {
-        partes.push(`dados coletados em ${data.toLocaleDateString('pt-BR')}`);
-      }
-    }
-
-    return partes.length > 0 ? `${partes.join(' · ')}.` : null;
+  const dataColeta = (() => {
+    if (!lead.data_busca) return null;
+    const data = new Date(lead.data_busca);
+    return Number.isNaN(data.getTime()) ? null : data.toLocaleDateString('pt-BR');
   })();
+
+  const termoBusca = nichoLead && cidadeLead ? `${nichoLead} em ${cidadeLead}` : null;
 
   const gargalos = Array.from(
     // Instagram e Facebook chegam como dois itens e traduzem para a mesma
@@ -311,11 +451,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
     return `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
   }
 
-  const linkGeral = linkWhatsApp(
-    `Olá! Vi o relatório de presença digital da empresa *${lead.nome}* no Google e gostaria de saber como colocar nossa empresa no topo do Google!`
-  );
-  // Visita fria: o próximo passo é entender, não escolher um serviço. Um CTA
-  // só, e a conversa define o caminho.
+  // Visita fria: o próximo passo é entender, não escolher um serviço.
   const linkEntender = linkWhatsApp(
     `Olá! Vi o diagnóstico de visibilidade da *${lead.nome}* e gostaria de entender melhor o que dá para melhorar na nossa presença no Google.`
   );
@@ -323,547 +459,417 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const SITE_EIXO = 'https://eixodigitalbr.com.br';
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-[#F1F5F9] antialiased font-inter pb-24 relative overflow-x-hidden selection:bg-[#10B981] selection:text-[#08130F]">
+    <div className="min-h-screen bg-zinc-100 text-zinc-800 antialiased font-inter">
+      {/* Impressão: o documento sai igual à tela, sem os controles. É o que
+          transforma "página" em "algo que se guarda". */}
+      <style>{`
+        @media print {
+          .nao-imprimir { display: none !important; }
+          body { background: #fff !important; }
+          .folha { box-shadow: none !important; margin: 0 !important; max-width: none !important; }
+          section { break-inside: avoid; }
+          a[href]:after { content: ""; }
+        }
+      `}</style>
 
-      {/* Glow Effect Sutil do Design System no Hero (blur 100px, opacidade 0.12) */}
-      <div
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[400px] pointer-events-none rounded-full"
-        style={{
-          background: 'radial-[#10B981]',
-          backgroundColor: '#10B981',
-          filter: 'blur(100px)',
-          opacity: 0.12,
-        }}
-      />
+      <div className="folha max-w-[880px] mx-auto bg-white sm:my-8 shadow-sm sm:rounded-lg overflow-hidden">
 
-      {/* Header Sticky - Design System (blur 12px, rgba(11,15,25,0.85), altura 76px) */}
-      <header className="sticky top-0 z-50 bg-[#0B0F19]/85 backdrop-blur-[12px] border-b border-[rgba(255,255,255,0.08)] h-[76px] px-4 sm:px-8 flex items-center">
-        <div className="max-w-[1100px] w-full mx-auto flex items-center justify-between">
-
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[10px] bg-[#10B981] flex items-center justify-center font-outfit font-extrabold text-[#08130F] text-xl shadow-[0_0_20px_rgba(16,185,129,0.25)] shrink-0">
-              E
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-2 py-0.5 rounded-full">
-                  Relatório Oficial
-                </span>
-                <span className="text-xs text-[#64748B] hidden sm:inline">• Eixo Digital</span>
+        {/* ── Capa ─────────────────────────────────────────────────────────
+            Título, empresa, procedência e data. É o que faz o documento ser
+            lido como laudo e não como landing page. */}
+        <header className="px-6 sm:px-12 pt-10 sm:pt-14 pb-8 border-b border-zinc-200">
+          <div className="flex items-start justify-between gap-4 mb-8">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded bg-emerald-800 text-white flex items-center justify-center font-extrabold text-sm shrink-0">
+                E
               </div>
-              <h1 className="text-sm sm:text-base font-bold font-outfit text-white leading-tight truncate max-w-[200px] sm:max-w-xs md:max-w-md">
-                {lead.nome}
-              </h1>
+              <span className="text-sm font-semibold text-zinc-900">Eixo Digital</span>
             </div>
-          </div>
 
-          {nichoLead ? (
-            <span className="text-xs font-semibold text-[#94A3B8] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] px-3 py-1.5 rounded-[999px] capitalize truncate max-w-[140px] sm:max-w-none">
-              {nichoLead}
-            </span>
-          ) : (
-            <a
-              href={linkGeral}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 bg-[#10B981] hover:bg-[#22C55E] text-[#08130F] font-bold text-xs px-3.5 py-2 rounded-[10px] shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
+            <button
+              onClick={() => window.print()}
+              className="nao-imprimir inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-600 hover:text-emerald-800 border border-zinc-300 hover:border-emerald-700 rounded px-3 py-1.5 transition-colors"
             >
-              <MessageCircle className="w-3.5 h-3.5 fill-[#08130F]" />
-              <span className="hidden sm:inline">Contato</span>
-            </a>
-          )}
-        </div>
-      </header>
-
-      {/* Conteúdo Principal (Largura Máxima 1100px centralizado) */}
-      <main className="max-w-[1100px] mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 space-y-8 sm:space-y-12 relative z-10">
-
-        {/* Hero Banner / Resumo executivo */}
-        <section className="text-center space-y-4 max-w-3xl mx-auto pt-2">
-          <div className="inline-flex items-center gap-2 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-1.5 rounded-[999px] text-xs font-semibold text-[#10B981]">
-            <Sparkles className="w-4 h-4 text-[#10B981]" />
-            <span>DIAGNÓSTICO EXCLUSIVO DE VISIBILIDADE DIGITAL</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>Imprimir</span>
+            </button>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold font-outfit text-[#F1F5F9] leading-tight tracking-tight text-balance">
-            Análise de Desempenho no Google para <span className="text-[#10B981]">{lead.nome}</span>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-800 mb-3">
+            Diagnóstico de Visibilidade Digital
+          </p>
+
+          <h1 className="text-3xl sm:text-[2.6rem] font-extrabold text-zinc-900 leading-[1.1] tracking-tight mb-2">
+            {empresa}
           </h1>
 
-          <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed max-w-2xl mx-auto font-inter">
-            Comparação de posicionamento no Google Maps, nota de clientes, estrutura de site e oportunidades de crescimento na sua região.
-          </p>
-
-          {/* Sem declarar termo, local e data, o dono confere do próprio
-              celular — logado e com outra geolocalização —, vê outra posição e
-              conclui que o relatório é inventado. */}
-          {contextoBusca && (
-            <p className="text-xs text-[#64748B] leading-relaxed max-w-2xl mx-auto pt-1">
-              {contextoBusca}
-            </p>
+          {/* O nome completo do perfil aparece uma vez só, aqui. */}
+          {empresa !== lead.nome && (
+            <p className="text-sm text-zinc-500 leading-snug mb-6 max-w-[60ch]">{lead.nome}</p>
           )}
 
-          {/* A credencial rende mais aqui do que numa seção de venda: a
-              primeira dúvida de quem recebe uma análise que não pediu é "de
-              onde você tirou isso?". */}
-          <p className="text-xs text-[#64748B] leading-relaxed max-w-2xl mx-auto">
-            Nossos aplicativos são aprovados pelo Google e usam as APIs oficiais —
-            os números deste relatório vêm direto da fonte.
-          </p>
-        </section>
-
-        {/* A antiga seção 01 (posição, nota e opiniões em três cards) saiu
-            daqui: repetia o que a tabela abaixo já mostra, e mostra melhor,
-            porque número isolado não diz nada — número ao lado do concorrente
-            diz tudo. A página estava longa demais para o celular. */}
-
-        {/* Seção 1: Comparativo com Líderes do Nicho */}
-        <section className="bg-[#0B0F19] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 sm:p-8 space-y-6 shadow-xl">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold font-outfit tracking-wider uppercase text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-3 py-1 rounded-[999px]">
-                01. Concorrência
-              </span>
-              <h2 className="text-xl sm:text-2xl font-bold font-outfit text-white">
-                Comparativo com os Líderes da Região
-              </h2>
+          <dl className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 mt-8 pt-6 border-t border-zinc-100">
+            {termoBusca && (
+              <div>
+                <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Busca analisada</dt>
+                <dd className="text-sm text-zinc-800 font-medium">{termoBusca}</dd>
+              </div>
+            )}
+            {dataColeta && (
+              <div>
+                <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Dados coletados em</dt>
+                <dd className="text-sm text-zinc-800 font-medium tabular-nums">{dataColeta}</dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Fonte</dt>
+              <dd className="text-sm text-zinc-800 font-medium">APIs oficiais do Google</dd>
             </div>
+          </dl>
+        </header>
+
+        {/* ── Veredito ─────────────────────────────────────────────────────
+            O relatório inteiro numa frase, antes de qualquer explicação. Quem
+            ler só isto já entendeu; quem se interessar rola o resto. */}
+        <section className="px-6 sm:px-12 py-8 sm:py-10 bg-emerald-50/60 border-b border-emerald-100">
+          <div className="flex items-baseline gap-3 mb-3">
+            <span className="text-5xl sm:text-6xl font-extrabold text-emerald-900 leading-none">
+              {lead.posicao_maps ? `${lead.posicao_maps}º` : '—'}
+            </span>
+            <span className="text-base sm:text-lg text-emerald-900/80 font-medium">
+              {lead.posicao_maps && lead.posicao_maps <= 3
+                ? 'entre as primeiras da região'
+                : 'na busca da sua região'}
+            </span>
           </div>
 
-          <div className="overflow-x-auto rounded-[16px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
-            <table className="w-full text-left text-xs sm:text-sm text-[#F1F5F9] border-collapse min-w-[430px]">
-              <thead className="bg-[#0E1424] text-[#94A3B8] font-outfit uppercase font-bold text-[11px] tracking-wider border-b border-[rgba(255,255,255,0.08)]">
-                <tr>
-                  <th className="p-3 sm:p-4">Empresa</th>
-                  <th className="p-3 sm:p-4 text-center">Posição</th>
-                  <th className="p-3 sm:p-4 text-center">Nota no Google</th>
-                  <th className="p-3 sm:p-4 text-center">Avaliações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[rgba(255,255,255,0.06)]">
+          <p className="text-[15px] sm:text-base text-zinc-700 leading-relaxed max-w-[62ch]">
+            {textoDemanda ? (
+              <>
+                <strong className="text-zinc-900">{textoDemanda}</strong>{' '}
+                A maior parte desses cliques fica com as três primeiras posições.
+              </>
+            ) : (
+              <>As três primeiras posições ficam com a maior parte dos contatos de quem procura no Google.</>
+            )}
+          </p>
 
-                {linhasComparativo.map((linha, idx) => {
-                  const lacuna = lacunaAntesDe(idx);
+          {lead.posicao_maps && <ReguaPosicao posicao={lead.posicao_maps} />}
+        </section>
 
-                  return (
-                    <React.Fragment key={linha.id}>
-                      {lacuna > 0 && (
-                        <tr className="bg-[rgba(255,255,255,0.01)]">
-                          <td colSpan={4} className="px-4 py-2.5 text-center text-[11px] uppercase tracking-wider text-[#64748B] font-semibold">
-                            ┈┈┈ {lacuna} {lacuna === 1 ? 'posição' : 'posições'} no meio do caminho ┈┈┈
+        <main className="px-6 sm:px-12 py-10 sm:py-12 space-y-12 sm:space-y-16">
+
+          {/* ── 01. Concorrência ─────────────────────────────────────────── */}
+          <section>
+            <TituloSecao numero="01. Concorrência">Como você aparece ao lado dos líderes</TituloSecao>
+
+            {/* Sem rolagem horizontal: no celular ela esconde justamente a
+                coluna de avaliações. As colunas numéricas ganham largura fixa
+                e o nome trunca no que sobrar. */}
+            <div>
+              <table className="w-full text-left border-collapse table-fixed">
+                <colgroup>
+                  <col />
+                  <col className="w-[52px] sm:w-[80px]" />
+                  <col className="w-[48px] sm:w-[72px]" />
+                  <col className="w-[56px] sm:w-[88px]" />
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-zinc-200">
+                    <th className="pb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400">Empresa</th>
+                    <th className="pb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 text-center whitespace-nowrap">Pos.</th>
+                    <th className="pb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 text-center whitespace-nowrap">Nota</th>
+                    <th className="pb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 text-right whitespace-nowrap">Aval.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {linhasComparativo.map((linha, idx) => {
+                    const lacuna = lacunaAntesDe(idx);
+
+                    return (
+                      <React.Fragment key={linha.id}>
+                        {lacuna > 0 && (
+                          <tr>
+                            <td colSpan={4} className="py-2 text-center text-[11px] text-zinc-400 italic">
+                              {lacuna} {lacuna === 1 ? 'posição' : 'posições'} no meio do caminho
+                            </td>
+                          </tr>
+                        )}
+
+                        <tr className={linha.isLead ? 'bg-emerald-50' : ''}>
+                          <td className={`py-3 pr-2 text-sm ${linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-700'}`}>
+                            <span className="block truncate">{nomeCurto(linha.nome)}</span>
+                            {linha.isLead && (
+                              <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                                você
+                              </span>
+                            )}
+                          </td>
+                          <td className={`py-3 text-center text-sm tabular-nums ${linha.isLead ? 'font-bold text-emerald-900' : 'text-zinc-600'}`}>
+                            {linha.posicao_maps ? `${linha.posicao_maps}º` : '—'}
+                          </td>
+                          <td className="py-3 text-center text-sm tabular-nums text-zinc-700 whitespace-nowrap">
+                            {linha.gmb_nota != null ? linha.gmb_nota.toFixed(1) : '—'}
+                          </td>
+                          <td className={`py-3 text-right text-sm tabular-nums ${linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-600'}`}>
+                            {linha.gmb_avaliacoes != null ? linha.gmb_avaliacoes : '—'}
                           </td>
                         </tr>
-                      )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-                      <tr
-                        className={
-                          linha.isLead
-                            ? 'bg-[#10B981]/10 text-white font-bold border-l-4 border-[#10B981]'
-                            : 'hover:bg-[rgba(255,255,255,0.03)] transition-colors text-[#94A3B8]'
-                        }
-                      >
-                        <td className="p-3 sm:p-4">
-                          {linha.isLead ? (
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse" />
-                              <span className="font-outfit text-base text-white">{linha.nome}</span>
-                              <span className="text-[10px] bg-[#10B981] text-[#08130F] font-bold px-2 py-0.5 rounded-[999px] uppercase">
-                                Sua Empresa
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="font-medium text-slate-200">{linha.nome}</span>
-                          )}
-                        </td>
-                        <td className="p-3 sm:p-4 text-center">
-                          {linha.isLead ? (
-                            <span className="font-outfit font-black text-lg text-[#10B981]">
-                              #{linha.posicao_maps || 'N/A'}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-[999px] bg-slate-900 text-amber-300 text-xs font-bold border border-amber-400/20">
-                              #{linha.posicao_maps}
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3 sm:p-4 text-center font-bold text-amber-400 whitespace-nowrap">
-                          {linha.gmb_nota !== null && linha.gmb_nota !== undefined
-                            ? `⭐ ${linha.gmb_nota.toFixed(1)}`
-                            : <span className="text-[#64748B]">—</span>}
-                        </td>
-                        <td className={`p-3 sm:p-4 text-center ${linha.isLead ? 'text-white font-bold' : 'text-slate-300'}`}>
-                          {linha.gmb_avaliacoes !== null && linha.gmb_avaliacoes !== undefined
-                            ? linha.gmb_avaliacoes
-                            : <span className="text-[#64748B]">—</span>}
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+            <BarrasAvaliacoes linhas={linhasComparativo} />
 
-          {/* O que a posição significa em gente procurando.
-              Fica colado na tabela de propósito: "#9" sozinho é placar, e
-              placar não move ninguém. Com o volume ao lado, vira consequência.
-
-              O número é medido, a fonte é declarada e a data também — é o que
-              permite responder "de onde você tirou isso?", que é a única
-              pergunta que importa aqui. A fatia dos primeiros fica qualitativa
-              porque CTR exato varia, e um percentual cravado teria o mesmo
-              problema de credibilidade que uma estimativa disfarçada. */}
-          {textoDemanda && demanda && (
-            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-5 space-y-2">
-              <p className="text-sm sm:text-base text-[#F1F5F9] leading-relaxed">
-                <strong className="text-white">{textoDemanda}</strong>{' '}
-                A maior parte desses cliques fica com as três primeiras posições.
-              </p>
-              <p className="text-xs text-[#64748B] leading-relaxed">
+            {demanda && (
+              <p className="text-[11px] text-zinc-400 mt-6">
                 {FONTE_DEMANDA}, {demanda.medidoEm}.
               </p>
-            </div>
-          )}
+            )}
 
-          {/* Card de Insight: o espaço do tráfego pago está vazio na região */}
-          {lideresSemSite && (
-            <div className="bg-[#0E1424] border border-amber-500/30 rounded-[16px] p-5 space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-amber-400 font-bold font-outfit uppercase tracking-wider">
-                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Oportunidade Comercial Identificada!</span>
-              </div>
-              <p className="text-[#94A3B8] leading-relaxed">
-                Nenhum dos {concorrentesTop.length === 1 ? 'líderes' : `${concorrentesTop.length} líderes`} da sua região
-                {' '}tem <strong className="text-white">site próprio</strong>. Todos disputam a primeira posição apenas com o perfil do Google.
-              </p>
-              {lead.site ? (
-                <p className="text-[#10B981] font-semibold">
-                  👉 A {lead.nome} já tem o ativo que nenhum concorrente do topo construiu. O que falta é tráfego chegando até ele.
-                </p>
-              ) : (
-                <p className="text-[#10B981] font-semibold">
-                  👉 Quem entra com site e anúncio compete num espaço que ninguém está ocupando — e aparece <strong>acima</strong> dos primeiros colocados, na área paga, já na primeira semana.
-                </p>
+            {/* Achados: um por vez, com peso de nota de rodapé destacada e não
+                de card colorido. */}
+            <div className="mt-8 space-y-4">
+              {lideresSemSite && (
+                <div className="border-l-2 border-emerald-700 pl-4 py-1">
+                  <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
+                    Nenhum dos {concorrentesTop.length} líderes da sua região tem{' '}
+                    <strong className="text-zinc-900">site próprio</strong>. Todos disputam a primeira posição
+                    apenas com o perfil do Google.{' '}
+                    {lead.site
+                      ? `A ${empresa} já tem o ativo que nenhum concorrente do topo construiu — o que falta é tráfego chegando até ele.`
+                      : 'Quem entra com site e anúncio compete num espaço que ninguém está ocupando.'}
+                  </p>
+                </div>
+              )}
+
+              {!lideresSemSite && lideraComNotaMenor && primeiroColocado && (
+                <div className="border-l-2 border-emerald-700 pl-4 py-1">
+                  <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
+                    O 1º colocado ({nomeCurto(primeiroColocado.nome)}) está no topo com nota{' '}
+                    {notaPrimeiro?.toFixed(1)} — <strong className="text-zinc-900">abaixo da sua, {notaLead?.toFixed(1)}</strong>.
+                    A diferença não está na satisfação dos seus clientes: a posição no mapa depende de como o
+                    perfil está configurado e de como o Google entende a sua área de atendimento. Com o perfil
+                    trabalhado, a {empresa} tem espaço {metaPosicional}.
+                  </p>
+                </div>
+              )}
+
+              {reputacaoMaisSolida && (
+                <div className="border-l-2 border-emerald-700 pl-4 py-1">
+                  <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
+                    A sua nota {notaLead?.toFixed(1)} está apoiada em{' '}
+                    <strong className="text-zinc-900">{avaliacoesLead} avaliações</strong>, enquanto{' '}
+                    {lideresComMenosOpinioes.length === 1 ? 'um dos líderes' : `${lideresComMenosOpinioes.length} dos líderes`}{' '}
+                    à frente sustentam a nota deles em bem menos opiniões. Nota alta com poucas avaliações não
+                    convence quem está decidindo entre três empresas — reputação a {empresa} já tem.
+                  </p>
+                </div>
               )}
             </div>
-          )}
+          </section>
 
-          {/* Quando todos têm site, o argumento é a nota: o lead já é melhor
-              avaliado que quem está em #1. */}
-          {!lideresSemSite && lideraComNotaMenor && primeiroColocado && (
-            <div className="bg-[#0E1424] border border-amber-500/30 rounded-[16px] p-5 space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-amber-400 font-bold font-outfit uppercase tracking-wider">
-                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Oportunidade Comercial Identificada!</span>
+          {/* ── 02. O que decide ──────────────────────────────────────────── */}
+          <section>
+            <TituloSecao numero="02. O que decide">Por que eles aparecem na frente</TituloSecao>
+
+            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-6">
+              A ordem do Google Maps não é um ranking de qualidade. Ela se decide por coisas que a
+              maioria dos donos de negócio nunca ouviu falar:
+            </p>
+
+            <ol className="space-y-0 mb-8 border-t border-zinc-100">
+              {[
+                'Com que frequência o perfil recebe publicações e fotos novas',
+                'Se as avaliações são respondidas, e em quanto tempo',
+                'As palavras usadas no nome, na descrição e nas categorias',
+                'A distância entre a empresa e quem está fazendo a busca',
+              ].map((fator, i) => (
+                <li key={fator} className="flex gap-4 py-3 border-b border-zinc-100 text-[15px] text-zinc-700">
+                  <span className="text-zinc-300 font-bold tabular-nums shrink-0">{i + 1}</span>
+                  <span className="leading-relaxed">{fator}</span>
+                </li>
+              ))}
+            </ol>
+
+            <p className="text-lg sm:text-xl font-bold text-zinc-900 leading-snug max-w-[52ch] mb-2">
+              Nada disso mede a qualidade do seu serviço.
+            </p>
+            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
+              Mede quanta atenção o perfil recebe. Uma empresa menos preparada que a {empresa} pode
+              estar na frente apenas por cuidar disso todo mês.
+            </p>
+
+            {gargalos.length > 0 && (
+              <div className="mt-10">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500 mb-4">
+                  No perfil da {empresa}, o que está pesando hoje
+                </h3>
+                <ul className="border-t border-zinc-100">
+                  {gargalos.map((falha, idx) => (
+                    <li key={idx} className="flex gap-3 py-3 border-b border-zinc-100 text-[15px] text-zinc-700 leading-relaxed">
+                      <span className="text-amber-500 shrink-0 mt-0.5">●</span>
+                      <span>{falha}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <p className="text-[#94A3B8] leading-relaxed">
-                O <strong className="text-white">1º colocado ({primeiroColocado.nome})</strong> está no topo com nota{' '}
-                {notaPrimeiro?.toFixed(1)} — <strong className="text-white">abaixo da sua, {notaLead?.toFixed(1)}</strong>.
-                A diferença não está na satisfação dos seus clientes: a posição no mapa depende de como o perfil
-                está configurado e de como o Google entende a sua área de atendimento.
-              </p>
-              <p className="text-[#10B981] font-semibold">
-                👉 Quem seus clientes avaliam melhor é a {lead.nome}. Com o perfil trabalhado, sua empresa tem espaço {metaPosicional}.
-              </p>
-            </div>
-          )}
-
-          {/* Volume de avaliações: nota alta apoiada em 2 opiniões não vale o
-              mesmo que a mesma nota apoiada em 30. */}
-          {reputacaoMaisSolida && (
-            <div className="bg-[#0E1424] border border-[#10B981]/30 rounded-[16px] p-5 space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-[#10B981] font-bold font-outfit uppercase tracking-wider">
-                <Zap className="w-4 h-4 text-[#10B981] shrink-0" />
-                <span>A sua reputação é a mais sólida da tabela</span>
-              </div>
-              <p className="text-[#94A3B8] leading-relaxed">
-                A nota {notaLead?.toFixed(1)} da <strong className="text-white">{lead.nome}</strong> está apoiada
-                em <strong className="text-white">{avaliacoesLead} avaliações</strong>.
-                {' '}{lideresComMenosOpinioes.length === 1 ? 'Um dos líderes' : `${lideresComMenosOpinioes.length} dos líderes`}
-                {' '}que aparecem à frente sustentam a nota deles em bem menos opiniões.
-              </p>
-              <p className="text-[#10B981] font-semibold">
-                👉 Nota alta com poucas avaliações não convence quem está decidindo entre três empresas. Reputação
-                a {lead.nome} já tem — o que falta é o perfil trabalhar a favor dela na hora da busca.
-              </p>
-            </div>
-          )}
-        </section>
-
-        {/* Seção 2: Por que eles aparecem na frente.
-            Substitui a antiga lista de gargalos. Aquela versão lia como
-            boletim de notas — cinco linhas de "Sem isso, sem aquilo" fecham a
-            pessoa em vez de abrir. O enquadramento aqui é outro: a posição não
-            é um ranking de qualidade, e isso é verdade e verificável. Tira o
-            ferrão sem tirar o problema, e transforma a distância em algo
-            corrigível em vez de merecido. */}
-        <section className="bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 sm:p-8 space-y-6 shadow-xl">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs font-bold font-outfit tracking-wider uppercase text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-3 py-1 rounded-[999px]">
-              02. O que decide
-            </span>
-            <h2 className="text-xl sm:text-2xl font-bold font-outfit text-white">
-              Por que eles aparecem na frente
-            </h2>
-          </div>
-
-          <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed max-w-3xl">
-            A ordem do Google Maps não é um ranking de qualidade. Ela se decide por coisas
-            que a maioria dos donos de negócio nunca ouviu falar:
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {[
-              'Com que frequência o perfil recebe publicações e fotos novas',
-              'Se as avaliações são respondidas, e em quanto tempo',
-              'As palavras usadas no nome, na descrição e nas categorias',
-              'A distância entre a empresa e quem está fazendo a busca',
-            ].map((fator) => (
-              <div
-                key={fator}
-                className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-4 rounded-[16px] text-xs sm:text-sm text-[#F1F5F9] flex items-start gap-3"
-              >
-                <div className="w-2 h-2 rounded-full bg-[#10B981] shrink-0 mt-1.5 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                <span className="font-medium leading-relaxed">{fator}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-[rgba(16,185,129,0.06)] border border-[#10B981]/20 rounded-[16px] p-5">
-            <p className="text-sm sm:text-base text-[#F1F5F9] leading-relaxed">
-              <strong className="text-white">Nada disso mede a qualidade do seu serviço.</strong>{' '}
-              Mede quanta atenção o perfil recebe. Uma empresa menos preparada que a {lead.nome}{' '}
-              pode estar na frente apenas por cuidar disso todo mês.
-            </p>
-          </div>
-
-          {gargalos.length > 0 && (
-            <div className="space-y-3 pt-1">
-              <h3 className="text-sm font-bold font-outfit text-white uppercase tracking-wider">
-                No perfil da {lead.nome}, o que está pesando hoje
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {gargalos.map((falha, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] p-4 rounded-[16px] text-xs sm:text-sm text-[#F1F5F9] flex items-start gap-3 hover:border-amber-500/40 transition-all"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1.5 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
-                    <span className="font-medium leading-relaxed">{falha}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Bloco do site — só para quem não tem.
-            Cuidado deliberado com a redação: a tabela acima mostra líderes sem
-            site, então afirmar que site melhora a posição no mapa seria
-            desmentido pela própria página. O argumento é outro: site soma com
-            o resto, e numa região onde ninguém tem, diferencia. */}
-        {!lead.site && (
-          <section className="bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[20px] p-6 sm:p-8 space-y-4 shadow-xl">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xs font-bold font-outfit tracking-wider uppercase text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-3 py-1 rounded-[999px]">
-                Sobre não ter site
-              </span>
-            </div>
-
-            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
-              Você provavelmente já ouviu que hoje não precisa de site, que o perfil do Google resolve.
-              Isso era verdade há alguns anos.
-            </p>
-
-            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
-              O perfil é um espaço emprestado: o formato, a ordem e o que aparece são decisão do Google.
-              O site é o único lugar onde a <strong className="text-white">{lead.nome}</strong> conta a
-              própria história do seu jeito, com as suas fotos e os seus argumentos.
-            </p>
-
-            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
-              E hoje quem lê isso não são só pessoas. Quando alguém pergunta a uma inteligência artificial
-              qual a melhor {nichoLead || 'empresa'} {cidadeLead ? `de ${cidadeLead}` : 'da região'}, a resposta se monta
-              a partir do que está escrito na internet sobre cada uma. Quem não tem site não tem o que ser lido.
-            </p>
-
-            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
-              Site sozinho não muda posição. Mas soma com o resto: dá ao Google mais material sobre o que
-              a empresa faz e onde atende, é para onde o anúncio manda quem clica, e é o que sustenta a
-              sua presença fora do mapa.
-            </p>
-
-            {lideresSemSite && (
-              <p className="text-sm sm:text-base text-[#10B981] font-semibold leading-relaxed">
-                👉 Numa região onde nenhum dos líderes tem site, quem fizer — junto com a otimização do
-                perfil — se destaca sozinho.
-              </p>
             )}
           </section>
-        )}
 
-        {/* Seção 3: Os dois caminhos do Google.
-            Quem chega aqui veio de uma abordagem fria e ainda não está
-            escolhendo serviço. Os dois cards explicam; a ação é uma só, e é
-            entender — não contratar. */}
-        <section className="bg-[#0E1424] border border-[#10B981]/30 rounded-[20px] p-6 sm:p-10 md:p-12 space-y-7 sm:space-y-8 shadow-2xl relative overflow-hidden">
+          {/* ── Sobre não ter site ────────────────────────────────────────
+              A redação evita de propósito afirmar que site melhora a posição
+              no mapa: a tabela acima mostra líderes sem site e desmentiria a
+              própria página. O argumento é que soma com o resto. */}
+          {!lead.site && (
+            <section>
+              <TituloSecao numero="03. Sobre não ter site">O que existe fora do mapa</TituloSecao>
 
-          <div className="space-y-4 max-w-2xl mx-auto text-center">
-            <div className="inline-block">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/30 px-4 py-1.5 rounded-[999px]">
-                Próximo Passo
-              </span>
-            </div>
+              <div className="space-y-4 text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
+                <p>
+                  O perfil do Google é um espaço emprestado: o formato, a ordem e o que aparece são
+                  decisão dele. O site é o único lugar onde a <strong className="text-zinc-900">{empresa}</strong>{' '}
+                  conta a própria história do seu jeito.
+                </p>
+                <p>
+                  E hoje quem lê isso não são só pessoas. Quando alguém pergunta a uma inteligência
+                  artificial qual a melhor {nichoLead || 'empresa'} {cidadeCurta ? `de ${cidadeCurta}` : 'da região'},
+                  a resposta se monta a partir do que está escrito na internet sobre cada uma. Quem não
+                  tem site não tem o que ser lido.
+                </p>
+                <p>
+                  Site sozinho não muda posição — mas soma com o resto, e é para onde o anúncio manda
+                  quem clica.
+                  {lideresSemSite && (
+                    <strong className="text-zinc-900">
+                      {' '}Numa região onde nenhum dos líderes tem, quem fizer se destaca sozinho.
+                    </strong>
+                  )}
+                </p>
+              </div>
+            </section>
+          )}
 
-            <h2 className="text-xl sm:text-3xl md:text-4xl font-extrabold font-outfit text-white leading-tight">
-              Existem dois caminhos para a {lead.nome} aparecer no topo do Google
-            </h2>
+          {/* ── Próximo passo ─────────────────────────────────────────────── */}
+          <section>
+            <TituloSecao numero={lead.site ? '03. Próximo passo' : '04. Próximo passo'}>
+              Dois caminhos para aparecer no topo
+            </TituloSecao>
 
-            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
-              O <strong className="text-white">anúncio</strong> é o caminho pago para aparecer primeiro.
-              O <strong className="text-white">Google Meu Negócio</strong> é o caminho orgânico.
+            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-8">
+              O <strong className="text-zinc-900">anúncio</strong> é o caminho pago para aparecer primeiro.
+              O <strong className="text-zinc-900">Google Meu Negócio</strong> é o caminho orgânico.
               Eles não são excludentes — o melhor cenário é ocupar os dois.
             </p>
-          </div>
 
-          {/* Explicação, não cardápio: sem lista de entregáveis, que a essa
-              altura soa como proposta comercial. */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-
-            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-5 sm:p-6 flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-[10px] bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center shrink-0">
-                  <MapPin className="w-5 h-5 text-[#10B981]" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-zinc-200 border border-zinc-200 rounded-lg overflow-hidden mb-8">
+              <div className="bg-white p-5 sm:p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
+                  <h3 className="text-[15px] font-bold text-zinc-900">Google Meu Negócio</h3>
                 </div>
-                <div className="min-w-0">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#10B981]">Caminho Orgânico</span>
-                  <h3 className="text-base sm:text-lg font-bold font-outfit text-white leading-tight">Google Meu Negócio</h3>
-                </div>
+                <p className="text-sm text-zinc-600 leading-relaxed mb-4">
+                  Trabalhar o seu perfil — avaliações, fotos, publicações e respostas — para aparecer
+                  entre os primeiros de quem busca na sua região, sem pagar por clique.
+                </p>
+                <p className="text-xs text-zinc-500 pt-3 border-t border-zinc-100">
+                  Constrói ao longo dos meses e continua rendendo depois.
+                </p>
               </div>
 
-              <p className="text-sm text-[#F1F5F9] leading-relaxed flex-1">
-                Trabalhar o seu perfil no Google — avaliações, fotos, publicações e respostas — para aparecer entre os primeiros de quem busca na sua região, sem pagar por clique.
-              </p>
-
-              <p className="text-xs text-[#64748B] leading-relaxed border-t border-[rgba(255,255,255,0.08)] pt-3">
-                Constrói ao longo dos meses e continua rendendo depois.
-              </p>
-            </div>
-
-            <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-5 sm:p-6 flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-[10px] bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center shrink-0">
-                  <Megaphone className="w-5 h-5 text-[#10B981]" />
+              <div className="bg-white p-5 sm:p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Megaphone className="w-4 h-4 text-emerald-800 shrink-0" />
+                  <h3 className="text-[15px] font-bold text-zinc-900">Site + Google Ads</h3>
                 </div>
-                <div className="min-w-0">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#10B981]">Caminho Pago</span>
-                  <h3 className="text-base sm:text-lg font-bold font-outfit text-white leading-tight">Site + Google Ads</h3>
-                </div>
+                <p className="text-sm text-zinc-600 leading-relaxed mb-4">
+                  Um site que apresenta os seus trabalhos e leva direto ao WhatsApp, com anúncios que
+                  colocam a sua empresa acima de todos os resultados do mapa.
+                </p>
+                <p className="text-xs text-zinc-500 pt-3 border-t border-zinc-100">
+                  Aparece desde a primeira semana, com investimento que você controla.
+                </p>
               </div>
-
-              <p className="text-sm text-[#F1F5F9] leading-relaxed flex-1">
-                Um site que apresenta os seus trabalhos e leva direto ao WhatsApp, com anúncios que colocam a sua empresa acima de todos os resultados do mapa.
-              </p>
-
-              <p className="text-xs text-[#64748B] leading-relaxed border-t border-[rgba(255,255,255,0.08)] pt-3">
-                Aparece desde a primeira semana, com investimento que você controla.
-              </p>
             </div>
 
-          </div>
+            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
+              Um traz cliente sem custo por clique, o outro traz cliente amanhã.
+              <strong className="text-zinc-900"> Quem faz os dois aparece duas vezes na mesma busca.</strong>{' '}
+              A Eixo Digital cuida dos dois caminhos — dá para começar por um só ou fazer os dois juntos.
+            </p>
+          </section>
 
-          <p className="text-center text-sm sm:text-base text-[#F1F5F9] font-semibold max-w-2xl mx-auto leading-relaxed">
-            Um traz cliente sem custo por clique, o outro traz cliente amanhã.
-            <span className="text-[#10B981]"> Quem faz os dois aparece duas vezes na mesma busca.</span>
-          </p>
-
-          {/* Até aqui a seção explicava o mercado, não a oferta: dava para ler
-              tudo sem descobrir que a Eixo Digital faz os dois. Dizer o que se
-              faz é diferente de pedir que a pessoa escolha — a escolha continua
-              adiada para a conversa, que é o que o botão abaixo propõe. */}
-          <p className="text-center text-sm text-[#94A3B8] max-w-2xl mx-auto leading-relaxed">
-            A <strong className="text-white">Eixo Digital</strong> cuida dos dois caminhos. Dá para começar
-            por um só ou fazer os dois juntos — o que faz sentido depende de onde a {lead.nome} está hoje.
-          </p>
-
-          {/* O passo principal é pedir a análise, não falar com vendedor:
-              "quero saber mais sobre a minha empresa" é um sim muito mais
-              barato que "vamos conversar sobre contratar". Quem já quer
-              conversar tem o WhatsApp logo abaixo. */}
-          <div className="flex flex-col items-center gap-3 pt-1">
+          {/* ── Ação ──────────────────────────────────────────────────────── */}
+          <section className="nao-imprimir border-t border-zinc-200 pt-10">
             {pedido === 'feito' ? (
-              <div className="w-full max-w-md bg-[#10B981]/10 border border-[#10B981]/40 rounded-[16px] p-5 text-center space-y-2">
-                <div className="flex items-center justify-center gap-2 text-[#10B981] font-bold font-outfit">
+              <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-5 max-w-lg">
+                <div className="flex items-center gap-2 text-emerald-900 font-bold mb-1.5">
                   <CheckCircle2 className="w-5 h-5 shrink-0" />
                   <span>Pedido registrado</span>
                 </div>
-                <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Vamos preparar a análise detalhada da {lead.nome} e enviar no seu WhatsApp.
-                  Você já deve ter recebido a confirmação por lá.
+                <p className="text-sm text-zinc-700 leading-relaxed">
+                  Vamos preparar a análise detalhada da {empresa} e enviar no seu WhatsApp. Você já deve
+                  ter recebido a confirmação por lá.
                 </p>
               </div>
             ) : (
-              <>
+              <div className="max-w-lg">
+                <h3 className="text-lg font-bold text-zinc-900 mb-2">
+                  Quer entender isso com mais profundidade?
+                </h3>
+                <p className="text-[15px] text-zinc-700 leading-relaxed mb-5">
+                  Podemos preparar uma análise mais detalhada, só da {empresa} — gratuita e sem
+                  compromisso. A gente manda no seu WhatsApp quando ficar pronta.
+                </p>
+
                 <button
                   onClick={handleSolicitarAvancado}
                   disabled={pedido === 'enviando'}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#10B981] hover:bg-[#22C55E] disabled:opacity-60 disabled:cursor-not-allowed text-[#08130F] font-bold px-6 sm:px-8 py-4 rounded-[10px] shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] transition-all text-sm sm:text-base cursor-pointer text-center"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-7 py-3.5 rounded-md transition-colors text-[15px]"
                 >
-                  <Sparkles className="w-5 h-5 shrink-0" />
-                  <span>{pedido === 'enviando' ? 'Enviando pedido...' : 'Quero a análise avançada'}</span>
+                  {pedido === 'enviando' ? 'Enviando pedido...' : 'Quero a análise avançada'}
                 </button>
 
-                <p className="text-xs text-[#64748B] text-center max-w-sm leading-relaxed">
-                  Gratuita e sem compromisso. É um estudo mais fundo, só da {lead.nome}, e a gente
-                  manda no seu WhatsApp quando ficar pronto.
-                </p>
-
                 {pedido === 'erro' && (
-                  <p className="text-xs text-red-400 text-center max-w-sm leading-relaxed">
+                  <p className="text-sm text-red-700 mt-3 leading-relaxed">
                     {erroPedido || 'Não foi possível registrar o pedido.'} Se preferir, fale com a gente
                     direto no WhatsApp pelo link abaixo.
                   </p>
                 )}
-              </>
+
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-5">
+                  <a
+                    href={linkEntender}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-zinc-600 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Prefiro falar no WhatsApp</span>
+                  </a>
+                  <a
+                    href={SITE_EIXO}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-zinc-600 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 transition-colors"
+                  >
+                    <span>Conhecer a Eixo Digital</span>
+                    <ArrowUpRight className="w-3 h-3 shrink-0" />
+                  </a>
+                </div>
+              </div>
             )}
+          </section>
+        </main>
 
-            <a
-              href={linkEntender}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-[#94A3B8] hover:text-[#10B981] underline underline-offset-4 decoration-[rgba(255,255,255,0.2)] hover:decoration-[#10B981] transition-colors mt-1"
-            >
-              <MessageCircle className="w-3.5 h-3.5 shrink-0" />
-              <span>Prefiro falar direto no WhatsApp</span>
-            </a>
-
-            <a
-              href={SITE_EIXO}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#10B981] underline underline-offset-4 decoration-[rgba(255,255,255,0.15)] hover:decoration-[#10B981] transition-colors"
-            >
-              <span>Conhecer a Eixo Digital</span>
-              <ArrowUpRight className="w-3 h-3 shrink-0" />
-            </a>
-          </div>
-
-        </section>
-
-      </main>
-
-      {/* Footer Estático */}
-      <footer className="text-center py-8 px-4 text-[#64748B] text-xs border-t border-[rgba(255,255,255,0.08)] mt-12 space-y-2">
-        <p>© Eixo Digital • Presença &amp; Estratégia de Tração no Google</p>
-        <a
-          href={SITE_EIXO}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-block text-[#64748B] hover:text-[#10B981] underline underline-offset-4 transition-colors"
-        >
-          eixodigitalbr.com.br
-        </a>
-      </footer>
-
+        <footer className="px-6 sm:px-12 py-6 border-t border-zinc-200 text-xs text-zinc-500 flex flex-wrap items-center justify-between gap-2">
+          <span>© Eixo Digital · Presença &amp; Estratégia de Tração no Google</span>
+          <span>eixodigitalbr.com.br</span>
+        </footer>
+      </div>
     </div>
   );
 }
