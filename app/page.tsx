@@ -49,6 +49,40 @@ export default function DashboardPage() {
     'Descartado': leads.filter(l => l.status_funil === 'Descartado').length,
   };
 
+  /**
+   * Taxas do funil.
+   *
+   * `status_funil` guarda só o estágio ATUAL, então quem virou cliente não
+   * aparece mais em "Contatado". Para medir passagem de etapa é preciso contar
+   * de forma cumulativa: quem está em Cliente também passou por todas as
+   * anteriores.
+   *
+   * Isto só começou a significar alguma coisa depois que o envio do link
+   * deixou de marcar "Aceitou Diagnóstico" — antes o número media o seu
+   * próprio clique, não a reação do prospect.
+   */
+  const contatados =
+    funilCounts['Contatado'] +
+    funilCounts['Diagnóstico Enviado'] +
+    funilCounts['Aceitou Diagnóstico'] +
+    funilCounts['Em Negociação'] +
+    funilCounts['Cliente'];
+
+  const diagnosticosEnviados =
+    funilCounts['Diagnóstico Enviado'] +
+    funilCounts['Aceitou Diagnóstico'] +
+    funilCounts['Em Negociação'] +
+    funilCounts['Cliente'];
+
+  const pediramAnalise =
+    funilCounts['Aceitou Diagnóstico'] +
+    funilCounts['Em Negociação'] +
+    funilCounts['Cliente'];
+
+  // Sem base, "0%" mentiria: nada foi tentado ainda.
+  const taxa = (parte: number, total: number): string =>
+    total > 0 ? `${Math.round((parte / total) * 100)}%` : '—';
+
   return (
     <div className="p-6 sm:p-8 space-y-8 max-w-[1200px] mx-auto font-inter">
       
@@ -90,13 +124,15 @@ export default function DashboardPage() {
           <p className="text-xs text-[#64748B]">Empresas auditadas no sistema</p>
         </div>
 
-        <div className="bg-[#0E1424] border border-red-500/20 rounded-[16px] p-5 space-y-2 shadow-lg">
-          <div className="flex items-center justify-between text-red-400">
+        {/* Mesma correção do ScoreBadge: o destaque acompanha o que merece
+            ação. Antes o cartão verde com ✅ era o dos piores alvos. */}
+        <div className="bg-[#0E1424] border border-[#10B981]/30 rounded-[16px] p-5 space-y-2 shadow-lg">
+          <div className="flex items-center justify-between text-[#10B981]">
             <span className="text-xs font-semibold uppercase tracking-wider font-outfit">Oportunidade Alta</span>
-            <Flame className="w-4 h-4 text-red-400" />
+            <Flame className="w-4 h-4 text-[#10B981]" />
           </div>
-          <p className="text-3xl font-black font-outfit text-red-400">{altoCount}</p>
-          <p className="text-xs text-[#64748B]">Leads de prioridade máxima</p>
+          <p className="text-3xl font-black font-outfit text-[#10B981]">{altoCount}</p>
+          <p className="text-xs text-[#64748B]">Aborde estes primeiro</p>
         </div>
 
         <div className="bg-[#0E1424] border border-amber-500/20 rounded-[16px] p-5 space-y-2 shadow-lg">
@@ -105,16 +141,16 @@ export default function DashboardPage() {
             <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
           <p className="text-3xl font-black font-outfit text-amber-400">{medioCount}</p>
-          <p className="text-xs text-[#64748B]">Potencial de conversão intermediário</p>
+          <p className="text-xs text-[#64748B]">Potencial intermediário</p>
         </div>
 
-        <div className="bg-[#0E1424] border border-[#10B981]/20 rounded-[16px] p-5 space-y-2 shadow-lg">
-          <div className="flex items-center justify-between text-[#10B981]">
+        <div className="bg-[#0E1424] border border-[rgba(255,255,255,0.08)] rounded-[16px] p-5 space-y-2 shadow-lg">
+          <div className="flex items-center justify-between text-[#64748B]">
             <span className="text-xs font-semibold uppercase tracking-wider font-outfit">Oportunidade Baixa</span>
-            <CheckCircle className="w-4 h-4 text-[#10B981]" />
+            <CheckCircle className="w-4 h-4 text-[#64748B]" />
           </div>
-          <p className="text-3xl font-black font-outfit text-[#10B981]">{baixoCount}</p>
-          <p className="text-xs text-[#64748B]">Presença digital forte</p>
+          <p className="text-3xl font-black font-outfit text-[#64748B]">{baixoCount}</p>
+          <p className="text-xs text-[#64748B]">Já têm presença forte — deixe por último</p>
         </div>
 
       </div>
@@ -133,6 +169,34 @@ export default function DashboardPage() {
               <span className="text-xl font-bold font-outfit text-white">{funilCounts[status]}</span>
             </div>
           ))}
+        </div>
+
+        {/* As duas taxas que dizem se a abordagem e o relatório funcionam.
+            Contagem cumulativa, porque o status guarda só o estágio atual. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-[rgba(255,255,255,0.08)]">
+          <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-[12px] p-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-xs text-[#94A3B8] font-medium">Aceitaram receber o diagnóstico</span>
+              <span className="text-2xl font-bold font-outfit text-white shrink-0">
+                {taxa(diagnosticosEnviados, contatados)}
+              </span>
+            </div>
+            <p className="text-[11px] text-[#64748B] mt-1">
+              {diagnosticosEnviados} de {contatados} abordados · mede a mensagem de abordagem
+            </p>
+          </div>
+
+          <div className="bg-[rgba(255,255,255,0.03)] border border-[#10B981]/25 rounded-[12px] p-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-xs text-[#94A3B8] font-medium">Pediram a análise avançada</span>
+              <span className="text-2xl font-bold font-outfit text-[#10B981] shrink-0">
+                {taxa(pediramAnalise, diagnosticosEnviados)}
+              </span>
+            </div>
+            <p className="text-[11px] text-[#64748B] mt-1">
+              {pediramAnalise} de {diagnosticosEnviados} que receberam · mede o relatório
+            </p>
+          </div>
         </div>
       </div>
 

@@ -40,9 +40,11 @@ export default function ExplorarLeadsPage() {
   const [filtroNivel, setFiltroNivel] = useState<string>('todos');
   const [buscaTexto, setBuscaTexto] = useState<string>('');
   
-  // Ordenação
-  const [sortField, setSortField] = useState<SortField>('posicao_maps');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  // Ordenação. Abre por oportunidade, do maior para o menor: a pergunta desta
+  // tela é "quem eu abordo agora", e por posição no Maps os melhores alvos
+  // ficavam dissolvidos no meio de mais de cem registros.
+  const [sortField, setSortField] = useState<SortField>('score_pontos');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // Paginação
   const [page, setPage] = useState<number>(1);
