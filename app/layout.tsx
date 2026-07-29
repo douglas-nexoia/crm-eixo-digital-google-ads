@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
 export const metadata: Metadata = {
+  // Necessário para caminhos relativos em og:image virarem URL absoluta —
+  // sem isto o Next recusa o caminho relativo no build.
+  metadataBase: new URL('https://crm.eixodigitalbr.com.br'),
   title: 'CRM — Eixo Digital',
   description: 'Sistema de prospecção e análise de presença digital no Google',
 };

@@ -23,6 +23,10 @@ type Props = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Resolvida contra o metadataBase do layout raiz. */
+const IMAGEM_OG = '/diagnostico/opengraph-image.png';
+const ALT_OG = 'Diagnóstico de Visibilidade Digital — Eixo Digital';
+
 type LeadMetadata = {
   nome: string;
   nicho: string | null;
@@ -101,11 +105,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: 'Eixo Digital',
       locale: 'pt_BR',
       type: 'website',
+      // Declarada à mão de propósito: o arquivo app/diagnostico/opengraph-image.png
+      // sozinho não basta aqui, porque um objeto `openGraph` explícito em
+      // generateMetadata sobrescreve o que vem da convenção de arquivo — a
+      // imagem existia e não estava sendo anunciada.
+      images: [{ url: IMAGEM_OG, width: 1200, height: 630, alt: ALT_OG }],
     },
     twitter: {
-      card: 'summary',
+      // Com imagem, o cartão grande vale mais que o resumo.
+      card: 'summary_large_image',
       title: titulo,
       description: descricao,
+      images: [IMAGEM_OG],
     },
   };
 }
