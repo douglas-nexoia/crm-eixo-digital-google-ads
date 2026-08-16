@@ -36,12 +36,7 @@ export default function RankingConcorrentesPage() {
       }
 
       const leadsDb = await getLeadsFromSupabase();
-      if (leadsDb.length > 0) {
-        setAllLeads(leadsDb);
-      } else {
-        setAllLeads(getLocalLeads());
-      }
-
+      setAllLeads(leadsDb);
       setLoading(false);
     }
     loadData();

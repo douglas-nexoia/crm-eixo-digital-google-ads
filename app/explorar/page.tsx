@@ -90,19 +90,9 @@ export default function ExplorarLeadsPage() {
       sortOrder
     });
 
-    if (result.leads.length > 0 || result.totalCount > 0) {
-      setLeads(result.leads);
-      setTotalCount(result.totalCount);
-      setTotalPages(result.totalPages || 1);
-    } else {
-      let local = getLocalLeads();
-      if (statusParam) {
-        local = local.filter(l => l.status_funil === statusParam);
-      }
-      setLeads(local);
-      setTotalCount(local.length);
-      setTotalPages(1);
-    }
+    setLeads(result.leads);
+    setTotalCount(result.totalCount);
+    setTotalPages(result.totalPages || 1);
     setLoading(false);
   };
 

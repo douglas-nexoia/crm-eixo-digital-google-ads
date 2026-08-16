@@ -16,18 +16,11 @@ export default function DashboardPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
 
   const loadData = async () => {
-    // Tenta carregar do Supabase primeiro
     const sbBuscas = await getBuscasFromSupabase();
     const sbLeads = await getLeadsFromSupabase();
 
-    if (sbBuscas.length > 0 || sbLeads.length > 0) {
-      setBuscas(sbBuscas);
-      setLeads(sbLeads);
-    } else {
-      // Fallback para dados de teste locais
-      setBuscas(getLocalBuscas());
-      setLeads(getLocalLeads());
-    }
+    setBuscas(sbBuscas);
+    setLeads(sbLeads);
   };
 
   useEffect(() => {
