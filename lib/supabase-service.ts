@@ -385,3 +385,35 @@ export async function updateLeadInSupabase(leadId: string, updates: Partial<Lead
     return null;
   }
 }
+
+/**
+ * Insere um novo lead manualmente no Supabase (Fluxo Inbound ou Auditoria Direta)
+ */
+export async function addLeadToSupabase(lead: Partial<Lead>): Promise<Lead | null> {
+  try {
+    const payload = {
+      ...lead,
+      slug: lead.slug || `${lead.nome.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now().toString().slice(-4)}`,
+      created_at: new Date().toISOString()
+    };
+
+    // Garantir que objetos aninhados de buscas não entrem no insert direto
+    delete (payload as any).buscas;
+
+    const { data, error } = await supabase
+      .from('leads')
+      .insert([payload])
+      .select();
+
+    if (error) {
+      console.error('Erro ao inserir lead no Supabase:', error.message);
+      throw error;
+    }
+
+    return (data?.[0] as Lead) || null;
+  } catch (err) {
+    console.error('Erro ao adicionar lead no Supabase:', err);
+    return null;
+  }
+}
+

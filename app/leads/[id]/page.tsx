@@ -43,6 +43,13 @@ export default function LeadDetalhesPage() {
   const [sendingDiagnostico, setSendingDiagnostico] = useState(false);
   const [evolutionFeedback, setEvolutionFeedback] = useState<{ success: boolean; msg: string; manualLink?: string } | null>(null);
 
+  // Novos Estados Inbound
+  const [anuncioDetectado, setAnuncioDetectado] = useState(false);
+  const [tagGtm, setTagGtm] = useState(false);
+  const [tagGoogleAds, setTagGoogleAds] = useState(false);
+  const [tagGa4, setTagGa4] = useState(false);
+  const [tagMetaPixel, setTagMetaPixel] = useState(false);
+
   const BASE_APP_URL = typeof window !== 'undefined' ? window.location.origin : 'https://crm.eixodigitalbr.com.br';
 
   useEffect(() => {
@@ -58,6 +65,11 @@ export default function LeadDetalhesPage() {
         setLead(targetLead);
         setHistoricoNotas(targetLead.notas || '');
         setStatusFunil(targetLead.status_funil);
+        setAnuncioDetectado(targetLead.anuncio_detectado || false);
+        setTagGtm(targetLead.tags_rastreamento?.gtm || false);
+        setTagGoogleAds(targetLead.tags_rastreamento?.google_ads || false);
+        setTagGa4(targetLead.tags_rastreamento?.ga4 || false);
+        setTagMetaPixel(targetLead.tags_rastreamento?.meta_pixel || false);
 
         let msg = targetLead.mensagem_editada || targetLead.mensagem_sugerida;
         if (!msg || !msg.trim()) {
@@ -277,7 +289,14 @@ export default function LeadDetalhesPage() {
     const updates = {
       mensagem_editada: mensagemText,
       notas: historicoNotas,
-      status_funil: statusFunil
+      status_funil: statusFunil,
+      anuncio_detectado: anuncioDetectado,
+      tags_rastreamento: {
+        gtm: tagGtm,
+        google_ads: tagGoogleAds,
+        ga4: tagGa4,
+        meta_pixel: tagMetaPixel
+      }
     };
 
     setErroSalvar(null);
@@ -383,6 +402,7 @@ export default function LeadDetalhesPage() {
             onChange={(e) => setStatusFunil(e.target.value as StatusFunil)}
             className="bg-slate-900 text-slate-100 text-xs font-bold px-3 py-1.5 rounded border border-slate-700 focus:outline-none focus:border-blue-500"
           >
+            <option value="Aguardando Diagnóstico">Aguardando Diagnóstico</option>
             <option value="Novo">Novo</option>
             <option value="Contatado">Contatado</option>
             <option value="Diagnóstico Enviado">Diagnóstico Enviado</option>
@@ -433,6 +453,72 @@ export default function LeadDetalhesPage() {
               <div className="flex items-center justify-between py-1.5 border-b border-slate-800/60">
                 <span className="text-slate-400">Site Responsivo</span>
                 <span>{lead.site_responsivo ? '✅ Sim' : '❌ Não'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-5 space-y-4">
+            <h2 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Anúncios & Rastreamento</h2>
+            
+            <div className="space-y-3 text-xs text-slate-300">
+              <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Origem</span>
+                <span className="font-bold text-slate-200">{lead.origem || 'Outbound'}</span>
+              </div>
+              
+              <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Anunciando no Google</span>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={anuncioDetectado}
+                    onChange={(e) => setAnuncioDetectado(e.target.checked)}
+                    className="rounded border-slate-850 text-[#10B981] focus:ring-[#10B981] w-4 h-4 bg-slate-950"
+                  />
+                  <span className="font-semibold text-slate-200">Sim</span>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <span className="text-slate-400 block mb-1">Tags de Conversão / Rastreamento:</span>
+                <div className="grid grid-cols-2 gap-2.5 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/65">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tagGtm}
+                      onChange={(e) => setTagGtm(e.target.checked)}
+                      className="rounded border-slate-850 text-[#10B981] focus:ring-[#10B981] w-3.5 h-3.5 bg-slate-950"
+                    />
+                    <span>GTM Container</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tagGoogleAds}
+                      onChange={(e) => setTagGoogleAds(e.target.checked)}
+                      className="rounded border-slate-850 text-[#10B981] focus:ring-[#10B981] w-3.5 h-3.5 bg-slate-950"
+                    />
+                    <span>Google Ads Tag</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tagGa4}
+                      onChange={(e) => setTagGa4(e.target.checked)}
+                      className="rounded border-slate-850 text-[#10B981] focus:ring-[#10B981] w-3.5 h-3.5 bg-slate-950"
+                    />
+                    <span>GA4 Tag</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tagMetaPixel}
+                      onChange={(e) => setTagMetaPixel(e.target.checked)}
+                      className="rounded border-slate-850 text-[#10B981] focus:ring-[#10B981] w-3.5 h-3.5 bg-slate-950"
+                    />
+                    <span>Meta Pixel</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>

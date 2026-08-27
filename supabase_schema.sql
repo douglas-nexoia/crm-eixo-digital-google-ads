@@ -16,15 +16,12 @@ CREATE TABLE IF NOT EXISTS public.buscas (
 CREATE TABLE IF NOT EXISTS public.leads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     busca_id UUID REFERENCES public.buscas(id) ON DELETE CASCADE,
-    -- Desnormalizados de `buscas`: o CRM filtra e ordena por eles direto, e a
-    -- view pública do diagnóstico precisa deles sem poder ler `buscas`.
     nicho TEXT,
     cidade TEXT,
     nome TEXT NOT NULL,
     telefone TEXT,
     site TEXT,
     gmb_nota NUMERIC(3, 1),
-    -- Sem DEFAULT: NULL significa "não coletado", distinto de 0 avaliações reais.
     gmb_avaliacoes INTEGER,
     gmb_verificado BOOLEAN DEFAULT FALSE,
     site_https BOOLEAN DEFAULT FALSE,
@@ -35,19 +32,15 @@ CREATE TABLE IF NOT EXISTS public.leads (
     score_nivel TEXT CHECK (score_nivel IN ('baixo', 'medio', 'alto')),
     score_detalhes TEXT[],
     posicao_maps INTEGER,
-    -- "Diagnóstico Enviado" é ação sua; "Aceitou Diagnóstico" é ação do
-    -- prospect (pediu a análise avançada na página). Separados de propósito:
-    -- antes o envio contava como aceite e o funil media esforço, não resultado.
-    status_funil TEXT DEFAULT 'Novo' CHECK (status_funil IN ('Novo', 'Contatado', 'Diagnóstico Enviado', 'Aceitou Diagnóstico', 'Em Negociação', 'Cliente', 'Descartado')),
+    status_funil TEXT DEFAULT 'Novo' CHECK (status_funil IN ('Novo', 'Contatado', 'Aguardando Diagnóstico', 'Diagnóstico Enviado', 'Aceitou Diagnóstico', 'Em Negociação', 'Cliente', 'Descartado')),
     mensagem_sugerida TEXT,
     mensagem_editada TEXT,
     data_contato TIMESTAMP WITH TIME ZONE,
     notas TEXT,
     slug TEXT UNIQUE,
-    -- Não existe `updated_at` aqui, e é proposital. O código já tentou gravar
-    -- essa coluna e o PostgREST rejeitava toda escrita com PGRST204 — em
-    -- silêncio, porque o erro era engolido. Se um dia ela for desejada, crie a
-    -- coluna antes de voltar a enviá-la.
+    origem TEXT DEFAULT 'Outbound',
+    anuncio_detectado BOOLEAN DEFAULT FALSE,
+    tags_rastreamento JSONB DEFAULT '{"gtm": false, "google_ads": false, "ga4": false, "meta_pixel": false}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -57,25 +50,9 @@ CREATE INDEX IF NOT EXISTS idx_leads_status ON public.leads(status_funil);
 CREATE INDEX IF NOT EXISTS idx_leads_score_nivel ON public.leads(score_nivel);
 CREATE INDEX IF NOT EXISTS idx_leads_slug ON public.leads(slug);
 
--- ============================================================================
--- RLS — reconciliado com o banco em 2026-07-26
--- ============================================================================
--- ATENÇÃO: este arquivo já divergiu do banco no passado, e os nomes das
--- policies aqui não batiam com os reais. Antes de escrever qualquer migration,
--- confirme o estado corrente com:
---
---   select tablename, policyname, cmd, roles, qual, with_check
---   from pg_policies where schemaname = 'public';
---
--- Trate o retorno dessa consulta como a verdade, não este arquivo.
--- ============================================================================
-
 ALTER TABLE public.buscas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 
--- Ambas as tabelas só respondem a sessões autenticadas. Não há acesso anônimo:
--- a anon key é pública por design e viaja no bundle de toda página, então
--- qualquer policy aberta aqui equivale a expor a base inteira na internet.
 CREATE POLICY "Todas operações para autenticados" ON public.leads
     FOR ALL USING (auth.role() = 'authenticated');
 
@@ -85,15 +62,6 @@ CREATE POLICY "Todas operações nas buscas para autenticados" ON public.buscas
 -- ----------------------------------------------------------------------------
 -- Janela pública do diagnóstico
 -- ----------------------------------------------------------------------------
--- O relatório em /diagnostico/[id] vai por WhatsApp para o prospect, que não
--- tem login. Em vez de abrir a tabela, ele lê esta view — que expõe só as
--- colunas do relatório e deixa de fora telefone, redes sociais e todo o dado
--- comercial do funil (status_funil, notas, data_contato, mensagens).
---
--- A view roda com o privilégio do dono e atravessa de propósito o RLS de
--- `leads`; é isso que a mantém legível sem sessão. O linter do Supabase
--- sinaliza "security definer view", e aqui é intencional.
-
 CREATE OR REPLACE VIEW public.diagnosticos_publicos AS
 SELECT
     l.id,
@@ -108,7 +76,10 @@ SELECT
     l.score_pontos,
     l.score_nivel,
     l.score_detalhes,
-    l.busca_id
+    l.busca_id,
+    l.origem,
+    l.tags_rastreamento,
+    l.anuncio_detectado
 FROM public.leads l
 LEFT JOIN public.buscas b ON b.id = l.busca_id;
 

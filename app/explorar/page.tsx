@@ -14,16 +14,19 @@ import { getLocalLeads, saveLocalLead } from '@/lib/storage';
 import { Lead, StatusFunil } from '@/lib/types';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { FunnelBadge } from '@/components/FunnelBadge';
+import { AddInboundLeadModal } from '@/components/AddInboundLeadModal';
 
 type SortField = 'nome' | 'nicho' | 'posicao_maps' | 'gmb_nota' | 'gmb_avaliacoes' | 'score_pontos' | 'status_funil';
 type SortOrder = 'asc' | 'desc';
-type TabEstagio = 'todos' | 'Novo' | 'Contatado' | 'Diagnóstico Enviado' | 'Aceitou Diagnóstico' | 'Em Negociação / Cliente';
+type TabEstagio = 'todos' | 'Novo' | 'Aguardando Diagnóstico' | 'Contatado' | 'Diagnóstico Enviado' | 'Aceitou Diagnóstico' | 'Em Negociação / Cliente';
+
 
 export default function ExplorarLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [nichosDisponiveis, setNichosDisponiveis] = useState<string[]>([]);
   const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isAddInboundOpen, setIsAddInboundOpen] = useState(false);
 
   // Edição de telefone na própria linha: o scraper nem sempre acha o número, e
   // sem isto era preciso abrir o lead só para cadastrá-lo. Um por vez basta.
@@ -73,6 +76,7 @@ export default function ExplorarLeadsPage() {
     let statusParam: string | undefined = undefined;
     
     if (tabEstagio === 'Novo') statusParam = 'Novo';
+    else if (tabEstagio === 'Aguardando Diagnóstico') statusParam = 'Aguardando Diagnóstico';
     else if (tabEstagio === 'Contatado') statusParam = 'Contatado';
     else if (tabEstagio === 'Diagnóstico Enviado') statusParam = 'Diagnóstico Enviado';
     else if (tabEstagio === 'Aceitou Diagnóstico') statusParam = 'Aceitou Diagnóstico';
@@ -310,13 +314,20 @@ export default function ExplorarLeadsPage() {
     <div className="p-8 space-y-6 max-w-7xl mx-auto">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Explorar Leads & Disparo Rápido</h1>
           <p className="text-slate-400 text-sm mt-1">
             Prospecção ativa e gerenciamento do funil de vendas.
           </p>
         </div>
+        <button
+          onClick={() => setIsAddInboundOpen(true)}
+          className="flex items-center justify-center gap-2 bg-[#10B981] hover:bg-[#22C55E] text-[#08130F] font-bold px-4 py-2.5 rounded-lg text-xs shadow-[0_0_15px_rgba(16,185,129,0.25)] transition-all cursor-pointer self-start md:self-auto"
+        >
+          <PlusCircle className="w-4 h-4" />
+          <span>Adicionar Lead Inbound</span>
+        </button>
       </div>
 
       {/* SUB-ABAS POR ESTÁGIO DO FUNIL */}
@@ -330,7 +341,7 @@ export default function ExplorarLeadsPage() {
               : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
           }`}
         >
-          <span>🌐 Todos os Leads</span>
+          <span>🌐 Todos</span>
         </button>
 
         <button
@@ -342,7 +353,19 @@ export default function ExplorarLeadsPage() {
           }`}
         >
           <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-          <span>🔥 Novos Leads (Prospecção)</span>
+          <span>🔥 Novos Leads (Outbound)</span>
+        </button>
+
+        <button
+          onClick={() => { setTabEstagio('Aguardando Diagnóstico'); setPage(1); }}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            tabEstagio === 'Aguardando Diagnóstico'
+              ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
+              : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          <span>📥 Aguardando Diagnóstico (Inbound)</span>
         </button>
 
         <button
@@ -367,8 +390,6 @@ export default function ExplorarLeadsPage() {
           <span>📄 Diagnóstico Enviado</span>
         </button>
 
-        {/* Único estágio movido pelo prospect, e não por você: é a aba que
-            merece ser olhada primeiro. */}
         <button
           onClick={() => { setTabEstagio('Aceitou Diagnóstico'); setPage(1); }}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
@@ -377,7 +398,7 @@ export default function ExplorarLeadsPage() {
               : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
           }`}
         >
-          <span>🙋 Pediu Análise Avançada</span>
+          <span>🙋 Pediram Análise</span>
         </button>
 
       </div>
@@ -575,6 +596,13 @@ export default function ExplorarLeadsPage() {
                       <td className="px-4 py-3.5 text-xs">
                         <div className="font-semibold text-blue-400 capitalize">{nichoExibicao}</div>
                         <div className="text-slate-400 capitalize">{cidadeExibicao}</div>
+                        {lead.origem && lead.origem !== 'Outbound' && (
+                          <div className="mt-1">
+                            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap">
+                              {lead.origem}
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Posição no Maps */}
@@ -602,6 +630,7 @@ export default function ExplorarLeadsPage() {
                           onChange={(e) => handleStatusChangeDireto(lead.id, e.target.value as StatusFunil)}
                           className="bg-slate-950 text-slate-200 text-xs font-bold px-2 py-1 rounded border border-slate-800 focus:outline-none focus:border-blue-500"
                         >
+                          <option value="Aguardando Diagnóstico">Aguardando Diagnóstico</option>
                           <option value="Novo">Novo</option>
                           <option value="Contatado">Contatado</option>
                           <option value="Diagnóstico Enviado">Diagnóstico Enviado</option>
@@ -690,6 +719,12 @@ export default function ExplorarLeadsPage() {
         </div>
 
       </div>
+
+      <AddInboundLeadModal
+        isOpen={isAddInboundOpen}
+        onClose={() => setIsAddInboundOpen(false)}
+        onSuccess={fetchLeads}
+      />
 
     </div>
   );

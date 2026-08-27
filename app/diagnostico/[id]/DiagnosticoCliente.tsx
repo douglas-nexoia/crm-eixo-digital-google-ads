@@ -428,6 +428,15 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
     ? 'de disputar as primeiras posições da região'
     : 'de entrar no Top 3 da região';
 
+  // O diagnóstico técnico detalhado de tags é exclusivo para a estratégia Inbound
+  const showRastreamento = !!(lead.origem && lead.origem.startsWith('Inbound'));
+
+  const numRastreamento = "03";
+  const numSobreNaoTerSite = showRastreamento ? "04" : "03";
+  const numProximoPasso = lead.site
+    ? (showRastreamento ? "04" : "03")
+    : (showRastreamento ? "05" : "04");
+
   async function handleSolicitarAvancado() {
     if (!lead || pedido === 'enviando' || pedido === 'feito') return;
 
@@ -437,10 +446,11 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
     // O slug pode não existir em registros antigos; o id sempre existe.
     const resultado = await solicitarDiagnosticoAvancado(lead.slug || lead.id);
 
-    // `jaSolicitado` também cai aqui: para quem clicou, o resultado é o mesmo,
-    // e nada é reenviado.
     if (resultado.success) {
       setPedido('feito');
+      const msgProposta = `Olá! Analisei o diagnóstico da minha empresa e quero receber uma proposta de valor para implementar a metodologia de tração na *${lead.nome}*.`;
+      const url = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msgProposta)}`;
+      window.open(url, '_blank');
     } else {
       setPedido('erro');
       setErroPedido(resultado.error ?? null);
@@ -720,13 +730,121 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             )}
           </section>
 
+          {/* ── 03. Estrutura de Rastreamento (Auditoria Técnica) ────────────────────────── */}
+          {showRastreamento && (
+            <section>
+              <TituloSecao numero={`${numRastreamento}. Estrutura de Rastreamento`}>Fatos técnicos e Tags de Conversão</TituloSecao>
+
+              <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-6">
+                Para vender online ou gerar contatos qualificados no WhatsApp de forma eficiente, o site precisa ter as tags de rastreamento corretas instaladas. Sem elas, é impossível mensurar retornos e otimizar os investimentos.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                {/* Box 1: Tags */}
+                <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50">
+                  <h3 className="text-sm font-bold text-zinc-900 mb-3 border-b border-zinc-200/80 pb-2">Status das Tags no Site</h3>
+                  
+                  <ul className="space-y-3">
+                    <li className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-zinc-650">Google Tag Manager (GTM):</span>
+                      {lead.tags_rastreamento?.gtm ? (
+                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✅ Instalado</span>
+                      ) : (
+                        <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">❌ Não Detectado</span>
+                      )}
+                    </li>
+                    <li className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-zinc-650">Tag de Conversão Google Ads:</span>
+                      {lead.tags_rastreamento?.google_ads ? (
+                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✅ Instalada</span>
+                      ) : (
+                        <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">❌ Não Detectada</span>
+                      )}
+                    </li>
+                    <li className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-zinc-655">Google Analytics 4 (GA4):</span>
+                      {lead.tags_rastreamento?.ga4 ? (
+                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✅ Instalado</span>
+                      ) : (
+                        <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">❌ Não Detectado</span>
+                      )}
+                    </li>
+                    <li className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-zinc-655">Pixel da Meta (Facebook/Instagram):</span>
+                      {lead.tags_rastreamento?.meta_pixel ? (
+                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✅ Instalado</span>
+                      ) : (
+                        <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">❌ Não Detectado</span>
+                      )}
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Box 2: Anúncios */}
+                <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-zinc-900 mb-2 border-b border-zinc-200/80 pb-2">Investimento em Tráfego</h3>
+                    <div className="flex items-center justify-between text-xs py-1">
+                      <span className="text-zinc-650 font-semibold">Anunciando ativamente no Google:</span>
+                      <span className={`font-bold px-2 py-0.5 rounded border ${
+                        lead.anuncio_detectado 
+                          ? 'text-emerald-700 bg-emerald-50 border-emerald-200' 
+                          : 'text-zinc-600 bg-zinc-100 border-zinc-200'
+                      }`}>
+                        {lead.anuncio_detectado ? 'Sim' : 'Não Detectado'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-[10px] text-zinc-500 italic">
+                    * Varredura realizada com base nas tags ativas no código-fonte e histórico recente do leilão do Google Ads.
+                  </div>
+                </div>
+              </div>
+
+              {/* Alerta de Investimento no Escuro */}
+              {lead.anuncio_detectado && !lead.tags_rastreamento?.google_ads && (
+                <div className="border border-rose-250 bg-rose-50/60 text-rose-950 rounded-lg p-5 mb-6">
+                  <h4 className="font-bold text-sm text-rose-800 flex items-center gap-1.5 mb-1.5">
+                    🚨 GARGALO CRÍTICO: Investimento sem rastreamento de conversão
+                  </h4>
+                  <p className="text-xs sm:text-sm leading-relaxed text-rose-900">
+                    Identificamos que a sua empresa está pagando por anúncios no Google, mas a <strong>Tag de Conversão do Google Ads não está configurada</strong> no seu site. Isso significa que a agência ou profissional atual está trabalhando no escuro: sem saber quais palavras-chave geram vendas e contatos de verdade, seu dinheiro de tráfego pago pode estar sendo desperdiçado sem mensuração alguma.
+                  </p>
+                </div>
+              )}
+
+              {lead.anuncio_detectado && lead.tags_rastreamento?.google_ads && (
+                <div className="border border-emerald-200 bg-emerald-50/50 text-emerald-950 rounded-lg p-5 mb-6">
+                  <h4 className="font-bold text-sm text-emerald-800 flex items-center gap-1.5 mb-1.5">
+                    ✅ Rastreamento de anúncios ativo
+                  </h4>
+                  <p className="text-xs sm:text-sm leading-relaxed text-emerald-900">
+                    Detectamos a Tag de Conversão do Google Ads ativa. Isso garante que os dados básicos de cliques e cliques de conversão estão retornando ao painel do Google Ads para otimização das campanhas.
+                  </p>
+                </div>
+              )}
+
+              {!lead.anuncio_detectado && (
+                <div className="border border-zinc-200 bg-zinc-50 text-zinc-800 rounded-lg p-5 mb-6">
+                  <h4 className="font-bold text-sm text-zinc-900 flex items-center gap-1.5 mb-1.5">
+                    💡 Oportunidade de Tração imediata
+                  </h4>
+                  <p className="text-xs sm:text-sm leading-relaxed text-zinc-650">
+                    Sua empresa ainda não está anunciando no Google Ads. Ao invés de esperar meses para subir posições de forma orgânica, anunciar estruturando corretamente o GTM e a Tag de Conversão garante vendas imediatas rastreáveis desde a primeira semana.
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
+
           {/* ── Sobre não ter site ────────────────────────────────────────
               A redação evita de propósito afirmar que site melhora a posição
               no mapa: a tabela acima mostra líderes sem site e desmentiria a
               própria página. O argumento é que soma com o resto. */}
           {!lead.site && (
             <section>
-              <TituloSecao numero="03. Sobre não ter site">O que existe fora do mapa</TituloSecao>
+              <TituloSecao numero={`${numSobreNaoTerSite}. Sobre não ter site`}>O que existe fora do mapa</TituloSecao>
 
               <div className="space-y-4 text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
                 <p>
@@ -753,108 +871,108 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </section>
           )}
 
-          {/* ── Próximo passo ─────────────────────────────────────────────── */}
+          {/* ── Metodologia de Tração Eixo Digital ─────────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero={lead.site ? '03. Próximo passo' : '04. Próximo passo'}>
-              Dois caminhos para aparecer no topo
+            <TituloSecao numero={`${numProximoPasso}. A Metodologia de Tração`}>
+              Como funciona o circuito de aquisição
             </TituloSecao>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-8">
-              O <strong className="text-zinc-900">anúncio</strong> é o caminho pago para aparecer primeiro.
-              O <strong className="text-zinc-900">Google Meu Negócio</strong> é o caminho orgânico.
-              Eles não são excludentes — o melhor cenário é ocupar os dois.
+              Não se trata apenas de "fazer anúncios" ou "configurar o mapa". Para gerar vendas reais de forma sustentável, a presença digital da sua empresa precisa funcionar como um <strong>circuito integrado</strong> de 5 camadas coerentes:
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-zinc-200 border border-zinc-200 rounded-lg overflow-hidden mb-8">
-              <div className="bg-white p-5 sm:p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <h3 className="text-[15px] font-bold text-zinc-900">Google Meu Negócio</h3>
+            <div className="space-y-4 mb-8">
+              {[
+                {
+                  pilar: 'Google Ads (Camada de Aquisição)',
+                  desc: 'Coloca a sua empresa no topo das buscas no exato minuto em que o anúncio entra no ar, atraindo quem precisa do seu serviço hoje.'
+                },
+                {
+                  pilar: 'Atendimento & Conversão com IA (IARA)',
+                  desc: 'Um agente inteligente atende os contatos vindos do anúncio em segundos no WhatsApp, qualificando a necessidade e agendando o serviço 24h por dia.'
+                },
+                {
+                  pilar: 'Site Estruturado (Camada de Aprofundamento)',
+                  desc: 'Uma página veloz e otimizada que confirma a promessa do anúncio, gerando confiança e guiando o prospect para o contato.'
+                },
+                {
+                  pilar: 'Google Meu Negócio (Camada de Descoberta)',
+                  desc: 'SEO Local estruturado com as especialidades e regiões de atendimento corretas, garantindo que o Google confie e recomende a empresa organicamente.'
+                },
+                {
+                  pilar: 'OS + Pós-venda + Avaliações (Camada de Prova)',
+                  desc: 'Cada atendimento gera uma OS e uma solicitação de feedback automatizada. Avaliações 5 estrelas geram evidência digital, subindo o ranking orgânico e reduzindo o custo dos seus anúncios.'
+                }
+              ].map((camada, i) => (
+                <div key={i} className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/40 hover:bg-white hover:shadow-sm transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-emerald-800 font-bold bg-emerald-50 border border-emerald-100 rounded-full w-6 h-6 flex items-center justify-center text-xs shrink-0">{i + 1}</span>
+                    <h3 className="text-[15px] font-bold text-zinc-900">{camada.pilar}</h3>
+                  </div>
+                  <p className="text-sm text-zinc-650 leading-relaxed pl-9">
+                    {camada.desc}
+                  </p>
                 </div>
-                <p className="text-sm text-zinc-600 leading-relaxed mb-4">
-                  Trabalhar o seu perfil — avaliações, fotos, publicações e respostas — para aparecer
-                  entre os primeiros de quem busca na sua região, sem pagar por clique.
-                </p>
-                <p className="text-xs text-zinc-500 pt-3 border-t border-zinc-100">
-                  Constrói ao longo dos meses e continua rendendo depois.
-                </p>
-              </div>
-
-              <div className="bg-white p-5 sm:p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Megaphone className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <h3 className="text-[15px] font-bold text-zinc-900">Site + Google Ads</h3>
-                </div>
-                <p className="text-sm text-zinc-600 leading-relaxed mb-4">
-                  Um site que apresenta os seus trabalhos e leva direto ao WhatsApp, com anúncios que
-                  colocam a sua empresa acima de todos os resultados do mapa.
-                </p>
-                <p className="text-xs text-zinc-500 pt-3 border-t border-zinc-100">
-                  Aparece desde a primeira semana, com investimento que você controla.
-                </p>
-              </div>
+              ))}
             </div>
 
-            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-              Um traz cliente sem custo por clique, o outro traz cliente amanhã.
-              <strong className="text-zinc-900"> Quem faz os dois aparece duas vezes na mesma busca.</strong>{' '}
-              A Eixo Digital cuida dos dois caminhos — dá para começar por um só ou fazer os dois juntos.
-            </p>
+            <div className="bg-emerald-50/50 border border-emerald-100 p-5 rounded-lg">
+              <p className="text-sm text-emerald-950 font-semibold leading-relaxed text-center">
+                🔄 Circuito Fechado: Anúncio → Atendimento (IARA) → Serviço → Avaliação Real → Reputação Local → Menor custo por clique → Mais Clientes.
+              </p>
+            </div>
           </section>
 
-          {/* ── Ação ──────────────────────────────────────────────────────── */}
+          {/* ── Ação (CTA Proposta de Valor) ──────────────────────────────────────────────────────── */}
           <section className="nao-imprimir border-t border-zinc-200 pt-10">
             {pedido === 'feito' ? (
               <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-5 max-w-lg">
                 <div className="flex items-center gap-2 text-emerald-900 font-bold mb-1.5">
                   <CheckCircle2 className="w-5 h-5 shrink-0" />
-                  <span>Pedido registrado</span>
+                  <span>Solicitação Enviada!</span>
                 </div>
                 <p className="text-sm text-zinc-700 leading-relaxed">
-                  Vamos preparar a análise detalhada da {empresa} e enviar no seu WhatsApp. Você já deve
-                  ter recebido a confirmação por lá.
+                  Registramos seu interesse. Estamos redirecionando você para o nosso WhatsApp comercial para receber a Proposta de Valor e agendar a Reunião Estratégica da <strong>{empresa}</strong>.
                 </p>
               </div>
             ) : (
               <div className="max-w-lg">
                 <h3 className="text-lg font-bold text-zinc-900 mb-2">
-                  Quer entender isso com mais profundidade?
+                  Quer implementar essa metodologia na sua empresa?
                 </h3>
-                <p className="text-[15px] text-zinc-700 leading-relaxed mb-5">
-                  Podemos preparar uma análise mais detalhada, só da {empresa} — gratuita e sem
-                  compromisso. A gente manda no seu WhatsApp quando ficar pronta.
+                <p className="text-[15px] text-zinc-700 leading-relaxed mb-6">
+                  Podemos analisar a viabilidade do seu nicho de mercado em sua região e desenhar uma <strong>Proposta de Valor Personalizada</strong> para a {empresa} — sem custos ou compromissos.
                 </p>
 
                 <button
                   onClick={handleSolicitarAvancado}
                   disabled={pedido === 'enviando'}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-7 py-3.5 rounded-md transition-colors text-[15px]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-7 py-3.5 rounded-md transition-colors text-[15px] cursor-pointer shadow-sm"
                 >
-                  {pedido === 'enviando' ? 'Enviando pedido...' : 'Quero a análise avançada'}
+                  {pedido === 'enviando' ? 'Processando...' : 'Receber Proposta de Valor no WhatsApp'}
                 </button>
 
                 {pedido === 'erro' && (
                   <p className="text-sm text-red-700 mt-3 leading-relaxed">
-                    {erroPedido || 'Não foi possível registrar o pedido.'} Se preferir, fale com a gente
-                    direto no WhatsApp pelo link abaixo.
+                    {erroPedido || 'Não foi possível registrar o pedido.'} Fale conosco diretamente pelo link do WhatsApp abaixo.
                   </p>
                 )}
 
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-5">
                   <a
-                    href={linkEntender}
+                    href={`https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(`Olá! Analisei o diagnóstico da minha empresa e quero receber uma proposta de valor para implementar a metodologia de tração na *${lead.nome}*.`)}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm text-zinc-600 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-sm text-zinc-650 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 transition-colors font-medium"
                   >
                     <MessageCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Prefiro falar no WhatsApp</span>
+                    <span>Falar direto no WhatsApp</span>
                   </a>
                   <a
                     href={SITE_EIXO}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-zinc-600 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 transition-colors"
+                    className="inline-flex items-center gap-1 text-sm text-zinc-650 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 transition-colors font-medium"
                   >
                     <span>Conhecer a Eixo Digital</span>
                     <ArrowUpRight className="w-3 h-3 shrink-0" />

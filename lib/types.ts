@@ -8,11 +8,19 @@ export type ScoreNivel = 'alto' | 'medio' | 'baixo';
 export type StatusFunil =
   | 'Novo'
   | 'Contatado'
+  | 'Aguardando Diagnóstico'
   | 'Diagnóstico Enviado'
   | 'Aceitou Diagnóstico'
   | 'Em Negociação'
   | 'Cliente'
   | 'Descartado';
+
+export interface TagsRastreamento {
+  gtm: boolean;
+  google_ads: boolean;
+  ga4: boolean;
+  meta_pixel: boolean;
+}
 
 export interface Busca {
   id: string;
@@ -59,6 +67,11 @@ export interface Lead {
   // Vem da view `diagnosticos_publicos` (data da coleta do ranking), não da
   // tabela `leads`.
   data_busca?: string | null;
+  
+  // Novos campos Inbound / Auditoria profunda
+  origem?: string;
+  anuncio_detectado?: boolean;
+  tags_rastreamento?: TagsRastreamento;
   
   // Relacionamento opcional de busca pai
   buscas?: {
