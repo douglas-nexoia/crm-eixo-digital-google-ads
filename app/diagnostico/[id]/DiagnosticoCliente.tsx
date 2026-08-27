@@ -871,56 +871,47 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </section>
           )}
 
-          {/* ── Metodologia de Tração Eixo Digital ─────────────────────────────────────────────── */}
+          {/* ── A Combinação que traz mais resultado ─────────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero={`${numProximoPasso}. A Metodologia de Tração`}>
-              Como funciona o circuito de aquisição
+            <TituloSecao numero={`${numProximoPasso}. Próximo passo`}>
+              A combinação que traz mais resultado
             </TituloSecao>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-8">
-              Não se trata apenas de "fazer anúncios" ou "configurar o mapa". Para gerar vendas reais de forma sustentável, a presença digital da sua empresa precisa funcionar como um <strong>circuito integrado</strong> de 5 camadas coerentes:
+              O maior volume de vendas em assistências técnicas locais acontece quando juntamos os dois caminhos. Eles não competem entre si — eles se somam para dominar a sua região.
             </p>
 
-            <div className="space-y-4 mb-8">
-              {[
-                {
-                  pilar: 'Google Ads (Camada de Aquisição)',
-                  desc: 'Coloca a sua empresa no topo das buscas no exato minuto em que o anúncio entra no ar, atraindo quem precisa do seu serviço hoje.'
-                },
-                {
-                  pilar: 'Atendimento & Conversão com IA (IARA)',
-                  desc: 'Um agente inteligente atende os contatos vindos do anúncio em segundos no WhatsApp, qualificando a necessidade e agendando o serviço 24h por dia.'
-                },
-                {
-                  pilar: 'Site Estruturado (Camada de Aprofundamento)',
-                  desc: 'Uma página veloz e otimizada que confirma a promessa do anúncio, gerando confiança e guiando o prospect para o contato.'
-                },
-                {
-                  pilar: 'Google Meu Negócio (Camada de Descoberta)',
-                  desc: 'SEO Local estruturado com as especialidades e regiões de atendimento corretas, garantindo que o Google confie e recomende a empresa organicamente.'
-                },
-                {
-                  pilar: 'OS + Pós-venda + Avaliações (Camada de Prova)',
-                  desc: 'Cada atendimento gera uma OS e uma solicitação de feedback automatizada. Avaliações 5 estrelas geram evidência digital, subindo o ranking orgânico e reduzindo o custo dos seus anúncios.'
-                }
-              ].map((camada, i) => (
-                <div key={i} className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/40 hover:bg-white hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-emerald-800 font-bold bg-emerald-50 border border-emerald-100 rounded-full w-6 h-6 flex items-center justify-center text-xs shrink-0">{i + 1}</span>
-                    <h3 className="text-[15px] font-bold text-zinc-900">{camada.pilar}</h3>
-                  </div>
-                  <p className="text-sm text-zinc-650 leading-relaxed pl-9">
-                    {camada.desc}
-                  </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-zinc-200 border border-zinc-200 rounded-lg overflow-hidden mb-8">
+              <div className="bg-white p-5 sm:p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
+                  <h3 className="text-[15px] font-bold text-zinc-900">Google Meu Negócio (Orgânico)</h3>
                 </div>
-              ))}
+                <p className="text-sm text-zinc-600 leading-relaxed mb-4">
+                  Garante que quem pesquisa por perto encontre sua empresa gratuitamente. O trabalho constante de otimização e avaliações constrói sua reputação no mapa.
+                </p>
+                <p className="text-xs text-zinc-500 pt-3 border-t border-zinc-100 font-semibold text-emerald-800">
+                  A base de reputação que reduz o custo dos seus anúncios.
+                </p>
+              </div>
+
+              <div className="bg-white p-5 sm:p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Megaphone className="w-4 h-4 text-emerald-800 shrink-0" />
+                  <h3 className="text-[15px] font-bold text-zinc-900">Google Ads + Site (Pago)</h3>
+                </div>
+                <p className="text-sm text-zinc-600 leading-relaxed mb-4">
+                  Coloca a sua assistência no topo imediatamente, na frente de todos os concorrentes. Captura o cliente com pressa que precisa de um conserto hoje.
+                </p>
+                <p className="text-xs text-zinc-500 pt-3 border-t border-zinc-100 font-semibold text-emerald-800">
+                  Vendas imediatas, trazendo novos contatos desde a primeira semana.
+                </p>
+              </div>
             </div>
 
-            <div className="bg-emerald-50/50 border border-emerald-100 p-5 rounded-lg">
-              <p className="text-sm text-emerald-950 font-semibold leading-relaxed text-center">
-                🔄 Circuito Fechado: Anúncio → Atendimento (IARA) → Serviço → Avaliação Real → Reputação Local → Menor custo por clique → Mais Clientes.
-              </p>
-            </div>
+            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
+              Quem faz os dois aparece duas vezes na mesma busca e domina a região. A Eixo Digital cuida de toda essa estrutura para você.
+            </p>
           </section>
 
           {/* ── Ação (CTA Proposta de Valor) ──────────────────────────────────────────────────────── */}
