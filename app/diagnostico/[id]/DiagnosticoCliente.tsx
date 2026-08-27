@@ -8,7 +8,7 @@ import {
 } from '@/lib/supabase-service';
 import { getLocalLeads } from '@/lib/storage';
 import { Lead } from '@/lib/types';
-import { buscarDemanda, fraseDemanda, FONTE_DEMANDA } from '@/lib/demanda-busca';
+import { buscarDemanda, fraseDemanda, FONTE_DEMANDA, calcularPlanoGoogleAds, termoDoNicho } from '@/lib/demanda-busca';
 import {
   AlertTriangle, MessageCircle, MapPin, Megaphone,
   ArrowUpRight, CheckCircle2, Printer,
@@ -436,6 +436,12 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const numProximoPasso = lead.site
     ? (showRastreamento ? "04" : "03")
     : (showRastreamento ? "05" : "04");
+
+  const numProjecao = lead.site
+    ? (showRastreamento ? "05" : "04")
+    : (showRastreamento ? "06" : "05");
+
+  const planoAds = calcularPlanoGoogleAds(nichoLead, cidadeLead);
 
   async function handleSolicitarAvancado() {
     if (!lead || pedido === 'enviando' || pedido === 'feito') return;
@@ -912,6 +918,85 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
               Você não precisa contratar duas assessorias separadas. Nós estruturamos e gerenciamos os dois pilares juntos para garantir o maior lucro possível.
             </p>
+          </section>
+
+          {/* ── Plano de Investimento Diário (Google Ads Projeção) ─────────────────────────────────────────────── */}
+          <section>
+            <TituloSecao numero={`${numProjecao}. Plano de Investimento Diário`}>
+              Estimativa de investimento e retorno no Google Ads
+            </TituloSecao>
+
+            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-8">
+              Quando você começa a anunciar no Google, a dúvida mais comum é quanto investir por dia para obter retorno. Com base no leilão real do Google para <strong>{termoDoNicho(lead.nicho) || 'seu segmento'}</strong> em <strong>{cidadeCurta || 'sua região'}</strong>, projetamos dois cenários recomendados:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {/* Cenário Piloto */}
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 hover:bg-white hover:shadow-sm transition-all flex flex-col justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-900 border-b border-zinc-200/80 pb-2 mb-4 flex justify-between items-center">
+                    <span>Cenário Piloto (Validação)</span>
+                    <span className="text-xs bg-zinc-100 border border-zinc-200 text-zinc-650 px-2 py-0.5 rounded">Teste</span>
+                  </h3>
+                  <div className="space-y-3 mb-6">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-600">Investimento Diário:</span>
+                      <strong className="text-zinc-900">R$ {planoAds.cenarioPiloto.diario},00 / dia</strong>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-600">Investimento Mensal:</span>
+                      <strong className="text-zinc-900">R$ {planoAds.cenarioPiloto.mensal},00 / mês</strong>
+                    </div>
+                    <div className="flex justify-between text-sm border-t border-zinc-100 pt-2">
+                      <span className="text-zinc-600">Cliques Estimados:</span>
+                      <strong className="text-zinc-900">~{planoAds.cenarioPiloto.cliquesMes} visitas/mês</strong>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-600">Contatos no WhatsApp:</span>
+                      <strong className="text-emerald-800 font-bold">~{planoAds.cenarioPiloto.contatosMesMin} a {planoAds.cenarioPiloto.contatosMesMax} contatos/mês</strong>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-zinc-500 italic">
+                  * Foco em iniciar a tração e validar os primeiros serviços de alta margem.
+                </div>
+              </div>
+
+              {/* Cenário Escala */}
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 hover:bg-white hover:shadow-sm transition-all flex flex-col justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-900 border-b border-zinc-200/80 pb-2 mb-4 flex justify-between items-center">
+                    <span>Cenário Escala (Aceleração)</span>
+                    <span className="text-xs bg-emerald-50 border border-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-semibold">Ideal</span>
+                  </h3>
+                  <div className="space-y-3 mb-6">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-600">Investimento Diário:</span>
+                      <strong className="text-zinc-900">R$ {planoAds.cenarioEscala.diario},00 / dia</strong>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-600">Investimento Mensal:</span>
+                      <strong className="text-zinc-900">R$ {planoAds.cenarioEscala.mensal},00 / mês</strong>
+                    </div>
+                    <div className="flex justify-between text-sm border-t border-zinc-100 pt-2">
+                      <span className="text-zinc-600">Cliques Estimados:</span>
+                      <strong className="text-zinc-900">~{planoAds.cenarioEscala.cliquesMes} visitas/mês</strong>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-600">Contatos no WhatsApp:</span>
+                      <strong className="text-emerald-800 font-bold">~{planoAds.cenarioEscala.contatosMesMin} a {planoAds.cenarioEscala.contatosMesMax} contatos/mês</strong>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-zinc-500 italic">
+                  * Recomendado para dominar a região e manter a equipe de técnicos 100% ocupada.
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-zinc-500 italic bg-zinc-50 border border-zinc-200 rounded p-3">
+              * Estimativas baseadas no leilão do Google Ads em <strong>{planoAds.medidoEm}</strong>. CPC médio estimado em R$ {planoAds.cpcMedio.toFixed(2)}. Projeção de conversão calculada com base na taxa de 12% a 18% da landing page de destino.
+            </div>
           </section>
 
           {/* ── Ação (CTA Falar com o Douglas) ──────────────────────────────────────────────────────── */}

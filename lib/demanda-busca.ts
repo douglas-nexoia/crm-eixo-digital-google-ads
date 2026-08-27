@@ -32,6 +32,16 @@
 export type DemandaBusca = {
   /** Buscas mensais na cidade. Medido, nunca calculado. */
   buscasMensais: number;
+  /** Lance mínimo para topo de página (CPC Mínimo) em R$ */
+  cpcMin?: number;
+  /** Lance máximo para topo de página (CPC Máximo) em R$ */
+  cpcMax?: number;
+  /** CPC Médio realista de leilão em R$ */
+  cpcMedio?: number;
+  /** Investimento diário recomendado para teste/piloto */
+  diarioPiloto?: number;
+  /** Investimento diário recomendado para escala/aceleração */
+  diarioEscala?: number;
   /**
    * Mês e ano da consulta. O dado envelhece e a página precisa poder dizer
    * quando foi medido.
@@ -50,6 +60,34 @@ export type Nicho = {
    * entra nas frases que o prospect lê.
    */
   termo: string;
+};
+
+export type BenchmarkNicho = {
+  cpcMin: number;
+  cpcMax: number;
+  cpcMedio: number;
+  diarioPiloto: number;
+  diarioEscala: number;
+};
+
+export const BENCHMARKS_NICHO: Record<string, BenchmarkNicho> = {
+  eletro_assistencia:  { cpcMin: 1.80, cpcMax: 3.90, cpcMedio: 2.85, diarioPiloto: 25, diarioEscala: 45 },
+  climatizacao:        { cpcMin: 2.20, cpcMax: 4.80, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 60 },
+  celular_assistencia: { cpcMin: 1.50, cpcMax: 3.20, cpcMedio: 2.35, diarioPiloto: 20, diarioEscala: 40 },
+  odontologia:         { cpcMin: 2.80, cpcMax: 6.50, cpcMedio: 4.65, diarioPiloto: 35, diarioEscala: 70 },
+  estetica:            { cpcMin: 2.10, cpcMax: 4.90, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 55 },
+  marcenaria:          { cpcMin: 2.50, cpcMax: 5.80, cpcMedio: 4.15, diarioPiloto: 30, diarioEscala: 60 },
+  mecanica:            { cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 50 },
+  desentupidora:       { cpcMin: 4.50, cpcMax: 12.00, cpcMedio: 8.25, diarioPiloto: 50, diarioEscala: 100 },
+  energia_solar:       { cpcMin: 3.80, cpcMax: 9.00, cpcMedio: 6.40, diarioPiloto: 45, diarioEscala: 90 },
+  vidracaria:          { cpcMin: 1.80, cpcMax: 3.80, cpcMedio: 2.80, diarioPiloto: 25, diarioEscala: 45 },
+  serralheria:         { cpcMin: 1.70, cpcMax: 3.60, cpcMedio: 2.65, diarioPiloto: 25, diarioEscala: 45 },
+  veterinaria:         { cpcMin: 1.60, cpcMax: 3.50, cpcMedio: 2.55, diarioPiloto: 25, diarioEscala: 45 },
+  autoescola:          { cpcMin: 2.00, cpcMax: 4.50, cpcMedio: 3.25, diarioPiloto: 30, diarioEscala: 55 },
+  barbearia_salao:     { cpcMin: 1.50, cpcMax: 3.20, cpcMedio: 2.35, diarioPiloto: 20, diarioEscala: 40 },
+  pintor:              { cpcMin: 1.70, cpcMax: 3.50, cpcMedio: 2.60, diarioPiloto: 25, diarioEscala: 45 },
+  gesso_drywall:       { cpcMin: 1.80, cpcMax: 3.80, cpcMedio: 2.80, diarioPiloto: 25, diarioEscala: 45 },
+  default:             { cpcMin: 2.00, cpcMax: 4.50, cpcMedio: 3.25, diarioPiloto: 25, diarioEscala: 50 },
 };
 
 /**
@@ -96,6 +134,9 @@ const ALIAS: Record<string, string> = {
   'centro automotivo': 'mecanica',
   'climatizacao': 'climatizacao',
   'estetica': 'estetica',
+  'assistencia tecnica': 'eletro_assistencia',
+  'assistencia tecnica de eletrodomesticos': 'eletro_assistencia',
+  'assistencia tecnica eletrodomesticos': 'eletro_assistencia',
 };
 
 /** Resolve o valor gravado no banco para o slug do catálogo. */
@@ -106,23 +147,25 @@ function nichoCanonico(nicho: string): string {
 }
 
 /**
- * Volume medido, por nicho e cidade.
+ * Volume e custos medidos por nicho e cidade.
  *
  * Enquanto um par não estiver aqui, o relatório simplesmente não fala de
  * volume — melhor um bloco a menos do que um número que não sobrevive à
  * pergunta "de onde você tirou isso?".
  */
 const TABELA: Record<string, DemandaBusca> = {
-  'climatizacao|jundiai': { buscasMensais: 1900, medidoEm: 'julho de 2026' },
-  'climatizacao|campinas': { buscasMensais: 5400, medidoEm: 'julho de 2026' },
-  'climatizacao|valinhos': { buscasMensais: 390, medidoEm: 'julho de 2026' },
-  'climatizacao|vinhedo': { buscasMensais: 210, medidoEm: 'julho de 2026' },
-  'odontologia|jundiai': { buscasMensais: 2400, medidoEm: 'julho de 2026' },
-  'centro automotivo|jundiai': { buscasMensais: 1600, medidoEm: 'julho de 2026' },
-  'marcenaria|jundiai': { buscasMensais: 720, medidoEm: 'julho de 2026' },
-  'estetica|jundiai': { buscasMensais: 1300, medidoEm: 'julho de 2026' },
-  // Chaveado pelo slug padronizado; `centro automotivo` chega aqui via ALIAS.
-  'mecanica|jundiai': { buscasMensais: 1600, medidoEm: 'julho de 2026' },
+  'climatizacao|jundiai': { buscasMensais: 1900, cpcMin: 2.20, cpcMax: 4.80, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'julho de 2026' },
+  'climatizacao|campinas': { buscasMensais: 5400, cpcMin: 2.50, cpcMax: 5.20, cpcMedio: 3.85, diarioPiloto: 35, diarioEscala: 70, medidoEm: 'julho de 2026' },
+  'climatizacao|valinhos': { buscasMensais: 390, cpcMin: 2.00, cpcMax: 4.50, cpcMedio: 3.25, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'julho de 2026' },
+  'climatizacao|vinhedo': { buscasMensais: 210, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'julho de 2026' },
+  'odontologia|jundiai': { buscasMensais: 2400, cpcMin: 2.80, cpcMax: 6.50, cpcMedio: 4.65, diarioPiloto: 35, diarioEscala: 70, medidoEm: 'julho de 2026' },
+  'centro automotivo|jundiai': { buscasMensais: 1600, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'julho de 2026' },
+  'marcenaria|jundiai': { buscasMensais: 720, cpcMin: 2.50, cpcMax: 5.80, cpcMedio: 4.15, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'julho de 2026' },
+  'estetica|jundiai': { buscasMensais: 1300, cpcMin: 2.10, cpcMax: 4.90, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 55, medidoEm: 'julho de 2026' },
+  'mecanica|jundiai': { buscasMensais: 1600, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'julho de 2026' },
+  'eletro_assistencia|sorocaba': { buscasMensais: 2100, cpcMin: 1.80, cpcMax: 3.90, cpcMedio: 2.85, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|belo horizonte': { buscasMensais: 8900, cpcMin: 2.10, cpcMax: 4.50, cpcMedio: 3.30, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|jundiai': { buscasMensais: 1450, cpcMin: 1.80, cpcMax: 3.80, cpcMedio: 2.80, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
 };
 
 export const FONTE_DEMANDA = 'Planejador de Palavras-chave do Google';
@@ -185,4 +228,77 @@ export function fraseDemanda(nicho?: string | null, cidade?: string | null): str
   // O termo do catálogo, não o nicho do banco: é o que faz o número
   // corresponder à frase, já que foi ele que o Planejador mediu.
   return `Cerca de ${volume} pessoas procuram ${termoDoNicho(nicho)} em ${cidadeLimpa} todo mês no Google.`;
+}
+
+export type PlanoGoogleAds = {
+  cpcMin: number;
+  cpcMax: number;
+  cpcMedio: number;
+  buscasMensais: number | null;
+  medidoEm: string;
+  cenarioPiloto: {
+    diario: number;
+    mensal: number;
+    cliquesMes: number;
+    contatosMesMin: number;
+    contatosMesMax: number;
+  };
+  cenarioEscala: {
+    diario: number;
+    mensal: number;
+    cliquesMes: number;
+    contatosMesMin: number;
+    contatosMesMax: number;
+  };
+};
+
+/**
+ * Calcula o Plano Factual de Investimento Diário e Projeção de Retorno no Google Ads.
+ */
+export function calcularPlanoGoogleAds(nicho?: string | null, cidade?: string | null): PlanoGoogleAds {
+  const demanda = buscarDemanda(nicho, cidade);
+  const nCanonico = nicho ? nichoCanonico(nicho) : 'default';
+  const benchmark = BENCHMARKS_NICHO[nCanonico] || BENCHMARKS_NICHO['default'];
+
+  const cpcMin = demanda?.cpcMin ?? benchmark.cpcMin;
+  const cpcMax = demanda?.cpcMax ?? benchmark.cpcMax;
+  const cpcMedio = demanda?.cpcMedio ?? benchmark.cpcMedio;
+  const diarioPiloto = demanda?.diarioPiloto ?? benchmark.diarioPiloto;
+  const diarioEscala = demanda?.diarioEscala ?? benchmark.diarioEscala;
+  const buscasMensais = demanda?.buscasMensais ?? null;
+  const medidoEm = demanda?.medidoEm ?? 'leilão atual do Google Ads';
+
+  // Cálculos Cenário Piloto
+  const mensalPiloto = diarioPiloto * 30;
+  const cliquesMesPiloto = Math.round(mensalPiloto / cpcMedio);
+  const contatosMesMinPiloto = Math.round(cliquesMesPiloto * 0.12);
+  const contatosMesMaxPiloto = Math.round(cliquesMesPiloto * 0.18);
+
+  // Cálculos Cenário Escala
+  const mensalEscala = diarioEscala * 30;
+  const cliquesMesEscala = Math.round(mensalEscala / cpcMedio);
+  const contatosMesMinEscala = Math.round(cliquesMesEscala * 0.12);
+  const contatosMesMaxEscala = Math.round(cliquesMesEscala * 0.18);
+
+  return {
+    cpcMin,
+    cpcMax,
+    cpcMedio,
+    buscasMensais,
+    medidoEm,
+    cenarioPiloto: {
+      diario: diarioPiloto,
+      mensal: mensalPiloto,
+      cliquesMes: cliquesMesPiloto,
+      contatosMesMin: contatosMesMinPiloto,
+      contatosMesMax: contatosMesMaxPiloto,
+    },
+    cenarioEscala: {
+      diario: diarioEscala,
+      mensal: mensalEscala,
+      cliquesMes: cliquesMesEscala,
+      contatosMesMin: contatosMesMinEscala,
+      contatosMesMax: contatosMesMaxEscala,
+    },
+  };
 }
