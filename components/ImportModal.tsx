@@ -78,8 +78,8 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
             gmb_verificado: item.gmb?.verificado ?? false,
             site_https: item.site_auditoria?.https ?? false,
             site_responsivo: item.site_auditoria?.responsivo ?? false,
-            instagram: item.redes_sociais?.instagram ?? null,
-            facebook: item.redes_sociais?.facebook ?? null,
+            instagram: item.redes_sociais?.instagram ?? undefined,
+            facebook: item.redes_sociais?.facebook ?? undefined,
             score_pontos: item.score?.pontos ?? 0,
             score_nivel: item.score?.nivel ?? 'medio',
             score_detalhes: item.score?.detalhes ?? [],
@@ -96,9 +96,9 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuc
               parsed.nicho,
               parsed.cidade
             ),
-            mensagem_editada: null,
-            data_contato: null,
-            notas: null,
+            mensagem_editada: undefined,
+            data_contato: undefined,
+            notas: undefined,
             slug: `${item.nome.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now().toString().slice(-4)}`,
             created_at: new Date().toISOString()
           }))

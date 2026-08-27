@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   Search, Copy, Check, FileText, ChevronLeft, ChevronRight,
   ArrowUpDown, ArrowUp, ArrowDown, MessageSquare, Send, Sparkles, AlertCircle,
-  Pencil, X
+  Pencil, X, PlusCircle
 } from 'lucide-react';
 import { getLeadsPaginadosFromSupabase, getNichosECidadesUnicosFromSupabase, updateLeadInSupabase } from '@/lib/supabase-service';
 import { enviarMensagemEvolutionAPI } from '@/lib/evolution-service';

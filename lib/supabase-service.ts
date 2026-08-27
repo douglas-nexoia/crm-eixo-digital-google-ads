@@ -393,7 +393,7 @@ export async function addLeadToSupabase(lead: Partial<Lead>): Promise<Lead | nul
   try {
     const payload = {
       ...lead,
-      slug: lead.slug || `${lead.nome.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now().toString().slice(-4)}`,
+      slug: lead.slug || `${(lead.nome ?? 'lead').toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now().toString().slice(-4)}`,
       created_at: new Date().toISOString()
     };
 
