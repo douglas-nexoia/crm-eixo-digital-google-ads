@@ -448,7 +448,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
     if (resultado.success) {
       setPedido('feito');
-      const msgProposta = `Olá Douglas! Vi o diagnóstico da *${lead.nome}* e quero estruturar o Google Ads e o Google Meu Negócio na minha cidade.`;
+      const msgProposta = `Olá Douglas! Vi o diagnóstico da *${lead.nome}* e quero ativar os anúncios do Google com o mapa incluso na minha cidade.`;
       const url = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msgProposta)}`;
       window.open(url, '_blank');
     } else {
@@ -874,43 +874,43 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
           {/* ── A Estrutura Completa ─────────────────────────────────────────────── */}
           <section>
             <TituloSecao numero={`${numProximoPasso}. A Estrutura Completa`}>
-              Como as assistências que mais faturam dominam a busca local
+              O motor de anúncios com a base do mapa inclusa
             </TituloSecao>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-8">
-              O maior resultado acontece quando você ocupa os dois espaços ao mesmo tempo:
+              Para a sua assistência técnica receber chamadas todos os dias no WhatsApp, nós ativamos um sistema completo de aquisição:
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-zinc-200 border border-zinc-200 rounded-lg overflow-hidden mb-8">
               <div className="bg-white p-5 sm:p-6">
                 <div className="flex items-center gap-2 mb-1">
-                  <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <h3 className="text-[15px] font-bold text-zinc-900">Google Meu Negócio</h3>
+                  <Megaphone className="w-4 h-4 text-emerald-800 shrink-0" />
+                  <h3 className="text-[15px] font-bold text-zinc-900">Google Ads + Site</h3>
                 </div>
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-850 mb-3">
-                  Presença Orgânica no Maps
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-800 mb-3">
+                  A Solução Principal de Aquisição
                 </span>
                 <p className="text-sm text-zinc-600 leading-relaxed">
-                  Perfil otimizado e ativo para ser encontrado no bairro sem custo por clique.
+                  Anúncios no topo do Google focados apenas em serviços de alta margem (geladeira, lava e seca, ar) com cliente chamando no WhatsApp hoje.
                 </p>
               </div>
 
               <div className="bg-white p-5 sm:p-6">
                 <div className="flex items-center gap-2 mb-1">
-                  <Megaphone className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <h3 className="text-[15px] font-bold text-zinc-900">Google Ads + Site</h3>
+                  <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
+                  <h3 className="text-[15px] font-bold text-zinc-900">Google Meu Negócio</h3>
                 </div>
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-855 mb-3">
-                  Topo Imediato de Quem Tem Pressa
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-800 mb-3">
+                  Incluso Sem Custo Adicional
                 </span>
                 <p className="text-sm text-zinc-600 leading-relaxed">
-                  Anúncios no topo para serviços de alto valor (geladeira, máquina, ar) com cliente chamando hoje.
+                  Otimizamos e mantemos o seu perfil ativo no mapa. Uma presença forte no mapa faz o Google cobrar mais barato por cada clique dos seus anúncios.
                 </p>
               </div>
             </div>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-              Quem faz os dois aparece duas vezes na mesma busca e domina a cidade. A Eixo Digital cuida de toda essa estrutura para a sua empresa.
+              Você não precisa contratar duas assessorias separadas. Nós estruturamos e gerenciamos os dois pilares juntos para garantir o maior lucro possível.
             </p>
           </section>
 
@@ -923,16 +923,16 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                   <span>Redirecionando...</span>
                 </div>
                 <p className="text-sm text-zinc-700 leading-relaxed">
-                  Registramos seu interesse! Estamos redirecionando você para o WhatsApp do Douglas para estruturar o Google Ads e o Google Meu Negócio da <strong>{empresa}</strong> na sua cidade.
+                  Registramos seu interesse! Estamos redirecionando você para o WhatsApp do Douglas para ativar os anúncios e otimizar o Google Meu Negócio da <strong>{empresa}</strong> na sua cidade.
                 </p>
               </div>
             ) : (
               <div className="max-w-lg">
                 <h3 className="text-lg font-bold text-zinc-900 mb-2">
-                  Quer estruturar o Google da {empresa}?
+                  Quer estruturar os anúncios da {empresa}?
                 </h3>
                 <p className="text-[15px] text-zinc-700 leading-relaxed mb-6">
-                  Em 48 horas colocamos tudo no ar, sem reuniões demoradas.
+                  Em 48 horas colocamos seus anúncios no ar com o seu mapa otimizado de bônus, sem reuniões demoradas.
                 </p>
 
                 <button
@@ -951,7 +951,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-5">
                   <a
-                    href={`https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(`Olá Douglas! Vi o diagnóstico da *${lead.nome}* e quero estruturar o Google Ads e o Google Meu Negócio na minha cidade.`)}`}
+                    href={`https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(`Olá Douglas! Vi o diagnóstico da *${lead.nome}* e quero ativar os anúncios do Google com o mapa incluso na minha cidade.`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 text-sm text-zinc-650 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 transition-colors font-medium"
