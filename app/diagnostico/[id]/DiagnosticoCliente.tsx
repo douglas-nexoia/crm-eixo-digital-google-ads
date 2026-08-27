@@ -448,7 +448,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
     if (resultado.success) {
       setPedido('feito');
-      const msgProposta = `Olá! Analisei o diagnóstico da minha empresa e quero receber uma proposta de valor para implementar a metodologia de tração na *${lead.nome}*.`;
+      const msgProposta = `Olá Douglas! Vi o diagnóstico da *${lead.nome}* e quero estruturar o Google Ads e o Google Meu Negócio na minha cidade.`;
       const url = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msgProposta)}`;
       window.open(url, '_blank');
     } else {
@@ -871,68 +871,68 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </section>
           )}
 
-          {/* ── A Combinação que traz mais resultado ─────────────────────────────────────────────── */}
+          {/* ── A Estrutura Completa ─────────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero={`${numProximoPasso}. Próximo passo`}>
-              A combinação que traz mais resultado
+            <TituloSecao numero={`${numProximoPasso}. A Estrutura Completa`}>
+              Como as assistências que mais faturam dominam a busca local
             </TituloSecao>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-8">
-              O maior volume de vendas em assistências técnicas locais acontece quando juntamos os dois caminhos. Eles não competem entre si — eles se somam para dominar a sua região.
+              O maior resultado acontece quando você ocupa os dois espaços ao mesmo tempo:
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-zinc-200 border border-zinc-200 rounded-lg overflow-hidden mb-8">
               <div className="bg-white p-5 sm:p-6">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
                   <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <h3 className="text-[15px] font-bold text-zinc-900">Google Meu Negócio (Orgânico)</h3>
+                  <h3 className="text-[15px] font-bold text-zinc-900">Google Meu Negócio</h3>
                 </div>
-                <p className="text-sm text-zinc-600 leading-relaxed mb-4">
-                  Garante que quem pesquisa por perto encontre sua empresa gratuitamente. O trabalho constante de otimização e avaliações constrói sua reputação no mapa.
-                </p>
-                <p className="text-xs text-zinc-500 pt-3 border-t border-zinc-100 font-semibold text-emerald-800">
-                  A base de reputação que reduz o custo dos seus anúncios.
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-850 mb-3">
+                  Presença Orgânica no Maps
+                </span>
+                <p className="text-sm text-zinc-600 leading-relaxed">
+                  Perfil otimizado e ativo para ser encontrado no bairro sem custo por clique.
                 </p>
               </div>
 
               <div className="bg-white p-5 sm:p-6">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
                   <Megaphone className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <h3 className="text-[15px] font-bold text-zinc-900">Google Ads + Site (Pago)</h3>
+                  <h3 className="text-[15px] font-bold text-zinc-900">Google Ads + Site</h3>
                 </div>
-                <p className="text-sm text-zinc-600 leading-relaxed mb-4">
-                  Coloca a sua assistência no topo imediatamente, na frente de todos os concorrentes. Captura o cliente com pressa que precisa de um conserto hoje.
-                </p>
-                <p className="text-xs text-zinc-500 pt-3 border-t border-zinc-100 font-semibold text-emerald-800">
-                  Vendas imediatas, trazendo novos contatos desde a primeira semana.
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-855 mb-3">
+                  Topo Imediato de Quem Tem Pressa
+                </span>
+                <p className="text-sm text-zinc-600 leading-relaxed">
+                  Anúncios no topo para serviços de alto valor (geladeira, máquina, ar) com cliente chamando hoje.
                 </p>
               </div>
             </div>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-              Quem faz os dois aparece duas vezes na mesma busca e domina a região. A Eixo Digital cuida de toda essa estrutura para você.
+              Quem faz os dois aparece duas vezes na mesma busca e domina a cidade. A Eixo Digital cuida de toda essa estrutura para a sua empresa.
             </p>
           </section>
 
-          {/* ── Ação (CTA Proposta de Valor) ──────────────────────────────────────────────────────── */}
+          {/* ── Ação (CTA Falar com o Douglas) ──────────────────────────────────────────────────────── */}
           <section className="nao-imprimir border-t border-zinc-200 pt-10">
             {pedido === 'feito' ? (
               <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-5 max-w-lg">
                 <div className="flex items-center gap-2 text-emerald-900 font-bold mb-1.5">
                   <CheckCircle2 className="w-5 h-5 shrink-0" />
-                  <span>Solicitação Enviada!</span>
+                  <span>Redirecionando...</span>
                 </div>
                 <p className="text-sm text-zinc-700 leading-relaxed">
-                  Registramos seu interesse. Estamos redirecionando você para o nosso WhatsApp comercial para receber a Proposta de Valor e agendar a Reunião Estratégica da <strong>{empresa}</strong>.
+                  Registramos seu interesse! Estamos redirecionando você para o WhatsApp do Douglas para estruturar o Google Ads e o Google Meu Negócio da <strong>{empresa}</strong> na sua cidade.
                 </p>
               </div>
             ) : (
               <div className="max-w-lg">
                 <h3 className="text-lg font-bold text-zinc-900 mb-2">
-                  Quer implementar essa metodologia na sua empresa?
+                  Quer estruturar o Google da {empresa}?
                 </h3>
                 <p className="text-[15px] text-zinc-700 leading-relaxed mb-6">
-                  Podemos analisar a viabilidade do seu nicho de mercado em sua região e desenhar uma <strong>Proposta de Valor Personalizada</strong> para a {empresa} — sem custos ou compromissos.
+                  Em 48 horas colocamos tudo no ar, sem reuniões demoradas.
                 </p>
 
                 <button
@@ -940,7 +940,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                   disabled={pedido === 'enviando'}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-7 py-3.5 rounded-md transition-colors text-[15px] cursor-pointer shadow-sm"
                 >
-                  {pedido === 'enviando' ? 'Processando...' : 'Receber Proposta de Valor no WhatsApp'}
+                  {pedido === 'enviando' ? 'Redirecionando...' : 'Falar com o Douglas no WhatsApp'}
                 </button>
 
                 {pedido === 'erro' && (
@@ -951,7 +951,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-5">
                   <a
-                    href={`https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(`Olá! Analisei o diagnóstico da minha empresa e quero receber uma proposta de valor para implementar a metodologia de tração na *${lead.nome}*.`)}`}
+                    href={`https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(`Olá Douglas! Vi o diagnóstico da *${lead.nome}* e quero estruturar o Google Ads e o Google Meu Negócio na minha cidade.`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 text-sm text-zinc-650 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 transition-colors font-medium"
