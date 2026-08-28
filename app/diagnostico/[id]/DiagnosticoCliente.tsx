@@ -443,6 +443,41 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
   const planoAds = calcularPlanoGoogleAds(nichoLead, cidadeLead);
 
+  // Cálculo do Índice de Presença & Captação Digital (0 a 100)
+  const pilarAnuncios = lead.anuncio_detectado ? 35 : 0;
+  let pilarSite = 0;
+  if (lead.site) {
+    pilarSite += 15;
+    if (lead.site_https) pilarSite += 5;
+    if (lead.site_responsivo) pilarSite += 5;
+    if (lead.tags_rastreamento?.google_ads) pilarSite += 10;
+  }
+  let pilarGmb = 5;
+  const avaliacoes = lead.gmb_avaliacoes || 0;
+  if (avaliacoes >= 50) pilarGmb = 30;
+  else if (avaliacoes >= 20) pilarGmb = 25;
+  else if (avaliacoes >= 10) pilarGmb = 18;
+  else if (avaliacoes >= 1) pilarGmb = 12;
+
+  const totalIndice = Math.min(100, Math.max(10, pilarAnuncios + pilarSite + pilarGmb));
+
+  let nivelScore = 'Vulnerável / Baixo';
+  let badgeScoreColor = 'bg-rose-100 text-rose-900 border-rose-200';
+  let barScoreColor = 'bg-rose-500';
+  let descScore = 'Sua empresa possui boa reputação inicial, mas está invisível no topo das buscas urgentes do Google por falta de anúncios e página rápida de conversão.';
+
+  if (totalIndice >= 75) {
+    nivelScore = 'Consolidado / Alto';
+    badgeScoreColor = 'bg-emerald-100 text-emerald-900 border-emerald-200';
+    barScoreColor = 'bg-emerald-600';
+    descScore = 'Presença estruturada e ativa nas buscas do Google.';
+  } else if (totalIndice >= 45) {
+    nivelScore = 'Intermediário / Em Construção';
+    badgeScoreColor = 'bg-amber-100 text-amber-900 border-amber-200';
+    barScoreColor = 'bg-amber-500';
+    descScore = 'Sua empresa já possui ativos digitais, mas ainda perde a maior parte dos clientes por falta de anúncios de alta precisão no topo.';
+  }
+
   async function handleSolicitarAvancado() {
     if (!lead || pedido === 'enviando' || pedido === 'feito') return;
 
@@ -466,11 +501,6 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   function linkWhatsApp(mensagem: string): string {
     return `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
   }
-
-  // Visita fria: o próximo passo é entender, não escolher um serviço.
-  const linkEntender = linkWhatsApp(
-    `Olá! Vi o diagnóstico de visibilidade da *${lead.nome}* e gostaria de entender melhor o que dá para melhorar na nossa presença no Google.`
-  );
 
   const SITE_EIXO = 'https://eixodigitalbr.com.br';
 
@@ -512,7 +542,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
           </div>
 
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-800 mb-3">
-            Diagnóstico de Visibilidade Digital
+            Diagnóstico de Presença &amp; Captação Digital
           </p>
 
           <h1 className="text-3xl sm:text-[2.6rem] font-extrabold text-zinc-900 leading-[1.1] tracking-tight mb-2">
@@ -544,47 +574,127 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
           </dl>
         </header>
 
-        {/* ── Veredito ─────────────────────────────────────────────────────
-            O relatório inteiro numa frase, antes de qualquer explicação. Quem
-            ler só isto já entendeu; quem se interessar rola o resto. */}
-        <section className="px-6 sm:px-12 py-8 sm:py-10 bg-emerald-50/60 border-b border-emerald-100">
-          <div className="flex items-baseline gap-3 mb-3">
-            <span className="text-5xl sm:text-6xl font-extrabold text-emerald-900 leading-none">
-              {lead.posicao_maps ? `${lead.posicao_maps}º` : '—'}
-            </span>
-            <span className="text-base sm:text-lg text-emerald-900/80 font-medium">
-              {lead.posicao_maps && lead.posicao_maps <= 3
-                ? 'entre as primeiras da região'
-                : 'na busca da sua região'}
-            </span>
+        {/* ── Índice de Presença Digital (Hero Analítico) ───────────────────────────────────────────────────── */}
+        <section className="px-6 sm:px-12 py-8 sm:py-10 bg-zinc-50/80 border-b border-zinc-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 block mb-1">
+                Índice de Presença &amp; Captação Digital
+              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-5xl sm:text-6xl font-black text-zinc-900 leading-none">
+                  {totalIndice}
+                </span>
+                <span className="text-xl font-bold text-zinc-400">/ 100</span>
+              </div>
+            </div>
+
+            <div>
+              <span className={`inline-block text-xs font-extrabold px-3.5 py-1.5 rounded-full border ${badgeScoreColor}`}>
+                {nivelScore}
+              </span>
+            </div>
+          </div>
+
+          {/* Barra de Progresso do Score */}
+          <div className="w-full bg-zinc-200 rounded-full h-3 mb-4 overflow-hidden">
+            <div
+              className={`h-3 rounded-full transition-all duration-700 ${barScoreColor}`}
+              style={{ width: `${totalIndice}%` }}
+            />
           </div>
 
           <p className="text-[15px] sm:text-base text-zinc-700 leading-relaxed max-w-[62ch]">
-            {textoDemanda ? (
-              <>
-                <strong className="text-zinc-900">{textoDemanda}</strong>{' '}
-                A maior parte desses cliques fica com as três primeiras posições.
-              </>
-            ) : (
-              <>As três primeiras posições ficam com a maior parte dos contatos de quem procura no Google.</>
-            )}
+            {descScore}
           </p>
-
-          {lead.posicao_maps && <ReguaPosicao posicao={lead.posicao_maps} />}
         </section>
 
         <main className="px-6 sm:px-12 py-10 sm:py-12 space-y-12 sm:space-y-16">
 
-          {/* ── 01. O Cenário na sua Cidade ─────────────────────────────────────────── */}
+          {/* ── 01. Raio-X dos 3 Pilares ─────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero="01. O Cenário na sua Região">
-              Quem está recebendo as ligações hoje em {cidadeCurta || 'sua cidade'}
+            <TituloSecao numero="01. Raio-X dos 3 Pilares">
+              O que compõe a força de captação da sua empresa
+            </TituloSecao>
+
+            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-6">
+              Para uma assistência técnica receber chamados lucrativos todos os dias no Google, a presença digital depende de 3 pilares fundamentais:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {/* Pilar 1 */}
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Pilar 1</span>
+                    <span className={`text-xs font-extrabold px-2 py-0.5 rounded border ${lead.anuncio_detectado ? 'bg-emerald-100 text-emerald-900 border-emerald-200' : 'bg-rose-100 text-rose-900 border-rose-200'}`}>
+                      {pilarAnuncios} / 35 pts
+                    </span>
+                  </div>
+                  <h3 className="text-[15px] font-bold text-zinc-900 mb-2">Anúncios no Topo (Google Ads)</h3>
+                  <p className="text-xs text-zinc-600 leading-relaxed mb-4">
+                    {lead.anuncio_detectado
+                      ? 'Anúncios detectados no leilão do Google.'
+                      : 'Não detectamos anúncios ativos. Quando um cliente quebra um equipamento e busca conserto com urgência, sua empresa não aparece nas primeiras buscas pagas.'}
+                  </p>
+                </div>
+                <div className="text-[11px] font-bold text-zinc-600 border-t border-zinc-200/60 pt-2.5">
+                  Status: {lead.anuncio_detectado ? '✅ Ativo' : '❌ Ausente no Leilão'}
+                </div>
+              </div>
+
+              {/* Pilar 2 */}
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Pilar 2</span>
+                    <span className={`text-xs font-extrabold px-2 py-0.5 rounded border ${lead.site ? 'bg-amber-100 text-amber-900 border-amber-200' : 'bg-rose-100 text-rose-900 border-rose-200'}`}>
+                      {pilarSite} / 35 pts
+                    </span>
+                  </div>
+                  <h3 className="text-[15px] font-bold text-zinc-900 mb-2">Página de Conversão (Site)</h3>
+                  <p className="text-xs text-zinc-600 leading-relaxed mb-4">
+                    {lead.site
+                      ? 'Possui site próprio. O que falta é tráfego qualificado de anúncios chegando até o botão de WhatsApp.'
+                      : 'Sem uma página própria no celular, 100% dos clientes que clicam no Google vão direto para os concorrentes com botão de WhatsApp.'}
+                  </p>
+                </div>
+                <div className="text-[11px] font-bold text-zinc-600 border-t border-zinc-200/60 pt-2.5">
+                  Status: {lead.site ? '⚠️ Sem Tráfego Pago' : '❌ Sem Página Própria'}
+                </div>
+              </div>
+
+              {/* Pilar 3 */}
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Pilar 3</span>
+                    <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200">
+                      {pilarGmb} / 30 pts
+                    </span>
+                  </div>
+                  <h3 className="text-[15px] font-bold text-zinc-900 mb-2">Perfil Google (Confiança)</h3>
+                  <p className="text-xs text-zinc-600 leading-relaxed mb-4">
+                    Nota {lead.gmb_nota != null ? `⭐ ${lead.gmb_nota.toFixed(1)}` : '5.0'} com {lead.gmb_avaliacoes || 0} avaliações. Reputação excelente para gerar confiança, mas com volume inicial frente aos líderes da região.
+                  </p>
+                </div>
+                <div className="text-[11px] font-bold text-zinc-600 border-t border-zinc-200/60 pt-2.5">
+                  Status: ⚠️ Em Construção
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ── 02. O Cenário na sua Região ─────────────────────────────────────────── */}
+          <section>
+            <TituloSecao numero="02. O Cenário na sua Região">
+              Demanda de clientes e concorrentes em {cidadeCurta || 'sua cidade'}
             </TituloSecao>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-6">
               {textoDemanda ? (
                 <>
-                  <strong className="text-zinc-900">{textoDemanda}</strong> Essas pessoas estão com o aparelho quebrado agora e vão chamar quem estiver nas primeiras posições.
+                  <strong className="text-zinc-900">{textoDemanda}</strong> Essas pessoas estão com o aparelho quebrado hoje e vão chamar quem estiver nas primeiras posições.
                 </>
               ) : (
                 <>Mais de 80% das pessoas que pesquisam por conserto no Google entram em contato apenas com as primeiras empresas que aparecem.</>
@@ -596,15 +706,13 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
               <table className="w-full text-left border-collapse table-fixed bg-white">
                 <colgroup>
                   <col />
-                  <col className="w-[60px] sm:w-[80px]" />
-                  <col className="w-[52px] sm:w-[72px]" />
-                  <col className="w-[64px] sm:w-[88px]" />
+                  <col className="w-[80px] sm:w-[110px]" />
+                  <col className="w-[80px] sm:w-[110px]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-zinc-200 bg-zinc-50/70">
                     <th className="py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Empresa</th>
-                    <th className="py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-center whitespace-nowrap">Posição</th>
-                    <th className="py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-center whitespace-nowrap">Nota</th>
+                    <th className="py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-center whitespace-nowrap">Nota Google</th>
                     <th className="py-2.5 pr-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-right whitespace-nowrap">Avaliações</th>
                   </tr>
                 </thead>
@@ -619,9 +727,6 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                           </span>
                         )}
                       </td>
-                      <td className={`py-3 text-center text-sm tabular-nums ${linha.isLead ? 'font-extrabold text-emerald-900' : 'text-zinc-600'}`}>
-                        {linha.posicao_maps ? `${linha.posicao_maps}º` : '—'}
-                      </td>
                       <td className="py-3 text-center text-sm tabular-nums text-zinc-700 whitespace-nowrap">
                         {linha.gmb_nota != null ? `⭐ ${linha.gmb_nota.toFixed(1)}` : '—'}
                       </td>
@@ -635,18 +740,18 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </div>
 
             <p className="text-sm text-zinc-600 leading-relaxed">
-              💡 <strong>Oportunidade:</strong> Enquanto a sua empresa estiver abaixo do Top 3, os contatos mais lucrativos da região estão indo direto para os concorrentes que aparecem primeiro.
+              💡 <strong>Oportunidade:</strong> Sua nota é excelente. Ao adicionar anúncios e uma página rápida, sua empresa passa na frente de concorrentes mais antigos.
             </p>
           </section>
 
-          {/* ── 02. Como Entrar no Topo ─────────────────────────────────────────── */}
+          {/* ── 03. Como Elevar o Índice para 90+ ─────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero="02. Como Entrar no Topo">
+            <TituloSecao numero="03. Como Elevar o Índice para 90+">
               O que você precisa para receber chamados todos os dias
             </TituloSecao>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-8">
-              Para colocar a {empresa} na frente de todos os concorrentes e receber mensagens no WhatsApp todos os dias, ativamos uma estrutura prática de 3 partes:
+              Para colocar a {empresa} no topo do Google e receber mensagens no WhatsApp todos os dias, ativamos uma estrutura prática de 3 partes:
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -660,6 +765,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                     Coloca o seu WhatsApp em 1º lugar no Google para quem tem pressa e busca por conserto urgente agora.
                   </p>
                 </div>
+                <div className="mt-3 text-[11px] font-bold text-emerald-800">+35 pontos no índice</div>
               </div>
 
               <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
@@ -672,6 +778,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                     Um site moderno e direto que abre em 1 segundo no celular e joga o cliente direto no seu WhatsApp.
                   </p>
                 </div>
+                <div className="mt-3 text-[11px] font-bold text-emerald-800">+35 pontos no índice</div>
               </div>
 
               <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
@@ -684,13 +791,14 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                     Perfil otimizado com fotos e avaliações para passar confiança e fazer o Google cobrar mais barato por cada anúncio.
                   </p>
                 </div>
+                <div className="mt-3 text-[11px] font-bold text-emerald-800">+20 pontos no índice</div>
               </div>
             </div>
           </section>
 
-          {/* ── 03. Investimento e Retorno ─────────────────────────────────────────── */}
+          {/* ── 04. Investimento e Retorno ─────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero="03. Investimento Diário & Retorno">
+            <TituloSecao numero="04. Investimento Diário & Retorno">
               Quanto investir e quantos clientes você recebe no WhatsApp
             </TituloSecao>
 
@@ -767,7 +875,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </div>
           </section>
 
-          {/* ── 04. Ação (CTA Falar com o Douglas) ──────────────────────────────────────────────────────── */}
+          {/* ── 05. Ação (CTA Falar com o Douglas) ──────────────────────────────────────────────────────── */}
           <section className="nao-imprimir border-t border-zinc-200 pt-10">
             {pedido === 'feito' ? (
               <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-5 max-w-lg">
@@ -791,9 +899,9 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                 <button
                   onClick={handleSolicitarAvancado}
                   disabled={pedido === 'enviando'}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold px-8 py-4 rounded-lg transition-all text-base cursor-pointer shadow-md hover:shadow-lg"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold px-7 py-3.5 rounded-lg transition-all text-[15px] cursor-pointer shadow-md hover:shadow-lg"
                 >
-                  {pedido === 'enviando' ? 'Redirecionando...' : '👉 Falar com o Douglas para ativar meus anúncios'}
+                  {pedido === 'enviando' ? 'Redirecionando...' : 'Ativar Anúncios no WhatsApp'}
                 </button>
 
                 {pedido === 'erro' && (
