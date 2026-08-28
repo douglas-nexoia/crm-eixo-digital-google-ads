@@ -1,1 +1,8 @@
-﻿export { default } from '../solicitar/page';
+﻿export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
+import { SolicitarDiagnostico } from '@/components/SolicitarDiagnostico';
+
+export default function DiagnosticoGratisPage() {
+  return <SolicitarDiagnostico />;
+}
