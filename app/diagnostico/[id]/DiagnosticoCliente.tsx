@@ -101,6 +101,10 @@ const TRADUCAO_GARGALOS: Array<{ padrao: RegExp; texto: string }> = [
     padrao: /instagram|facebook|rede/i,
     texto: 'Sem presença nas redes sociais: quem pesquisa o nome da empresa antes de ligar não encontra nada além do mapa.',
   },
+  {
+    padrao: /pagespeed|mobile lento|carregamento/i,
+    texto: 'Velocidade lenta no celular (Google PageSpeed): se o site demora mais de 3s para abrir, o cliente desiste e clica no concorrente.',
+  },
 ];
 
 function traduzirGargalo(bruto: string): string {
