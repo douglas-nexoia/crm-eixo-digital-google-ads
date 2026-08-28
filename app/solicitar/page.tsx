@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -6,16 +6,11 @@ import { Search, Sparkles, CheckCircle2, ArrowRight, ShieldCheck, MapPin, Buildi
 
 const NICHOS_COMUNS = [
   'Assistência Técnica de Eletrodomésticos',
-  'Climatização e Ar Condicionado',
-  'Conserto de Geladeira / Freezer',
-  'Conserto de Máquinas de Lavar / Lava e Seca',
-  'Clínica Odontológica / Dentista',
-  'Clínica Médica / Saúde',
-  'Estética e Beleza',
-  'Oficina Mecânica / Auto Center',
-  'Desentupidora e Dedetizadora',
-  'Marcenaria e Móveis Planejados',
-  'Outro Segmento',
+  'Refrigeração e Conserto de Geladeiras / Freezers',
+  'Climatização, Ar Condicionado e Higienização',
+  'Conserto de Máquinas de Lavar e Lava e Seca',
+  'Assistência Técnica de Celulares e Smartphones',
+  'Outro Tipo de Assistência Técnica / Manutenção',
 ];
 
 export default function SolicitarDiagnosticoPage() {
@@ -204,10 +199,10 @@ export default function SolicitarDiagnosticoPage() {
                 ))}
               </select>
 
-              {nicho === 'Outro Segmento' && (
+              {nicho.startsWith('Outro') && (
                 <input
                   type="text"
-                  placeholder="Qual é o seu segmento? (Ex: Energia Solar, Despachante...)"
+                  placeholder="Qual é o seu segmento? (Ex: Assistência de Fogões, TV...)"
                   value={nichoOutro}
                   onChange={(e) => setNichoOutro(e.target.value)}
                   disabled={isSubmitting}
