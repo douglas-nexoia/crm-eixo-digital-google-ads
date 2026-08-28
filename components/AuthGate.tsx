@@ -5,20 +5,25 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-const PREFIXOS_PUBLICOS = ['/diagnostico', '/solicitar', '/diagnostico-gratis', '/login'];
-
 export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [autenticado, setAutenticado] = useState<boolean | null>(null);
 
-  const ehPublico = pathname ? PREFIXOS_PUBLICOS.some(p => pathname === p || pathname.startsWith(`${p}/`)) : false;
+  // Descobrir a rota atual com segurança total (SSR e Cliente)
+  const currentPath = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
+
+  // Rotas que NUNCA exigem login
+  const isPublica =
+    !currentPath ||
+    currentPath.startsWith('/solicitar') ||
+    currentPath.startsWith('/diagnostico') ||
+    currentPath.startsWith('/diagnostico-gratis') ||
+    currentPath.startsWith('/login');
 
   useEffect(() => {
-    const currentPath = typeof window !== 'undefined' ? window.location.pathname : pathname;
-    const isPublicWindow = currentPath ? PREFIXOS_PUBLICOS.some(p => currentPath === p || currentPath.startsWith(`${p}/`)) : false;
-
-    if (ehPublico || isPublicWindow) {
+    // Se for rota pública, NUNCA executa checagem de sessão nem redirecionamento
+    if (isPublica) {
       setAutenticado(true);
       return;
     }
@@ -30,9 +35,13 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       const temSessao = Boolean(data.session);
       setAutenticado(temSessao);
       
-      const nowPath = typeof window !== 'undefined' ? window.location.pathname : '';
-      const nowPublic = PREFIXOS_PUBLICOS.some(p => nowPath === p || nowPath.startsWith(`${p}/`));
-      
+      const nowPath = window.location.pathname;
+      const nowPublic =
+        nowPath.startsWith('/solicitar') ||
+        nowPath.startsWith('/diagnostico') ||
+        nowPath.startsWith('/diagnostico-gratis') ||
+        nowPath.startsWith('/login');
+
       if (!temSessao && !nowPublic) {
         router.replace('/login');
       }
@@ -42,10 +51,14 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       if (!ativo) return;
       const temSessao = Boolean(sessao);
       setAutenticado(temSessao);
-      
-      const nowPath = typeof window !== 'undefined' ? window.location.pathname : '';
-      const nowPublic = PREFIXOS_PUBLICOS.some(p => nowPath === p || nowPath.startsWith(`${p}/`));
-      
+
+      const nowPath = window.location.pathname;
+      const nowPublic =
+        nowPath.startsWith('/solicitar') ||
+        nowPath.startsWith('/diagnostico') ||
+        nowPath.startsWith('/diagnostico-gratis') ||
+        nowPath.startsWith('/login');
+
       if (!temSessao && !nowPublic) {
         router.replace('/login');
       }
@@ -55,12 +68,14 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       ativo = false;
       inscricao.subscription.unsubscribe();
     };
-  }, [ehPublico, pathname, router]);
+  }, [isPublica, pathname, router]);
 
-  if (ehPublico) {
+  // Se a rota for pública, renderiza IMEDIATAMENTE (zero bloqueio)
+  if (isPublica) {
     return <>{children}</>;
   }
 
+  // Rota restrita sem sessão
   if (autenticado === null || !autenticado) {
     return (
       <div className="flex-1 min-h-screen flex items-center justify-center bg-[#0B0F19]">
