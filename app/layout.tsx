@@ -13,6 +13,15 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://crm.eixodigitalbr.com.br'),
   title: 'CRM — Eixo Digital',
   description: 'Sistema de prospecção e análise de presença digital no Google',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 };
 
 export default function RootLayout({
