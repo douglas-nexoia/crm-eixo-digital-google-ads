@@ -112,8 +112,8 @@ export function gerarMensagemDiagnostico(
   const onde = cidade ? `de ${cidade}` : 'da sua região';
 
   return [
-    `Perfeito! Segue o diagnóstico da *${nomeEmpresa}* com as primeiras colocadas ${onde}:`,
+    `Aqui está o diagnóstico da *${nomeEmpresa}*:`,
     `👉 ${url}`,
-    'Em dois minutos você vê a sua posição e o que está travando o leilão do seu Google hoje.',
+    'Dá uma olhada na sua posição e no que está travando os seus anúncios hoje.',
   ].join('\n\n');
 }

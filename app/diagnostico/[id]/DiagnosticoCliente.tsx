@@ -454,7 +454,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
     if (resultado.success) {
       setPedido('feito');
-      const msgProposta = `Olá Douglas! Vi o diagnóstico da *${lead.nome}* e quero ativar os anúncios do Google com o mapa incluso na minha cidade.`;
+      const msgProposta = `Olá Douglas! Quero ativar os anúncios do Google com o mapa incluso na minha cidade.`;
       const url = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msgProposta)}`;
       window.open(url, '_blank');
     } else {
@@ -575,431 +575,199 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
         <main className="px-6 sm:px-12 py-10 sm:py-12 space-y-12 sm:space-y-16">
 
-          {/* ── 01. Concorrência ─────────────────────────────────────────── */}
+          {/* ── 01. O Cenário na sua Cidade ─────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero="01. Concorrência">Como você aparece ao lado dos líderes</TituloSecao>
+            <TituloSecao numero="01. O Cenário na sua Região">
+              Quem está recebendo as ligações hoje em {cidadeCurta || 'sua cidade'}
+            </TituloSecao>
 
-            {/* Sem rolagem horizontal: no celular ela esconde justamente a
-                coluna de avaliações. As colunas numéricas ganham largura fixa
-                e o nome trunca no que sobrar. */}
-            <div>
-              <table className="w-full text-left border-collapse table-fixed">
+            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-6">
+              {textoDemanda ? (
+                <>
+                  <strong className="text-zinc-900">{textoDemanda}</strong> Essas pessoas estão com o aparelho quebrado agora e vão chamar quem estiver nas primeiras posições.
+                </>
+              ) : (
+                <>Mais de 80% das pessoas que pesquisam por conserto no Google entram em contato apenas com as primeiras empresas que aparecem.</>
+              )}
+            </p>
+
+            {/* Tabela de Concorrentes Top vs Lead */}
+            <div className="border border-zinc-200 rounded-lg overflow-hidden mb-6">
+              <table className="w-full text-left border-collapse table-fixed bg-white">
                 <colgroup>
                   <col />
-                  <col className="w-[52px] sm:w-[80px]" />
-                  <col className="w-[48px] sm:w-[72px]" />
-                  <col className="w-[56px] sm:w-[88px]" />
+                  <col className="w-[60px] sm:w-[80px]" />
+                  <col className="w-[52px] sm:w-[72px]" />
+                  <col className="w-[64px] sm:w-[88px]" />
                 </colgroup>
                 <thead>
-                  <tr className="border-b border-zinc-200">
-                    <th className="pb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400">Empresa</th>
-                    <th className="pb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 text-center whitespace-nowrap">Pos.</th>
-                    <th className="pb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 text-center whitespace-nowrap">Nota</th>
-                    <th className="pb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 text-right whitespace-nowrap">Aval.</th>
+                  <tr className="border-b border-zinc-200 bg-zinc-50/70">
+                    <th className="py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Empresa</th>
+                    <th className="py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-center whitespace-nowrap">Posição</th>
+                    <th className="py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-center whitespace-nowrap">Nota</th>
+                    <th className="py-2.5 pr-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-right whitespace-nowrap">Avaliações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {linhasComparativo.map((linha, idx) => {
-                    const lacuna = lacunaAntesDe(idx);
-
-                    return (
-                      <React.Fragment key={linha.id}>
-                        {lacuna > 0 && (
-                          <tr>
-                            <td colSpan={4} className="py-2 text-center text-[11px] text-zinc-400 italic">
-                              {lacuna} {lacuna === 1 ? 'posição' : 'posições'} no meio do caminho
-                            </td>
-                          </tr>
+                  {linhasComparativo.map((linha) => (
+                    <tr key={linha.id} className={`border-b border-zinc-100 last:border-0 ${linha.isLead ? 'bg-emerald-50/80 font-bold' : ''}`}>
+                      <td className="py-3 px-3 text-sm text-zinc-800">
+                        <span className="block truncate">{nomeCurto(linha.nome)}</span>
+                        {linha.isLead && (
+                          <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100/60 px-1.5 py-0.5 rounded mt-0.5">
+                            Sua Empresa
+                          </span>
                         )}
-
-                        <tr className={linha.isLead ? 'bg-emerald-50' : ''}>
-                          <td className={`py-3 pr-2 text-sm ${linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-700'}`}>
-                            <span className="block truncate">{nomeCurto(linha.nome)}</span>
-                            {linha.isLead && (
-                              <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-                                você
-                              </span>
-                            )}
-                          </td>
-                          <td className={`py-3 text-center text-sm tabular-nums ${linha.isLead ? 'font-bold text-emerald-900' : 'text-zinc-600'}`}>
-                            {linha.posicao_maps ? `${linha.posicao_maps}º` : '—'}
-                          </td>
-                          <td className="py-3 text-center text-sm tabular-nums text-zinc-700 whitespace-nowrap">
-                            {linha.gmb_nota != null ? linha.gmb_nota.toFixed(1) : '—'}
-                          </td>
-                          <td className={`py-3 text-right text-sm tabular-nums ${linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-600'}`}>
-                            {linha.gmb_avaliacoes != null ? linha.gmb_avaliacoes : '—'}
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    );
-                  })}
+                      </td>
+                      <td className={`py-3 text-center text-sm tabular-nums ${linha.isLead ? 'font-extrabold text-emerald-900' : 'text-zinc-600'}`}>
+                        {linha.posicao_maps ? `${linha.posicao_maps}º` : '—'}
+                      </td>
+                      <td className="py-3 text-center text-sm tabular-nums text-zinc-700 whitespace-nowrap">
+                        {linha.gmb_nota != null ? `⭐ ${linha.gmb_nota.toFixed(1)}` : '—'}
+                      </td>
+                      <td className={`py-3 pr-3 text-right text-sm tabular-nums ${linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-600'}`}>
+                        {linha.gmb_avaliacoes != null ? `${linha.gmb_avaliacoes}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
-            <BarrasAvaliacoes linhas={linhasComparativo} />
-
-            {demanda && (
-              <p className="text-[11px] text-zinc-400 mt-6">
-                {FONTE_DEMANDA}, {demanda.medidoEm}.
-              </p>
-            )}
-
-            {/* Achados: um por vez, com peso de nota de rodapé destacada e não
-                de card colorido. */}
-            <div className="mt-8 space-y-4">
-              {lideresSemSite && (
-                <div className="border-l-2 border-emerald-700 pl-4 py-1">
-                  <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-                    Nenhum dos {concorrentesTop.length} líderes da sua região tem{' '}
-                    <strong className="text-zinc-900">site próprio</strong>. Todos disputam a primeira posição
-                    apenas com o perfil do Google.{' '}
-                    {lead.site
-                      ? `A ${empresa} já tem o ativo que nenhum concorrente do topo construiu — o que falta é tráfego chegando até ele.`
-                      : 'Quem entra com site e anúncio compete num espaço que ninguém está ocupando.'}
-                  </p>
-                </div>
-              )}
-
-              {!lideresSemSite && lideraComNotaMenor && primeiroColocado && (
-                <div className="border-l-2 border-emerald-700 pl-4 py-1">
-                  <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-                    O 1º colocado ({nomeCurto(primeiroColocado.nome)}) está no topo com nota{' '}
-                    {notaPrimeiro?.toFixed(1)} — <strong className="text-zinc-900">abaixo da sua, {notaLead?.toFixed(1)}</strong>.
-                    A diferença não está na satisfação dos seus clientes: a posição no mapa depende de como o
-                    perfil está configurado e de como o Google entende a sua área de atendimento. Com o perfil
-                    trabalhado, a {empresa} tem espaço {metaPosicional}.
-                  </p>
-                </div>
-              )}
-
-              {reputacaoMaisSolida && (
-                <div className="border-l-2 border-emerald-700 pl-4 py-1">
-                  <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-                    A sua nota {notaLead?.toFixed(1)} está apoiada em{' '}
-                    <strong className="text-zinc-900">{avaliacoesLead} avaliações</strong>, enquanto{' '}
-                    {lideresComMenosOpinioes.length === 1 ? 'um dos líderes' : `${lideresComMenosOpinioes.length} dos líderes`}{' '}
-                    à frente sustentam a nota deles em bem menos opiniões. Nota alta com poucas avaliações não
-                    convence quem está decidindo entre três empresas — reputação a {empresa} já tem.
-                  </p>
-                </div>
-              )}
-            </div>
+            <p className="text-sm text-zinc-600 leading-relaxed">
+              💡 <strong>Oportunidade:</strong> Enquanto a sua empresa estiver abaixo do Top 3, os contatos mais lucrativos da região estão indo direto para os concorrentes que aparecem primeiro.
+            </p>
           </section>
 
-          {/* ── 02. O que decide ──────────────────────────────────────────── */}
+          {/* ── 02. Como Entrar no Topo ─────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero="02. O que decide">Por que eles aparecem na frente</TituloSecao>
-
-            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-6">
-              A ordem do Google Maps não é um ranking de qualidade. Ela se decide por coisas que a
-              maioria dos donos de negócio nunca ouviu falar:
-            </p>
-
-            <ol className="space-y-0 mb-8 border-t border-zinc-100">
-              {[
-                'Com que frequência o perfil recebe publicações e fotos novas',
-                'Se as avaliações são respondidas, e em quanto tempo',
-                'As palavras usadas no nome, na descrição e nas categorias',
-                'A distância entre a empresa e quem está fazendo a busca',
-              ].map((fator, i) => (
-                <li key={fator} className="flex gap-4 py-3 border-b border-zinc-100 text-[15px] text-zinc-700">
-                  <span className="text-zinc-300 font-bold tabular-nums shrink-0">{i + 1}</span>
-                  <span className="leading-relaxed">{fator}</span>
-                </li>
-              ))}
-            </ol>
-
-            <p className="text-lg sm:text-xl font-bold text-zinc-900 leading-snug max-w-[52ch] mb-2">
-              Nada disso mede a qualidade do seu serviço.
-            </p>
-            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-              Mede quanta atenção o perfil recebe. Uma empresa menos preparada que a {empresa} pode
-              estar na frente apenas por cuidar disso todo mês.
-            </p>
-
-            {gargalos.length > 0 && (
-              <div className="mt-10">
-                <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500 mb-4">
-                  No perfil da {empresa}, o que está pesando hoje
-                </h3>
-                <ul className="border-t border-zinc-100">
-                  {gargalos.map((falha, idx) => (
-                    <li key={idx} className="flex gap-3 py-3 border-b border-zinc-100 text-[15px] text-zinc-700 leading-relaxed">
-                      <span className="text-amber-500 shrink-0 mt-0.5">●</span>
-                      <span>{falha}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </section>
-
-          {/* ── 03. Estrutura de Rastreamento (Auditoria Técnica) ────────────────────────── */}
-          {showRastreamento && (
-            <section>
-              <TituloSecao numero={`${numRastreamento}. Estrutura de Rastreamento`}>Fatos técnicos e Tags de Conversão</TituloSecao>
-
-              <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-6">
-                Para vender online ou gerar contatos qualificados no WhatsApp de forma eficiente, o site precisa ter as tags de rastreamento corretas instaladas. Sem elas, é impossível mensurar retornos e otimizar os investimentos.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                {/* Box 1: Tags */}
-                <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50">
-                  <h3 className="text-sm font-bold text-zinc-900 mb-3 border-b border-zinc-200/80 pb-2">Status das Tags no Site</h3>
-                  
-                  <ul className="space-y-3">
-                    <li className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-zinc-650">Google Tag Manager (GTM):</span>
-                      {lead.tags_rastreamento?.gtm ? (
-                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✅ Instalado</span>
-                      ) : (
-                        <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">❌ Não Detectado</span>
-                      )}
-                    </li>
-                    <li className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-zinc-650">Tag de Conversão Google Ads:</span>
-                      {lead.tags_rastreamento?.google_ads ? (
-                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✅ Instalada</span>
-                      ) : (
-                        <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">❌ Não Detectada</span>
-                      )}
-                    </li>
-                    <li className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-zinc-655">Google Analytics 4 (GA4):</span>
-                      {lead.tags_rastreamento?.ga4 ? (
-                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✅ Instalado</span>
-                      ) : (
-                        <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">❌ Não Detectado</span>
-                      )}
-                    </li>
-                    <li className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-zinc-655">Pixel da Meta (Facebook/Instagram):</span>
-                      {lead.tags_rastreamento?.meta_pixel ? (
-                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✅ Instalado</span>
-                      ) : (
-                        <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">❌ Não Detectado</span>
-                      )}
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Box 2: Anúncios */}
-                <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-zinc-900 mb-2 border-b border-zinc-200/80 pb-2">Investimento em Tráfego</h3>
-                    <div className="flex items-center justify-between text-xs py-1">
-                      <span className="text-zinc-650 font-semibold">Anunciando ativamente no Google:</span>
-                      <span className={`font-bold px-2 py-0.5 rounded border ${
-                        lead.anuncio_detectado 
-                          ? 'text-emerald-700 bg-emerald-50 border-emerald-200' 
-                          : 'text-zinc-600 bg-zinc-100 border-zinc-200'
-                      }`}>
-                        {lead.anuncio_detectado ? 'Sim' : 'Não Detectado'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 text-[10px] text-zinc-500 italic">
-                    * Varredura realizada com base nas tags ativas no código-fonte e histórico recente do leilão do Google Ads.
-                  </div>
-                </div>
-              </div>
-
-              {/* Alerta de Investimento no Escuro */}
-              {lead.anuncio_detectado && !lead.tags_rastreamento?.google_ads && (
-                <div className="border border-rose-250 bg-rose-50/60 text-rose-950 rounded-lg p-5 mb-6">
-                  <h4 className="font-bold text-sm text-rose-800 flex items-center gap-1.5 mb-1.5">
-                    🚨 GARGALO CRÍTICO: Investimento sem rastreamento de conversão
-                  </h4>
-                  <p className="text-xs sm:text-sm leading-relaxed text-rose-900">
-                    Identificamos que a sua empresa está pagando por anúncios no Google, mas a <strong>Tag de Conversão do Google Ads não está configurada</strong> no seu site. Isso significa que a agência ou profissional atual está trabalhando no escuro: sem saber quais palavras-chave geram vendas e contatos de verdade, seu dinheiro de tráfego pago pode estar sendo desperdiçado sem mensuração alguma.
-                  </p>
-                </div>
-              )}
-
-              {lead.anuncio_detectado && lead.tags_rastreamento?.google_ads && (
-                <div className="border border-emerald-200 bg-emerald-50/50 text-emerald-950 rounded-lg p-5 mb-6">
-                  <h4 className="font-bold text-sm text-emerald-800 flex items-center gap-1.5 mb-1.5">
-                    ✅ Rastreamento de anúncios ativo
-                  </h4>
-                  <p className="text-xs sm:text-sm leading-relaxed text-emerald-900">
-                    Detectamos a Tag de Conversão do Google Ads ativa. Isso garante que os dados básicos de cliques e cliques de conversão estão retornando ao painel do Google Ads para otimização das campanhas.
-                  </p>
-                </div>
-              )}
-
-              {!lead.anuncio_detectado && (
-                <div className="border border-zinc-200 bg-zinc-50 text-zinc-800 rounded-lg p-5 mb-6">
-                  <h4 className="font-bold text-sm text-zinc-900 flex items-center gap-1.5 mb-1.5">
-                    💡 Oportunidade de Tração imediata
-                  </h4>
-                  <p className="text-xs sm:text-sm leading-relaxed text-zinc-650">
-                    Sua empresa ainda não está anunciando no Google Ads. Ao invés de esperar meses para subir posições de forma orgânica, anunciar estruturando corretamente o GTM e a Tag de Conversão garante vendas imediatas rastreáveis desde a primeira semana.
-                  </p>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* ── Sobre não ter site ────────────────────────────────────────
-              A redação evita de propósito afirmar que site melhora a posição
-              no mapa: a tabela acima mostra líderes sem site e desmentiria a
-              própria página. O argumento é que soma com o resto. */}
-          {!lead.site && (
-            <section>
-              <TituloSecao numero={`${numSobreNaoTerSite}. Sobre não ter site`}>O que existe fora do mapa</TituloSecao>
-
-              <div className="space-y-4 text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-                <p>
-                  O perfil do Google é um espaço emprestado: o formato, a ordem e o que aparece são
-                  decisão dele. O site é o único lugar onde a <strong className="text-zinc-900">{empresa}</strong>{' '}
-                  conta a própria história do seu jeito.
-                </p>
-                <p>
-                  E hoje quem lê isso não são só pessoas. Quando alguém pergunta a uma inteligência
-                  artificial qual a melhor {nichoLead || 'empresa'} {cidadeCurta ? `de ${cidadeCurta}` : 'da região'},
-                  a resposta se monta a partir do que está escrito na internet sobre cada uma. Quem não
-                  tem site não tem o que ser lido.
-                </p>
-                <p>
-                  Site sozinho não muda posição — mas soma com o resto, e é para onde o anúncio manda
-                  quem clica.
-                  {lideresSemSite && (
-                    <strong className="text-zinc-900">
-                      {' '}Numa região onde nenhum dos líderes tem, quem fizer se destaca sozinho.
-                    </strong>
-                  )}
-                </p>
-              </div>
-            </section>
-          )}
-
-          {/* ── A Estrutura Completa ─────────────────────────────────────────────── */}
-          <section>
-            <TituloSecao numero={`${numProximoPasso}. A Estrutura Completa`}>
-              O motor de anúncios com a base do mapa inclusa
+            <TituloSecao numero="02. Como Entrar no Topo">
+              O que você precisa para receber chamados todos os dias
             </TituloSecao>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-8">
-              Para a sua assistência técnica receber chamadas todos os dias no WhatsApp, nós ativamos um sistema completo de aquisição:
+              Para colocar a {empresa} na frente de todos os concorrentes e receber mensagens no WhatsApp todos os dias, ativamos uma estrutura prática de 3 partes:
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-zinc-200 border border-zinc-200 rounded-lg overflow-hidden mb-8">
-              <div className="bg-white p-5 sm:p-6">
-                <div className="flex items-center gap-2 mb-1">
-                  <Megaphone className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <h3 className="text-[15px] font-bold text-zinc-900">Google Ads + Site</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
+                <div>
+                  <div className="w-8 h-8 rounded bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold mb-3">
+                    1
+                  </div>
+                  <h3 className="text-[15px] font-bold text-zinc-900 mb-2">Anúncios no Topo (Google Ads)</h3>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    Coloca o seu WhatsApp em 1º lugar no Google para quem tem pressa e busca por conserto urgente agora.
+                  </p>
                 </div>
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-800 mb-3">
-                  A Solução Principal de Aquisição
-                </span>
-                <p className="text-sm text-zinc-600 leading-relaxed">
-                  Anúncios no topo do Google focados apenas em serviços de alta margem (geladeira, lava e seca, ar) com cliente chamando no WhatsApp hoje.
-                </p>
               </div>
 
-              <div className="bg-white p-5 sm:p-6">
-                <div className="flex items-center gap-2 mb-1">
-                  <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <h3 className="text-[15px] font-bold text-zinc-900">Google Meu Negócio</h3>
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
+                <div>
+                  <div className="w-8 h-8 rounded bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold mb-3">
+                    2
+                  </div>
+                  <h3 className="text-[15px] font-bold text-zinc-900 mb-2">Página de Contato Rápido</h3>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    Um site moderno e direto que abre em 1 segundo no celular e joga o cliente direto no seu WhatsApp.
+                  </p>
                 </div>
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-800 mb-3">
-                  Incluso Sem Custo Adicional
-                </span>
-                <p className="text-sm text-zinc-600 leading-relaxed">
-                  Otimizamos e mantemos o seu perfil ativo no mapa. Uma presença forte no mapa faz o Google cobrar mais barato por cada clique dos seus anúncios.
-                </p>
+              </div>
+
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 flex flex-col justify-between">
+                <div>
+                  <div className="w-8 h-8 rounded bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold mb-3">
+                    3
+                  </div>
+                  <h3 className="text-[15px] font-bold text-zinc-900 mb-2">Google Meu Negócio (Incluso)</h3>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    Perfil otimizado com fotos e avaliações para passar confiança e fazer o Google cobrar mais barato por cada anúncio.
+                  </p>
+                </div>
               </div>
             </div>
-
-            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-              Você não precisa contratar duas assessorias separadas. Nós estruturamos e gerenciamos os dois pilares juntos para garantir o maior lucro possível.
-            </p>
           </section>
 
-          {/* ── Plano de Investimento Diário (Google Ads Projeção) ─────────────────────────────────────────────── */}
+          {/* ── 03. Investimento e Retorno ─────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero={`${numProjecao}. Plano de Investimento Diário`}>
-              Estimativa de investimento e retorno no Google Ads
+            <TituloSecao numero="03. Investimento Diário & Retorno">
+              Quanto investir e quantos clientes você recebe no WhatsApp
             </TituloSecao>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-8">
-              Quando você começa a anunciar no Google, a dúvida mais comum é quanto investir por dia para obter retorno. Com base no leilão real do Google para <strong>{termoDoNicho(lead.nicho) || 'seu segmento'}</strong> em <strong>{cidadeCurta || 'sua região'}</strong>, projetamos dois cenários recomendados:
+              Com base nos valores reais de leilão do Google para <strong>{termoDoNicho(lead.nicho) || 'seu segmento'}</strong> em <strong>{cidadeCurta || 'sua cidade'}</strong>, projetamos a estimativa para começar:
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {/* Cenário Piloto */}
               <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 hover:bg-white hover:shadow-sm transition-all flex flex-col justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-zinc-900 border-b border-zinc-200/80 pb-2 mb-4 flex justify-between items-center">
-                    <span>Cenário Piloto (Validação)</span>
-                    <span className="text-xs bg-zinc-100 border border-zinc-200 text-zinc-650 px-2 py-0.5 rounded">Teste</span>
-                  </h3>
+                  <div className="flex justify-between items-center border-b border-zinc-200/80 pb-2 mb-4">
+                    <h3 className="text-sm font-bold text-zinc-900">Cenário Recomendado para Começar</h3>
+                    <span className="text-xs bg-emerald-100 text-emerald-900 font-bold px-2 py-0.5 rounded">Piloto</span>
+                  </div>
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-zinc-600">Investimento Diário:</span>
-                      <strong className="text-zinc-900">R$ {planoAds.cenarioPiloto.diario},00 / dia</strong>
+                      <strong className="text-zinc-900 font-bold">R$ {planoAds.cenarioPiloto.diario},00 / dia</strong>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-zinc-600">Investimento Mensal:</span>
-                      <strong className="text-zinc-900">R$ {planoAds.cenarioPiloto.mensal},00 / mês</strong>
+                      <strong className="text-zinc-900 font-bold">R$ {planoAds.cenarioPiloto.mensal},00 / mês</strong>
                     </div>
                     <div className="flex justify-between text-sm border-t border-zinc-100 pt-2">
-                      <span className="text-zinc-600">Cliques Estimados:</span>
+                      <span className="text-zinc-600">Visitas de Clientes no Site:</span>
                       <strong className="text-zinc-900">~{planoAds.cenarioPiloto.cliquesMes} visitas/mês</strong>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-600">Contatos no WhatsApp:</span>
-                      <strong className="text-emerald-800 font-bold">~{planoAds.cenarioPiloto.contatosMesMin} a {planoAds.cenarioPiloto.contatosMesMax} contatos/mês</strong>
+                    <div className="flex justify-between text-sm bg-emerald-50/80 p-2.5 rounded border border-emerald-100">
+                      <span className="text-emerald-900 font-semibold">Orçamentos no WhatsApp:</span>
+                      <strong className="text-emerald-900 font-extrabold text-[15px]">~{planoAds.cenarioPiloto.contatosMesMin} a {planoAds.cenarioPiloto.contatosMesMax} clientes/mês</strong>
                     </div>
                   </div>
                 </div>
-                <div className="text-xs text-zinc-500 italic">
-                  * Foco em iniciar a tração e validar os primeiros serviços de alta margem.
-                </div>
+                <p className="text-xs text-zinc-500 italic">
+                  * Investimento inicial ideal para validar e colocar os primeiros serviços na bancada.
+                </p>
               </div>
 
               {/* Cenário Escala */}
               <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50 hover:bg-white hover:shadow-sm transition-all flex flex-col justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-zinc-900 border-b border-zinc-200/80 pb-2 mb-4 flex justify-between items-center">
-                    <span>Cenário Escala (Aceleração)</span>
-                    <span className="text-xs bg-emerald-50 border border-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-semibold">Ideal</span>
-                  </h3>
+                  <div className="flex justify-between items-center border-b border-zinc-200/80 pb-2 mb-4">
+                    <h3 className="text-sm font-bold text-zinc-900">Cenário de Aceleração</h3>
+                    <span className="text-xs bg-zinc-200 text-zinc-800 font-bold px-2 py-0.5 rounded">Escala</span>
+                  </div>
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-zinc-600">Investimento Diário:</span>
-                      <strong className="text-zinc-900">R$ {planoAds.cenarioEscala.diario},00 / dia</strong>
+                      <strong className="text-zinc-900 font-bold">R$ {planoAds.cenarioEscala.diario},00 / dia</strong>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-zinc-600">Investimento Mensal:</span>
-                      <strong className="text-zinc-900">R$ {planoAds.cenarioEscala.mensal},00 / mês</strong>
+                      <strong className="text-zinc-900 font-bold">R$ {planoAds.cenarioEscala.mensal},00 / mês</strong>
                     </div>
                     <div className="flex justify-between text-sm border-t border-zinc-100 pt-2">
-                      <span className="text-zinc-600">Cliques Estimados:</span>
+                      <span className="text-zinc-600">Visitas de Clientes no Site:</span>
                       <strong className="text-zinc-900">~{planoAds.cenarioEscala.cliquesMes} visitas/mês</strong>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-600">Contatos no WhatsApp:</span>
-                      <strong className="text-emerald-800 font-bold">~{planoAds.cenarioEscala.contatosMesMin} a {planoAds.cenarioEscala.contatosMesMax} contatos/mês</strong>
+                    <div className="flex justify-between text-sm bg-zinc-100 p-2.5 rounded border border-zinc-200">
+                      <span className="text-zinc-800 font-semibold">Orçamentos no WhatsApp:</span>
+                      <strong className="text-zinc-900 font-extrabold text-[15px]">~{planoAds.cenarioEscala.contatosMesMin} a {planoAds.cenarioEscala.contatosMesMax} clientes/mês</strong>
                     </div>
                   </div>
                 </div>
-                <div className="text-xs text-zinc-500 italic">
-                  * Recomendado para dominar a região e manter a equipe de técnicos 100% ocupada.
-                </div>
+                <p className="text-xs text-zinc-500 italic">
+                  * Para quem quer manter a equipe e os técnicos com agenda 100% cheia todo mês.
+                </p>
               </div>
             </div>
 
             <div className="text-[11px] text-zinc-500 italic bg-zinc-50 border border-zinc-200 rounded p-3">
-              * Estimativas baseadas no leilão do Google Ads em <strong>{planoAds.medidoEm}</strong>. CPC médio estimado em R$ {planoAds.cpcMedio.toFixed(2)}. Projeção de conversão calculada com base na taxa de 12% a 18% da landing page de destino.
+              * Estimativas baseadas em dados oficiais do leilão do Google Ads em {planoAds.medidoEm}.
             </div>
           </section>
 
-          {/* ── Ação (CTA Falar com o Douglas) ──────────────────────────────────────────────────────── */}
+          {/* ── 04. Ação (CTA Falar com o Douglas) ──────────────────────────────────────────────────────── */}
           <section className="nao-imprimir border-t border-zinc-200 pt-10">
             {pedido === 'feito' ? (
               <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-5 max-w-lg">
@@ -1008,24 +776,24 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                   <span>Redirecionando...</span>
                 </div>
                 <p className="text-sm text-zinc-700 leading-relaxed">
-                  Registramos seu interesse! Estamos redirecionando você para o WhatsApp do Douglas para ativar os anúncios e otimizar o Google Meu Negócio da <strong>{empresa}</strong> na sua cidade.
+                  Registramos seu interesse! Estamos redirecionando você para o WhatsApp do Douglas para ativar os anúncios da <strong>{empresa}</strong>.
                 </p>
               </div>
             ) : (
               <div className="max-w-lg">
-                <h3 className="text-lg font-bold text-zinc-900 mb-2">
-                  Quer estruturar os anúncios da {empresa}?
+                <h3 className="text-xl font-extrabold text-zinc-900 mb-2">
+                  Quer colocar a {empresa} no topo do Google em 48 horas?
                 </h3>
                 <p className="text-[15px] text-zinc-700 leading-relaxed mb-6">
-                  Em 48 horas colocamos seus anúncios no ar com o seu mapa otimizado de bônus, sem reuniões demoradas.
+                  Colocamos seus anúncios e seu site no ar com o mapa otimizado de bônus, sem reuniões demoradas.
                 </p>
 
                 <button
                   onClick={handleSolicitarAvancado}
                   disabled={pedido === 'enviando'}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-7 py-3.5 rounded-md transition-colors text-[15px] cursor-pointer shadow-sm"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold px-8 py-4 rounded-lg transition-all text-base cursor-pointer shadow-md hover:shadow-lg"
                 >
-                  {pedido === 'enviando' ? 'Redirecionando...' : 'Falar com o Douglas no WhatsApp'}
+                  {pedido === 'enviando' ? 'Redirecionando...' : '👉 Falar com o Douglas para ativar meus anúncios'}
                 </button>
 
                 {pedido === 'erro' && (
@@ -1036,7 +804,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-5">
                   <a
-                    href={`https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(`Olá Douglas! Vi o diagnóstico da *${lead.nome}* e quero ativar os anúncios do Google com o mapa incluso na minha cidade.`)}`}
+                    href={`https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(`Olá Douglas! Quero ativar os anúncios do Google com o mapa incluso na minha cidade.`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 text-sm text-zinc-650 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 transition-colors font-medium"
