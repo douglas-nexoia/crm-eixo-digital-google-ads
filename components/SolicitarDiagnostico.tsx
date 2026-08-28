@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -79,8 +79,8 @@ export const SolicitarDiagnostico: React.FC = () => {
       setStepScan(4);
 
       setTimeout(() => {
-        router.push(`/diagnostico/${data.slug}`);
-      }, 1200);
+        window.location.href = `/diagnostico/${data.slug}`;
+      }, 1000);
 
     } catch (err: any) {
       console.error(err);

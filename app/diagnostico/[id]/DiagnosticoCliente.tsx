@@ -246,8 +246,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const isSolicitar =
     slugParam === 'solicitar' ||
     slugParam === 'novo' ||
-    slugParam === 'gratis' ||
-    (typeof window !== 'undefined' && window.location.pathname.includes('solicitar'));
+    slugParam === 'gratis';
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [concorrentesTop, setConcorrentesTop] = useState<Lead[]>([]);
