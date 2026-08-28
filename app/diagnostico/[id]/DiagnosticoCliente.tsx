@@ -243,9 +243,15 @@ function BarrasAvaliacoes({ linhas }: { linhas: LinhaComparativo[] }) {
 export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const slugParam = slug || '';
 
+  const isSolicitar =
+    slugParam === 'solicitar' ||
+    slugParam === 'novo' ||
+    slugParam === 'gratis' ||
+    (typeof window !== 'undefined' && window.location.pathname.includes('solicitar'));
+
   const [lead, setLead] = useState<Lead | null>(null);
   const [concorrentesTop, setConcorrentesTop] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isSolicitar);
 
   // O estado do pedido não vem do banco: `status_funil` é dado interno do
   // funil e fica de fora da view pública de propósito. Recarregar a página
@@ -257,6 +263,11 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const MEU_NUMERO_WHATSAPP = '5511944530448';
 
   useEffect(() => {
+    if (isSolicitar) {
+      setLoading(false);
+      return;
+    }
+
     async function loadData() {
       if (!slugParam) {
         setLoading(false);
@@ -307,7 +318,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
     );
   }
 
-  if (slugParam === 'solicitar' || slugParam === 'novo' || slugParam === 'gratis') {
+  if (isSolicitar) {
     return <SolicitarDiagnostico />;
   }
 
