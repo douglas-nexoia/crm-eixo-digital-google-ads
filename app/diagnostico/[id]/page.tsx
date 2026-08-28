@@ -74,6 +74,14 @@ async function buscarLeadParaMetadata(slugOrId: string): Promise<LeadMetadata | 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
+
+  if (id === 'solicitar' || id === 'novo' || id === 'gratis') {
+    return {
+      title: 'Diagnóstico Gratuito de Presença no Google • Eixo Digital',
+      description: 'Descubra a posição da sua empresa no Google e o potencial de novos clientes na sua cidade.',
+    };
+  }
+
   const lead = await buscarLeadParaMetadata(id);
 
   if (!lead?.nome) {
@@ -123,5 +131,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function DiagnosticoPublicoPage({ params }: Props) {
   const { id } = await params;
+  if (id === 'solicitar' || id === 'novo' || id === 'gratis') {
+    const { SolicitarDiagnostico } = await import('@/components/SolicitarDiagnostico');
+    return <SolicitarDiagnostico />;
+  }
   return <DiagnosticoCliente slug={id} />;
 }
