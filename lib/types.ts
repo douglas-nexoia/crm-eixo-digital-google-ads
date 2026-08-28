@@ -82,6 +82,12 @@ export interface Lead {
   // Dados diretos de leilão/mercado (opcional caso o scraper/webhook envie)
   buscas_mensais?: number;
   cpc_medio?: number;
+
+  // Google PageSpeed Insights & Performance Mobile
+  pagespeed_score?: number | null;
+  pagespeed_lcp?: number | null;
+  pagespeed_status?: string | null;
+  whatsapp_btn?: boolean;
 }
 
 export interface ScoutJSONFormat {
@@ -107,6 +113,10 @@ export interface ScoutJSONFormat {
     site_auditoria?: {
       https?: boolean;
       responsivo?: boolean;
+      pagespeed_score?: number;
+      pagespeed_lcp?: number;
+      pagespeed_status?: string;
+      whatsapp_btn?: boolean;
     };
     redes_sociais?: {
       instagram?: string;

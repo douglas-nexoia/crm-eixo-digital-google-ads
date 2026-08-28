@@ -520,6 +520,32 @@ export default function LeadDetalhesPage() {
                   </label>
                 </div>
               </div>
+
+              {/* Google PageSpeed Insights */}
+              <div className="pt-2 border-t border-slate-800/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-semibold">PageSpeed Mobile:</span>
+                  <span className="font-bold text-slate-200">
+                    {lead.pagespeed_score != null ? `${lead.pagespeed_score}/100` : 'Lighthouse'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 bg-slate-950/60 p-2 rounded border border-slate-800/65 text-[11px]">
+                  <div>
+                    <span className="text-slate-500 block">Tempo LCP:</span>
+                    <span className="font-bold text-slate-200">
+                      {lead.pagespeed_lcp != null ? `${lead.pagespeed_lcp.toFixed(2)}s` : '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Status:</span>
+                    <span className={`font-bold ${
+                      (lead.pagespeed_lcp || 0) > 3.5 || lead.pagespeed_status === 'Crítico' ? 'text-rose-400' : 'text-emerald-400'
+                    }`}>
+                      {lead.pagespeed_status || ((lead.pagespeed_lcp || 0) > 3.5 ? 'Crítico' : 'Normal')}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
