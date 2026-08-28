@@ -13,7 +13,6 @@ import {
   AlertTriangle, MessageCircle, MapPin, Megaphone,
   ArrowUpRight, CheckCircle2, Printer,
 } from 'lucide-react';
-import { SolicitarDiagnostico } from '@/components/SolicitarDiagnostico';
 
 /**
  * Este relatório é um DOCUMENTO, não uma tela de produto.
@@ -242,10 +241,6 @@ function BarrasAvaliacoes({ linhas }: { linhas: LinhaComparativo[] }) {
  */
 export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const slugParam = slug || '';
-
-  if (slugParam === 'solicitar' || slugParam === 'novo' || slugParam === 'gratis') {
-    return <SolicitarDiagnostico />;
-  }
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [concorrentesTop, setConcorrentesTop] = useState<Lead[]>([]);

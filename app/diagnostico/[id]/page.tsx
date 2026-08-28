@@ -2,6 +2,7 @@ export const runtime = 'edge';
 
 import type { Metadata } from 'next';
 import DiagnosticoCliente from './DiagnosticoCliente';
+import { SolicitarDiagnostico } from '@/components/SolicitarDiagnostico';
 
 /**
  * Esta rota existe como Server Component por um motivo só: montar as etiquetas
@@ -132,7 +133,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DiagnosticoPublicoPage({ params }: Props) {
   const { id } = await params;
   if (id === 'solicitar' || id === 'novo' || id === 'gratis') {
-    const { SolicitarDiagnostico } = await import('@/components/SolicitarDiagnostico');
     return <SolicitarDiagnostico />;
   }
   return <DiagnosticoCliente slug={id} />;
