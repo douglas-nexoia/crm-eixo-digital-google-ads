@@ -1,8 +1,10 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search, Sparkles, CheckCircle2, ArrowRight, ShieldCheck, MapPin, Building2, Phone, Globe, Flame, Loader2 } from 'lucide-react';
+import {
+  Search, Sparkles, CheckCircle2, ArrowRight, ShieldCheck, MapPin,
+  Building2, Phone, Globe, Flame, Loader2, MessageCircle, ExternalLink, RotateCcw
+} from 'lucide-react';
 
 const NICHOS_COMUNS = [
   'Assistência Técnica de Eletrodomésticos',
@@ -14,8 +16,6 @@ const NICHOS_COMUNS = [
 ];
 
 export const SolicitarDiagnostico: React.FC = () => {
-  const router = useRouter();
-
   const [nome, setNome] = useState('');
   const [cidade, setCidade] = useState('');
   const [nicho, setNicho] = useState(NICHOS_COMUNS[0]);
@@ -26,6 +26,10 @@ export const SolicitarDiagnostico: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepScan, setStepScan] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Estado de Sucesso / Entrega no WhatsApp
+  const [concluido, setConcluido] = useState(false);
+  const [resultado, setResultado] = useState<{ slug: string; urlDiagnostico: string } | null>(null);
 
   const formatarWhatsApp = (val: string) => {
     const limpo = val.replace(/\D/g, '').slice(0, 11);
@@ -56,7 +60,7 @@ export const SolicitarDiagnostico: React.FC = () => {
       const nichoFinal = nicho.startsWith('Outro') && nichoOutro.trim() ? nichoOutro.trim() : nicho;
 
       setTimeout(() => setStepScan(2), 1000);
-      setTimeout(() => setStepScan(3), 2200);
+      setTimeout(() => setStepScan(3), 2000);
 
       const res = await fetch('/api/solicitar', {
         method: 'POST',
@@ -79,7 +83,9 @@ export const SolicitarDiagnostico: React.FC = () => {
       setStepScan(4);
 
       setTimeout(() => {
-        window.location.href = `/diagnostico/${data.slug}`;
+        setResultado({ slug: data.slug, urlDiagnostico: data.urlDiagnostico });
+        setIsSubmitting(false);
+        setConcluido(true);
       }, 1000);
 
     } catch (err: any) {
@@ -88,6 +94,19 @@ export const SolicitarDiagnostico: React.FC = () => {
       setIsSubmitting(false);
       setStepScan(0);
     }
+  };
+
+  const handleReset = () => {
+    setNome('');
+    setCidade('');
+    setTelefone('');
+    setSite('');
+    setNicho(NICHOS_COMUNS[0]);
+    setNichoOutro('');
+    setConcluido(false);
+    setResultado(null);
+    setStepScan(0);
+    setErrorMsg(null);
   };
 
   return (
@@ -115,182 +134,272 @@ export const SolicitarDiagnostico: React.FC = () => {
       {/* HERO & FORM SECTION */}
       <main className="max-w-4xl mx-auto px-4 py-8 md:py-14 w-full">
         
-        {/* BADGE DE TOPO */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/70 border border-cyan-800/80 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-4 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '4s' }} />
-            Raio-X de Presença & Leilão do Google
-          </div>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.15] max-w-3xl mx-auto">
-            Descubra o potencial de clientes da sua empresa no <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-emerald-400">Google Ads</span>
-          </h1>
-          <p className="mt-3.5 text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            Receba um laudo técnico completo mostrando a sua posição em relação aos concorrentes locais e quanto custa anunciar no leilão da sua cidade.
-          </p>
-        </div>
-
-        {/* CARD DO FORMULÁRIO */}
-        <div className="bg-[#0f1a2a]/90 border border-slate-800 rounded-2xl p-6 sm:p-8 md:p-10 shadow-2xl shadow-cyan-950/20 backdrop-blur-sm relative overflow-hidden">
-          
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-          {errorMsg && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-950/70 border border-rose-800 text-rose-200 text-sm flex items-center gap-3">
-              <span className="text-lg">⚠️</span>
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
+        {concluido ? (
+          /* ================= TELA DE OBRIGADO / ENVIADO NO WHATSAPP ================= */
+          <div className="max-w-2xl mx-auto bg-[#0f1a2a]/95 border border-emerald-500/30 rounded-3xl p-6 sm:p-10 shadow-2xl shadow-emerald-950/30 backdrop-blur-md text-center relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
             
-            {/* LINHA 1: NOME E CIDADE */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-cyan-400" />
-                  Nome da sua Empresa <span className="text-cyan-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Secatec Assistência Técnica"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  disabled={isSubmitting}
-                  className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                />
-              </div>
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                  Cidade e Estado <span className="text-cyan-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Sorocaba/SP ou São Paulo/SP"
-                  value={cidade}
-                  onChange={(e) => setCidade(e.target.value)}
-                  disabled={isSubmitting}
-                  className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                />
+            {/* ÍCONE DE SUCESSO */}
+            <div className="w-20 h-20 rounded-full bg-emerald-950/80 border-2 border-emerald-500 mx-auto flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(16,185,129,0.35)]">
+              <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+            </div>
+
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-3">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              Diagnóstico Gerado com Sucesso
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight mb-4">
+              Prontinho! Seu Laudo foi enviado para o seu <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-300">WhatsApp</span>
+            </h2>
+
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-lg mx-auto mb-8">
+              Enviamos a análise de presença no Google e a estimativa de clientes da <strong className="text-white font-semibold">{nome}</strong> diretamente para o número informado.
+            </p>
+
+            {/* CARD COM OS DADOS ENVIADOS */}
+            <div className="bg-[#09111c] border border-slate-800 rounded-2xl p-5 mb-8 text-left space-y-3 shadow-inner">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                <span className="text-xs text-slate-400">Empresa:</span>
+                <span className="text-sm font-bold text-white truncate max-w-[240px]">{nome}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                <span className="text-xs text-slate-400">Região:</span>
+                <span className="text-sm font-medium text-slate-200">{cidade}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                <span className="text-xs text-slate-400">Nicho:</span>
+                <span className="text-sm font-medium text-slate-200">{nicho.startsWith('Outro') && nichoOutro ? nichoOutro : nicho}</span>
+              </div>
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="text-xs text-slate-400">WhatsApp de Envio:</span>
+                <span className="text-sm font-mono font-bold text-emerald-400 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5" />
+                  {telefone}
+                </span>
               </div>
             </div>
 
-            {/* LINHA 2: NICHO / SEGMENTO */}
-            <div>
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-cyan-400" />
-                Seu Nicho / Especialidade <span className="text-cyan-400">*</span>
-              </label>
-              <select
-                value={nicho}
-                onChange={(e) => setNicho(e.target.value)}
-                disabled={isSubmitting}
-                className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all cursor-pointer"
+            {/* BOTÕES DE AÇÃO */}
+            <div className="space-y-3.5">
+              <a
+                href={`https://wa.me/5511944530448?text=${encodeURIComponent(`Olá Douglas! Acabei de solicitar o diagnóstico da ${nome} (${cidade}) no formulário.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-[#071318] font-black py-4 px-6 rounded-xl text-base sm:text-lg shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-all flex items-center justify-center gap-2.5 cursor-pointer transform active:scale-[0.99]"
               >
-                {NICHOS_COMUNS.map((n) => (
-                  <option key={n} value={n} className="bg-[#09101a] text-slate-100">
-                    {n}
-                  </option>
-                ))}
-              </select>
+                <MessageCircle className="w-5 h-5" />
+                <span>ABRIR CONVERSA NO WHATSAPP</span>
+              </a>
 
-              {nicho.startsWith('Outro') && (
-                <input
-                  type="text"
-                  placeholder="Qual é o seu segmento? (Ex: Assistência de Fogões, TV...)"
-                  value={nichoOutro}
-                  onChange={(e) => setNichoOutro(e.target.value)}
-                  disabled={isSubmitting}
-                  className="mt-3 w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                />
+              {resultado?.urlDiagnostico && (
+                <a
+                  href={resultado.urlDiagnostico}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-[#132032] hover:bg-[#1a2c44] border border-slate-700 text-slate-300 hover:text-white font-semibold py-3 px-5 rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Visualizar laudo técnico online</span>
+                  <ExternalLink className="w-4 h-4 text-cyan-400" />
+                </a>
               )}
             </div>
 
-            {/* LINHA 3: WHATSAPP E SITE */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                  Seu WhatsApp com DDD <span className="text-emerald-400">*</span>
-                </label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="(11) 99999-9999"
-                  value={telefone}
-                  onChange={handleTelefoneChange}
-                  disabled={isSubmitting}
-                  className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm font-mono focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all"
-                />
-                <span className="text-[11px] text-slate-400 mt-1 block">
-                  Você receberá o link do laudo e a análise também por WhatsApp.
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                  Site ou Instagram <span className="text-slate-400 font-normal text-[11px]">(Opcional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: minhaempresa.com.br ou @perfil"
-                  value={site}
-                  onChange={(e) => setSite(e.target.value)}
-                  disabled={isSubmitting}
-                  className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                />
-                <span className="text-[11px] text-slate-400 mt-1 block">
-                  Caso já possua site para auditarmos tags de tráfego.
-                </span>
-              </div>
-            </div>
-
-            {/* BOTÃO DE SUBMISSÃO */}
-            <div className="pt-3">
+            {/* BOTÃO PARA NOVO DIAGNÓSTICO */}
+            <div className="mt-8 pt-6 border-t border-slate-800/80">
               <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-[#071318] font-black py-4 px-6 rounded-xl text-base sm:text-lg shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-all transform active:scale-[0.99] flex items-center justify-center gap-3 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                onClick={handleReset}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Processando Diagnóstico do Google...</span>
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-5 h-5" />
-                    <span>GERAR MEU DIAGNÓSTICO GRATUITO</span>
-                    <ArrowRight className="w-5 h-5 ml-1" />
-                  </>
-                )}
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Solicitar diagnóstico para outra empresa</span>
               </button>
             </div>
 
-            {/* GARANTIAS / BENEFÍCIOS */}
-            <div className="pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-400">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>100% Gratuito e Instantâneo</span>
+          </div>
+        ) : (
+          /* ================= FORMULÁRIO DE CAPTAÇÃO ================= */
+          <>
+            {/* BADGE DE TOPO */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/70 border border-cyan-800/80 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-4 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '4s' }} />
+                Raio-X de Presença & Leilão do Google
               </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Dados Oficiais do Leilão</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Sem compromisso comercial</span>
-              </div>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.15] max-w-3xl mx-auto">
+                Descubra o potencial de clientes da sua empresa no <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-emerald-400">Google Ads</span>
+              </h1>
+              <p className="mt-3.5 text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+                Receba um laudo técnico completo mostrando a sua posição em relação aos concorrentes locais e quanto custa anunciar no leilão da sua cidade.
+              </p>
             </div>
 
-          </form>
+            {/* CARD DO FORMULÁRIO */}
+            <div className="bg-[#0f1a2a]/90 border border-slate-800 rounded-2xl p-6 sm:p-8 md:p-10 shadow-2xl shadow-cyan-950/20 backdrop-blur-sm relative overflow-hidden">
+              
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        </div>
+              {errorMsg && (
+                <div className="mb-6 p-4 rounded-xl bg-rose-950/70 border border-rose-800 text-rose-200 text-sm flex items-center gap-3">
+                  <span className="text-lg">⚠️</span>
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                
+                {/* LINHA 1: NOME E CIDADE */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                      Nome da sua Empresa <span className="text-cyan-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: Secatec Assistência Técnica"
+                      value={nome}
+                      onChange={(e) => setNome(e.target.value)}
+                      disabled={isSubmitting}
+                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                      Cidade e Estado <span className="text-cyan-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: Sorocaba/SP ou São Paulo/SP"
+                      value={cidade}
+                      onChange={(e) => setCidade(e.target.value)}
+                      disabled={isSubmitting}
+                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* LINHA 2: NICHO / SEGMENTO */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Flame className="w-3.5 h-3.5 text-cyan-400" />
+                    Seu Nicho / Especialidade <span className="text-cyan-400">*</span>
+                  </label>
+                  <select
+                    value={nicho}
+                    onChange={(e) => setNicho(e.target.value)}
+                    disabled={isSubmitting}
+                    className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all cursor-pointer"
+                  >
+                    {NICHOS_COMUNS.map((n) => (
+                      <option key={n} value={n} className="bg-[#09101a] text-slate-100">
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+
+                  {nicho.startsWith('Outro') && (
+                    <input
+                      type="text"
+                      placeholder="Qual é o seu segmento? (Ex: Assistência de Fogões, TV...)"
+                      value={nichoOutro}
+                      onChange={(e) => setNichoOutro(e.target.value)}
+                      disabled={isSubmitting}
+                      className="mt-3 w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                    />
+                  )}
+                </div>
+
+                {/* LINHA 3: WHATSAPP E SITE */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                      Seu WhatsApp com DDD <span className="text-emerald-400">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="(11) 99999-9999"
+                      value={telefone}
+                      onChange={handleTelefoneChange}
+                      disabled={isSubmitting}
+                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm font-mono focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all"
+                    />
+                    <span className="text-[11px] text-slate-400 mt-1 block">
+                      O laudo completo e o comparativo serão enviados para este WhatsApp.
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                      Site ou Instagram <span className="text-slate-400 font-normal text-[11px]">(Opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: minhaempresa.com.br ou @perfil"
+                      value={site}
+                      onChange={(e) => setSite(e.target.value)}
+                      disabled={isSubmitting}
+                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                    />
+                    <span className="text-[11px] text-slate-400 mt-1 block">
+                      Caso já possua site para auditarmos tags de tráfego.
+                    </span>
+                  </div>
+                </div>
+
+                {/* BOTÃO DE SUBMISSÃO */}
+                <div className="pt-3">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-[#071318] font-black py-4 px-6 rounded-xl text-base sm:text-lg shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-all transform active:scale-[0.99] flex items-center justify-center gap-3 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Processando Diagnóstico do Google...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-5 h-5" />
+                        <span>RECEBER DIAGNÓSTICO NO WHATSAPP</span>
+                        <ArrowRight className="w-5 h-5 ml-1" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* GARANTIAS / BENEFÍCIOS */}
+                <div className="pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>100% Gratuito e Instantâneo</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span>Dados Oficiais do Leilão</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Sem compromisso comercial</span>
+                  </div>
+                </div>
+
+              </form>
+
+            </div>
+          </>
+        )}
 
       </main>
 
@@ -331,7 +440,7 @@ export const SolicitarDiagnostico: React.FC = () => {
               <div className={`p-3 rounded-lg border text-xs flex items-center gap-3 transition-all ${
                 stepScan >= 3 ? 'bg-cyan-950/40 border-cyan-800/80 text-cyan-200' : 'bg-slate-900/40 border-slate-800 text-slate-500'
               }`}>
-                {stepScan >= 4 ? '✓' : '3.'} Estruturando cenários de investimento e retorno...
+                {stepScan >= 4 ? '✓' : '3.'} Gerando laudo e enviando para o seu WhatsApp...
               </div>
             </div>
 

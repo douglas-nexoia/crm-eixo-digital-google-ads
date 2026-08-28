@@ -68,7 +68,11 @@ Deno.serve(async (req) => {
 
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const serviceRoleKey = (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '').trim();
+    const isServiceRole = Boolean(serviceRoleKey && token === serviceRoleKey);
+
+    if (!user && !isServiceRole) {
       return json({ success: false, error: 'Não autorizado.' }, 401);
     }
 
