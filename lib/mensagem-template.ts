@@ -114,6 +114,6 @@ export function gerarMensagemDiagnostico(
   return [
     `Aqui está o diagnóstico da *${nomeEmpresa}*:`,
     `👉 ${url}`,
-    'Dá uma olhada na sua posição e no que está travando os seus anúncios hoje.',
+    'Dá uma olhada na sua posição e em quantos clientes você pode começar a receber por dia.',
   ].join('\n\n');
 }
