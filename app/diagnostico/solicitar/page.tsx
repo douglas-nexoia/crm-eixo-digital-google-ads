@@ -1,5 +1,5 @@
 ﻿import { SolicitarDiagnostico } from '@/components/SolicitarDiagnostico';
 
-export default function SolicitarPage() {
+export default function DiagnosticoSolicitarPage() {
   return <SolicitarDiagnostico />;
 }
