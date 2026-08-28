@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import {
@@ -349,6 +349,10 @@ export const SolicitarDiagnostico: React.FC = () => {
                       value={site}
                       onChange={(e) => setSite(e.target.value)}
                       disabled={isSubmitting}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
                     />
                     <span className="text-[11px] text-slate-400 mt-1 block">

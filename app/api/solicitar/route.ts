@@ -95,13 +95,34 @@ export async function POST(req: NextRequest) {
 
     const urlDiagnostico = `https://crm.eixodigitalbr.com.br/diagnostico/${slug}`;
 
-    // 4. Disparar notificação pelo WhatsApp via Edge Function (se configurada)
+    // 4. Disparar notificação pelo WhatsApp via Edge Function autenticada
     try {
       const msgWhatsApp = `Olá! Tudo bem? Aqui é o Douglas da Eixo Digital.\n\nRecebi sua solicitação de diagnóstico gratuito para a *${nome}* em ${cidade}.\n\nSeu laudo de posicionamento no Google e estimativa de retorno em anúncios já está pronto:\n👉 ${urlDiagnostico}\n\nDá uma olhada e qualquer dúvida me chama aqui!`;
-      
-      await supabase.functions.invoke('whatsapp-send', {
-        body: { telefone: telLimpo, mensagem: msgWhatsApp },
-      }).catch(() => {});
+
+      const { data: linkData } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: 'suporte.eixodigital@gmail.com',
+      });
+
+      if (linkData?.properties?.hashed_token) {
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxdml4bWRranZsZ29lcXhiYXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5OTE2NTIsImV4cCI6MjEwMDU2NzY1Mn0.A_8wogQgOicXzK71ju_Gqes-kXdH59IR8AVtxVAErcM';
+        const publicClient = createClient(supabaseUrl, anonKey);
+        const { data: sessionData } = await publicClient.auth.verifyOtp({
+          token_hash: linkData.properties.hashed_token,
+          type: 'magiclink',
+        });
+
+        const token = sessionData?.session?.access_token;
+        if (token) {
+          const authedClient = createClient(supabaseUrl, anonKey, {
+            global: { headers: { Authorization: `Bearer ${token}` } },
+          });
+
+          await authedClient.functions.invoke('whatsapp-send', {
+            body: { telefone: telLimpo, mensagem: msgWhatsApp },
+          });
+        }
+      }
     } catch (e) {
       console.warn('Aviso no envio automático de WhatsApp:', e);
     }
