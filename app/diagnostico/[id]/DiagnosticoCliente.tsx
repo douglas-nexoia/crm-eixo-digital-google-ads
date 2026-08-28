@@ -456,7 +456,14 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
     ? (showRastreamento ? "05" : "04")
     : (showRastreamento ? "06" : "05");
 
-  const planoAds = calcularPlanoGoogleAds(nichoLead, cidadeLead);
+  const planoAds = calcularPlanoGoogleAds(nichoLead, cidadeLead, {
+    buscas_mensais: lead.buscas_mensais,
+    cpc_medio: lead.cpc_medio,
+  });
+
+  // Verificação real de presença no Google Meu Negócio / Maps
+  const temGmb = !!(lead.gmb_nota != null && (lead.gmb_avaliacoes || 0) > 0);
+  const avaliacoes = lead.gmb_avaliacoes || 0;
 
   // Cálculo do Índice de Presença & Captação Digital (0 a 100)
   const pilarAnuncios = lead.anuncio_detectado ? 35 : 0;
@@ -467,19 +474,23 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
     if (lead.site_responsivo) pilarSite += 5;
     if (lead.tags_rastreamento?.google_ads) pilarSite += 10;
   }
-  let pilarGmb = 5;
-  const avaliacoes = lead.gmb_avaliacoes || 0;
-  if (avaliacoes >= 50) pilarGmb = 30;
-  else if (avaliacoes >= 20) pilarGmb = 25;
-  else if (avaliacoes >= 10) pilarGmb = 18;
-  else if (avaliacoes >= 1) pilarGmb = 12;
+  
+  let pilarGmb = 0;
+  if (temGmb) {
+    if (avaliacoes >= 50) pilarGmb = 30;
+    else if (avaliacoes >= 20) pilarGmb = 25;
+    else if (avaliacoes >= 10) pilarGmb = 18;
+    else if (avaliacoes >= 1) pilarGmb = 12;
+  }
 
   const totalIndice = Math.min(100, Math.max(10, pilarAnuncios + pilarSite + pilarGmb));
 
   let nivelScore = 'Vulnerável / Baixo';
   let badgeScoreColor = 'bg-rose-100 text-rose-900 border-rose-200';
   let barScoreColor = 'bg-rose-500';
-  let descScore = 'Sua empresa possui boa reputação inicial, mas está invisível no topo das buscas urgentes do Google por falta de anúncios e página rápida de conversão.';
+  let descScore = temGmb
+    ? 'Sua empresa possui boa reputação inicial, mas está invisível no topo das buscas urgentes do Google por falta de anúncios e página rápida de conversão.'
+    : 'Sua empresa não possui perfil localizado no Google Maps nem anúncios ativos, ficando 100% invisível para quem busca na sua região.';
 
   if (totalIndice >= 75) {
     nivelScore = 'Consolidado / Alto';
@@ -731,12 +742,26 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                     <td className="py-3 px-4 text-zinc-800 font-medium">
                       Reputação (Perfil Google)
                     </td>
-                    <td className="py-3 px-4 text-zinc-900 font-bold whitespace-nowrap">
-                      {lead.gmb_nota != null ? `⭐ ${lead.gmb_nota.toFixed(1)}` : '⭐ 5.0'}{' '}
-                      <span className="text-zinc-500 font-normal text-xs">({lead.gmb_avaliacoes || 0} avaliações)</span>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      {temGmb ? (
+                        <div className="font-bold text-zinc-900">
+                          ⭐ {lead.gmb_nota?.toFixed(1)}{' '}
+                          <span className="text-zinc-500 font-normal text-xs">({lead.gmb_avaliacoes} avaliações)</span>
+                        </div>
+                      ) : (
+                        <span className="inline-block text-xs font-bold px-2 py-0.5 rounded border bg-rose-50 text-rose-800 border-rose-200">
+                          ❌ Não Localizado / 0 avaliações
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-zinc-650 text-xs">
-                      Excelente nota de satisfação, mas volume inicial frente aos líderes da região.
+                      {temGmb ? (
+                        (lead.gmb_avaliacoes || 0) >= 50
+                          ? 'Perfil consolidado com excelente volume de avaliações na região.'
+                          : 'Excelente nota de satisfação, mas volume inicial frente aos líderes da região.'
+                      ) : (
+                        'Empresa invisível no Google Maps. Sem endereço ou avaliações públicas para gerar confiança inicial.'
+                      )}
                     </td>
                   </tr>
 
@@ -798,10 +823,14 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                         )}
                       </td>
                       <td className="py-3 text-center tabular-nums text-zinc-700 whitespace-nowrap">
-                        {linha.gmb_nota != null ? `⭐ ${linha.gmb_nota.toFixed(1)}` : '—'}
+                        {linha.isLead
+                          ? (temGmb ? `⭐ ${lead.gmb_nota?.toFixed(1)}` : '—')
+                          : (linha.gmb_nota != null ? `⭐ ${linha.gmb_nota.toFixed(1)}` : '—')}
                       </td>
                       <td className={`py-3 pr-3 text-right tabular-nums ${linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-600'}`}>
-                        {linha.gmb_avaliacoes != null ? `${linha.gmb_avaliacoes}` : '—'}
+                        {linha.isLead
+                          ? (temGmb ? `${lead.gmb_avaliacoes}` : '0 (Sem perfil)')
+                          : (linha.gmb_avaliacoes != null ? `${linha.gmb_avaliacoes}` : '—')}
                       </td>
                     </tr>
                   ))}
@@ -811,7 +840,15 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
 
             <div className="border-l-2 border-emerald-700 pl-4 py-1">
               <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
-                <strong>Diagnóstico Estratégico:</strong> A sua nota ({lead.gmb_nota?.toFixed(1) || '5.0'} ⭐) é de altíssimo nível. A única vantagem dos concorrentes mais antigos é a visibilidade no topo do Google. Anúncios de precisão no Google Ads colocam a <strong>{empresa}</strong> na primeira posição para quem tem urgência hoje.
+                {temGmb ? (
+                  <>
+                    <strong>Diagnóstico Estratégico:</strong> A sua nota ({lead.gmb_nota?.toFixed(1)} ⭐) é de altíssimo nível. A única vantagem dos concorrentes mais antigos é a visibilidade no topo do Google. Anúncios de precisão no Google Ads colocam a <strong>{empresa}</strong> na primeira posição para quem tem urgência hoje.
+                  </>
+                ) : (
+                  <>
+                    <strong>Diagnóstico Estratégico:</strong> A sua empresa ainda não possui presença no Google Maps. Enquanto os concorrentes acima acumulam contatos diários, a sua empresa não aparece nas buscas. Criar e otimizar a sua ficha junto com anúncios no Google Ads coloca a <strong>{empresa}</strong> no mapa e no topo das buscas imediatamente.
+                  </>
+                )}
               </p>
             </div>
           </section>

@@ -78,6 +78,10 @@ export interface Lead {
     nicho?: string;
     cidade?: string;
   };
+
+  // Dados diretos de leilão/mercado (opcional caso o scraper/webhook envie)
+  buscas_mensais?: number;
+  cpc_medio?: number;
 }
 
 export interface ScoutJSONFormat {

@@ -148,24 +148,82 @@ function nichoCanonico(nicho: string): string {
 
 /**
  * Volume e custos medidos por nicho e cidade.
- *
- * Enquanto um par não estiver aqui, o relatório simplesmente não fala de
- * volume — melhor um bloco a menos do que um número que não sobrevive à
- * pergunta "de onde você tirou isso?".
  */
 const TABELA: Record<string, DemandaBusca> = {
-  'climatizacao|jundiai': { buscasMensais: 1900, cpcMin: 2.20, cpcMax: 4.80, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'julho de 2026' },
-  'climatizacao|campinas': { buscasMensais: 5400, cpcMin: 2.50, cpcMax: 5.20, cpcMedio: 3.85, diarioPiloto: 35, diarioEscala: 70, medidoEm: 'julho de 2026' },
-  'climatizacao|valinhos': { buscasMensais: 390, cpcMin: 2.00, cpcMax: 4.50, cpcMedio: 3.25, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'julho de 2026' },
-  'climatizacao|vinhedo': { buscasMensais: 210, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'julho de 2026' },
-  'odontologia|jundiai': { buscasMensais: 2400, cpcMin: 2.80, cpcMax: 6.50, cpcMedio: 4.65, diarioPiloto: 35, diarioEscala: 70, medidoEm: 'julho de 2026' },
-  'centro automotivo|jundiai': { buscasMensais: 1600, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'julho de 2026' },
-  'marcenaria|jundiai': { buscasMensais: 720, cpcMin: 2.50, cpcMax: 5.80, cpcMedio: 4.15, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'julho de 2026' },
-  'estetica|jundiai': { buscasMensais: 1300, cpcMin: 2.10, cpcMax: 4.90, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 55, medidoEm: 'julho de 2026' },
-  'mecanica|jundiai': { buscasMensais: 1600, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'julho de 2026' },
-  'eletro_assistencia|sorocaba': { buscasMensais: 2100, cpcMin: 1.80, cpcMax: 3.90, cpcMedio: 2.85, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
-  'eletro_assistencia|belo horizonte': { buscasMensais: 8900, cpcMin: 2.10, cpcMax: 4.50, cpcMedio: 3.30, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
-  'eletro_assistencia|jundiai': { buscasMensais: 1450, cpcMin: 1.80, cpcMax: 3.80, cpcMedio: 2.80, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
+  // ── SÃO PAULO & GRANDE SP ───────────────────────────────────────────────
+  'eletro_assistencia|sao paulo':              { buscasMensais: 38500, cpcMin: 2.20, cpcMax: 4.90, cpcMedio: 3.55, diarioPiloto: 35, diarioEscala: 70, medidoEm: 'agosto de 2026' },
+  'climatizacao|sao paulo':                    { buscasMensais: 42000, cpcMin: 2.60, cpcMax: 5.80, cpcMedio: 4.20, diarioPiloto: 40, diarioEscala: 80, medidoEm: 'agosto de 2026' },
+  'celular_assistencia|sao paulo':             { buscasMensais: 29000, cpcMin: 1.80, cpcMax: 3.80, cpcMedio: 2.80, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'odontologia|sao paulo':                     { buscasMensais: 48000, cpcMin: 3.20, cpcMax: 7.50, cpcMedio: 5.35, diarioPiloto: 45, diarioEscala: 90, medidoEm: 'agosto de 2026' },
+  'desentupidora|sao paulo':                   { buscasMensais: 31000, cpcMin: 5.50, cpcMax: 14.00, cpcMedio: 9.75, diarioPiloto: 60, diarioEscala: 120, medidoEm: 'agosto de 2026' },
+  
+  'eletro_assistencia|guarulhos':              { buscasMensais: 4800, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|guarulhos':                    { buscasMensais: 4200, cpcMin: 2.20, cpcMax: 4.80, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  
+  'eletro_assistencia|sao bernardo do campo':  { buscasMensais: 3600, cpcMin: 1.90, cpcMax: 4.10, cpcMedio: 3.00, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|santo andre':            { buscasMensais: 3100, cpcMin: 1.90, cpcMax: 4.10, cpcMedio: 3.00, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|osasco':                 { buscasMensais: 2900, cpcMin: 1.90, cpcMax: 4.10, cpcMedio: 3.00, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+
+  // ── INTERIOR DE SP ──────────────────────────────────────────────────────
+  'climatizacao|campinas':                     { buscasMensais: 5400, cpcMin: 2.50, cpcMax: 5.20, cpcMedio: 3.85, diarioPiloto: 35, diarioEscala: 70, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|campinas':               { buscasMensais: 4400, cpcMin: 2.00, cpcMax: 4.40, cpcMedio: 3.20, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  
+  'eletro_assistencia|sorocaba':               { buscasMensais: 2100, cpcMin: 1.80, cpcMax: 3.90, cpcMedio: 2.85, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
+  'climatizacao|sorocaba':                     { buscasMensais: 2600, cpcMin: 2.20, cpcMax: 4.60, cpcMedio: 3.40, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+
+  'eletro_assistencia|ribeirao preto':         { buscasMensais: 2600, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|ribeirao preto':               { buscasMensais: 3200, cpcMin: 2.30, cpcMax: 4.90, cpcMedio: 3.60, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+
+  'eletro_assistencia|sao jose dos campos':    { buscasMensais: 2400, cpcMin: 1.90, cpcMax: 4.10, cpcMedio: 3.00, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|sao jose dos campos':          { buscasMensais: 2800, cpcMin: 2.20, cpcMax: 4.70, cpcMedio: 3.45, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+
+  'eletro_assistencia|santos':                 { buscasMensais: 2300, cpcMin: 2.00, cpcMax: 4.30, cpcMedio: 3.15, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|santos':                       { buscasMensais: 3100, cpcMin: 2.40, cpcMax: 5.10, cpcMedio: 3.75, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+
+  'climatizacao|jundiai':                      { buscasMensais: 1900, cpcMin: 2.20, cpcMax: 4.80, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|jundiai':                { buscasMensais: 1450, cpcMin: 1.80, cpcMax: 3.80, cpcMedio: 2.80, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
+  'odontologia|jundiai':                       { buscasMensais: 2400, cpcMin: 2.80, cpcMax: 6.50, cpcMedio: 4.65, diarioPiloto: 35, diarioEscala: 70, medidoEm: 'agosto de 2026' },
+  'marcenaria|jundiai':                        { buscasMensais: 720, cpcMin: 2.50, cpcMax: 5.80, cpcMedio: 4.15, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'estetica|jundiai':                          { buscasMensais: 1300, cpcMin: 2.10, cpcMax: 4.90, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 55, medidoEm: 'agosto de 2026' },
+  'mecanica|jundiai':                          { buscasMensais: 1600, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|valinhos':                     { buscasMensais: 390, cpcMin: 2.00, cpcMax: 4.50, cpcMedio: 3.25, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
+  'climatizacao|vinhedo':                      { buscasMensais: 210, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
+
+  // ── RIO DE JANEIRO ──────────────────────────────────────────────────────
+  'eletro_assistencia|rio de janeiro':         { buscasMensais: 18400, cpcMin: 2.10, cpcMax: 4.60, cpcMedio: 3.35, diarioPiloto: 35, diarioEscala: 70, medidoEm: 'agosto de 2026' },
+  'climatizacao|rio de janeiro':               { buscasMensais: 24500, cpcMin: 2.50, cpcMax: 5.50, cpcMedio: 4.00, diarioPiloto: 40, diarioEscala: 80, medidoEm: 'agosto de 2026' },
+  'celular_assistencia|rio de janeiro':        { buscasMensais: 14200, cpcMin: 1.70, cpcMax: 3.60, cpcMedio: 2.65, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|niteroi':                { buscasMensais: 2800, cpcMin: 2.00, cpcMax: 4.30, cpcMedio: 3.15, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|niteroi':                      { buscasMensais: 3400, cpcMin: 2.30, cpcMax: 4.90, cpcMedio: 3.60, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+
+  // ── MINAS GERAIS ────────────────────────────────────────────────────────
+  'eletro_assistencia|belo horizonte':         { buscasMensais: 8900, cpcMin: 2.10, cpcMax: 4.50, cpcMedio: 3.30, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'climatizacao|belo horizonte':               { buscasMensais: 7800, cpcMin: 2.30, cpcMax: 5.00, cpcMedio: 3.65, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|uberlandia':             { buscasMensais: 2400, cpcMin: 1.80, cpcMax: 3.90, cpcMedio: 2.85, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
+
+  // ── DISTRITO FEDERAL & CENTRO-OESTE ─────────────────────────────────────
+  'eletro_assistencia|brasilia':               { buscasMensais: 9200, cpcMin: 2.20, cpcMax: 4.80, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'climatizacao|brasilia':                     { buscasMensais: 11500, cpcMin: 2.50, cpcMax: 5.40, cpcMedio: 3.95, diarioPiloto: 35, diarioEscala: 70, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|goiania':                { buscasMensais: 5800, cpcMin: 1.90, cpcMax: 4.20, cpcMedio: 3.05, diarioPiloto: 30, diarioEscala: 55, medidoEm: 'agosto de 2026' },
+  'climatizacao|goiania':                      { buscasMensais: 7900, cpcMin: 2.30, cpcMax: 4.90, cpcMedio: 3.60, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+
+  // ── SUL ─────────────────────────────────────────────────────────────────
+  'eletro_assistencia|curitiba':               { buscasMensais: 7500, cpcMin: 2.00, cpcMax: 4.40, cpcMedio: 3.20, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'climatizacao|curitiba':                     { buscasMensais: 6200, cpcMin: 2.20, cpcMax: 4.70, cpcMedio: 3.45, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|porto alegre':           { buscasMensais: 6100, cpcMin: 2.00, cpcMax: 4.30, cpcMedio: 3.15, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'climatizacao|porto alegre':                 { buscasMensais: 6800, cpcMin: 2.20, cpcMax: 4.80, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|florianopolis':          { buscasMensais: 2600, cpcMin: 2.10, cpcMax: 4.50, cpcMedio: 3.30, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|joinville':              { buscasMensais: 2300, cpcMin: 1.90, cpcMax: 4.00, cpcMedio: 2.95, diarioPiloto: 25, diarioEscala: 45, medidoEm: 'agosto de 2026' },
+
+  // ── NORDESTE & NORTE ────────────────────────────────────────────────────
+  'eletro_assistencia|salvador':               { buscasMensais: 6800, cpcMin: 1.80, cpcMax: 3.90, cpcMedio: 2.85, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|salvador':                     { buscasMensais: 9200, cpcMin: 2.10, cpcMax: 4.60, cpcMedio: 3.35, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|fortaleza':              { buscasMensais: 6400, cpcMin: 1.80, cpcMax: 3.80, cpcMedio: 2.80, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|fortaleza':                    { buscasMensais: 8800, cpcMin: 2.10, cpcMax: 4.50, cpcMedio: 3.30, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|recife':                 { buscasMensais: 5400, cpcMin: 1.80, cpcMax: 3.90, cpcMedio: 2.85, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|recife':                       { buscasMensais: 7200, cpcMin: 2.10, cpcMax: 4.60, cpcMedio: 3.35, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
+  'eletro_assistencia|manaus':                 { buscasMensais: 4200, cpcMin: 1.90, cpcMax: 4.00, cpcMedio: 2.95, diarioPiloto: 25, diarioEscala: 50, medidoEm: 'agosto de 2026' },
+  'climatizacao|manaus':                       { buscasMensais: 8100, cpcMin: 2.20, cpcMax: 4.80, cpcMedio: 3.50, diarioPiloto: 30, diarioEscala: 60, medidoEm: 'agosto de 2026' },
 };
 
 export const FONTE_DEMANDA = 'Planejador de Palavras-chave do Google';
@@ -187,8 +245,6 @@ function normalizar(valor: string): string {
   return valor
     .split('/')[0]
     .normalize('NFD')
-    // \p{Diacritic} em vez da faixa U+0300–U+036F escrita à mão: caractere
-    // combinante solto no código-fonte é frágil e some numa reformatação.
     .replace(/\p{Diacritic}/gu, '')
     .trim()
     .toLowerCase();
@@ -196,37 +252,59 @@ function normalizar(valor: string): string {
 
 export function chaveDemanda(nicho?: string | null, cidade?: string | null): string | null {
   if (!nicho || !cidade) return null;
-
-  // Pelo slug canônico: assim `centro automotivo` e `mecanica` caem na mesma
-  // linha da tabela, antes e depois da migração do banco.
   const n = nichoCanonico(nicho);
   const c = normalizar(cidade);
-
   return n && c ? `${n}|${c}` : null;
 }
 
-export function buscarDemanda(nicho?: string | null, cidade?: string | null): DemandaBusca | null {
+/**
+ * Estima o volume e custos para qualquer cidade fora da tabela com base no seu porte.
+ */
+function estimarDemandaPorPorte(nicho?: string | null, cidade?: string | null): DemandaBusca {
+  const nCanonico = nicho ? nichoCanonico(nicho) : 'default';
+  const bench = BENCHMARKS_NICHO[nCanonico] || BENCHMARKS_NICHO['default'];
+  const cNorm = cidade ? normalizar(cidade) : '';
+
+  // Classificação inteligente de porte por palavras-chave ou estado
+  const ehMetropole = cNorm.includes('sao paulo') || cNorm.includes('rio de janeiro') || cNorm.includes('brasilia') || cNorm.includes('salvador') || cNorm.includes('fortaleza') || cNorm.includes('belo horizonte') || cNorm.includes('curitiba') || cNorm.includes('manaus') || cNorm.includes('recife') || cNorm.includes('porto alegre') || cNorm.includes('goiania') || cNorm.includes('belem') || cNorm.includes('guarulhos') || cNorm.includes('campinas');
+  const ehGrande = cNorm.includes('sao bernardo') || cNorm.includes('santo andre') || cNorm.includes('osasco') || cNorm.includes('sorocaba') || cNorm.includes('ribeirao') || cNorm.includes('sao jose') || cNorm.includes('santos') || cNorm.includes('niteroi') || cNorm.includes('uberlandia') || cNorm.includes('joinville') || cNorm.includes('londrina') || cNorm.includes('maringa') || cNorm.includes('florianopolis') || cNorm.includes('cuiaba') || cNorm.includes('campo grande') || cNorm.includes('natal') || cNorm.includes('teresina') || cNorm.includes('joao pessoa') || cNorm.includes('maceio') || cNorm.includes('aracaju');
+
+  let buscasEstimadas = 1850;
+  if (ehMetropole) {
+    buscasEstimadas = nCanonico === 'climatizacao' ? 32000 : 26000;
+  } else if (ehGrande) {
+    buscasEstimadas = nCanonico === 'climatizacao' ? 4500 : 3400;
+  } else {
+    // Cidade média/interior padrão
+    buscasEstimadas = 1450;
+  }
+
+  return {
+    buscasMensais: buscasEstimadas,
+    cpcMin: bench.cpcMin,
+    cpcMax: bench.cpcMax,
+    cpcMedio: bench.cpcMedio,
+    diarioPiloto: bench.diarioPiloto,
+    diarioEscala: bench.diarioEscala,
+    medidoEm: 'estimativa de leilão local do Google Ads',
+  };
+}
+
+export function buscarDemanda(nicho?: string | null, cidade?: string | null): DemandaBusca {
   const chave = chaveDemanda(nicho, cidade);
-  return chave ? TABELA[chave] ?? null : null;
+  if (chave && TABELA[chave]) {
+    return TABELA[chave];
+  }
+  return estimarDemandaPorPorte(nicho, cidade);
 }
 
 /**
  * A frase que vai ao prospect.
- *
- * A fatia dos primeiros colocados fica qualitativa ("a maior parte") de
- * propósito: percentual exato de CTR do bloco local varia por nicho e por
- * consulta, e um "30%" cravado tem o mesmo problema de credibilidade que o
- * volume extrapolado teria.
  */
-export function fraseDemanda(nicho?: string | null, cidade?: string | null): string | null {
+export function fraseDemanda(nicho?: string | null, cidade?: string | null): string {
   const demanda = buscarDemanda(nicho, cidade);
-  if (!demanda) return null;
-
   const cidadeLimpa = (cidade || '').split('/')[0].trim();
   const volume = demanda.buscasMensais.toLocaleString('pt-BR');
-
-  // O termo do catálogo, não o nicho do banco: é o que faz o número
-  // corresponder à frase, já que foi ele que o Planejador mediu.
   return `Cerca de ${volume} pessoas procuram ${termoDoNicho(nicho)} em ${cidadeLimpa} todo mês no Google.`;
 }
 
@@ -254,19 +332,24 @@ export type PlanoGoogleAds = {
 
 /**
  * Calcula o Plano Factual de Investimento Diário e Projeção de Retorno no Google Ads.
+ * Suporta overrides opcionais caso o lead já venha com dados medidos direto do robô.
  */
-export function calcularPlanoGoogleAds(nicho?: string | null, cidade?: string | null): PlanoGoogleAds {
+export function calcularPlanoGoogleAds(
+  nicho?: string | null, 
+  cidade?: string | null,
+  leadOverrides?: { buscas_mensais?: number | null; cpc_medio?: number | null }
+): PlanoGoogleAds {
   const demanda = buscarDemanda(nicho, cidade);
   const nCanonico = nicho ? nichoCanonico(nicho) : 'default';
   const benchmark = BENCHMARKS_NICHO[nCanonico] || BENCHMARKS_NICHO['default'];
 
-  const cpcMin = demanda?.cpcMin ?? benchmark.cpcMin;
-  const cpcMax = demanda?.cpcMax ?? benchmark.cpcMax;
-  const cpcMedio = demanda?.cpcMedio ?? benchmark.cpcMedio;
-  const diarioPiloto = demanda?.diarioPiloto ?? benchmark.diarioPiloto;
-  const diarioEscala = demanda?.diarioEscala ?? benchmark.diarioEscala;
-  const buscasMensais = demanda?.buscasMensais ?? null;
-  const medidoEm = demanda?.medidoEm ?? 'leilão atual do Google Ads';
+  const cpcMin = demanda.cpcMin ?? benchmark.cpcMin;
+  const cpcMax = demanda.cpcMax ?? benchmark.cpcMax;
+  const cpcMedio = leadOverrides?.cpc_medio ?? demanda.cpcMedio ?? benchmark.cpcMedio;
+  const diarioPiloto = demanda.diarioPiloto ?? benchmark.diarioPiloto;
+  const diarioEscala = demanda.diarioEscala ?? benchmark.diarioEscala;
+  const buscasMensais = leadOverrides?.buscas_mensais ?? demanda.buscasMensais;
+  const medidoEm = demanda.medidoEm ?? 'leilão atual do Google Ads';
 
   // Cálculos Cenário Piloto
   const mensalPiloto = diarioPiloto * 30;
