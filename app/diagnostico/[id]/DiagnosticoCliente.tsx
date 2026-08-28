@@ -923,67 +923,148 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </p>
           </section>
 
-          {/* ── 02. Cenário Competitivo Local ─────────────────────────────────────────── */}
+          {/* ── 02. Cenário Competitivo & Mercado Local ─────────────────────────────────────────── */}
           <section>
             <TituloSecao numero="02. Cenário Competitivo">
-              Quem está absorvendo as buscas em {cidadeCurta || 'sua região'}
+              {concorrentesTop.length >= 2
+                ? `Quem está disputando as buscas em ${cidadeCurta || 'sua região'}`
+                : `O padrão dos líderes de mercado em ${cidadeCurta || 'sua região'}`}
             </TituloSecao>
 
             <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-6">
-              A maior parte dos contatos de conserto em {cidadeCurta || 'sua cidade'} está sendo direcionada para as empresas com maior presença no Google:
+              {concorrentesTop.length >= 2 ? (
+                <>
+                  A maior parte dos contatos de {termoDoNicho(lead.nicho) || 'conserto'} em {cidadeCurta || 'sua cidade'} está sendo direcionada para as empresas com maior presença no Google:
+                </>
+              ) : (
+                <>
+                  Para entender por que as empresas líderes de {cidadeCurta || 'sua região'} recebem a maior fatia dos clientes todos os dias, comparamos a estrutura do topo com a situação atual da <strong>{empresa}</strong>:
+                </>
+              )}
             </p>
 
-            {/* Tabela de Concorrentes Top vs Lead */}
-            <div className="border border-zinc-200 rounded-lg overflow-hidden mb-6 bg-white">
-              <table className="w-full text-left border-collapse table-fixed text-sm">
-                <colgroup>
-                  <col />
-                  <col className="w-[100px] sm:w-[120px]" />
-                  <col className="w-[100px] sm:w-[120px]" />
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-zinc-200 bg-zinc-50">
-                    <th className="py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Empresa</th>
-                    <th className="py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-center whitespace-nowrap">Nota Google</th>
-                    <th className="py-2.5 pr-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-right whitespace-nowrap">Avaliações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {linhasComparativo.map((linha) => (
-                    <tr key={linha.id} className={linha.isLead ? 'bg-emerald-50 font-bold' : ''}>
-                      <td className="py-3 px-3 text-zinc-800">
-                        <span className="block truncate">{nomeCurto(linha.nome)}</span>
-                        {linha.isLead && (
-                          <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100/60 px-1.5 py-0.5 rounded mt-0.5">
-                            Sua Empresa
-                          </span>
-                        )}
+            {concorrentesTop.length >= 2 ? (
+              /* Tabela com concorrentes reais do banco */
+              <div className="border border-zinc-200 rounded-lg overflow-hidden mb-6 bg-white shadow-xs">
+                <table className="w-full text-left border-collapse table-fixed text-sm">
+                  <colgroup>
+                    <col />
+                    <col className="w-[100px] sm:w-[120px]" />
+                    <col className="w-[100px] sm:w-[120px]" />
+                  </colgroup>
+                  <thead>
+                    <tr className="border-b border-zinc-200 bg-zinc-50">
+                      <th className="py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Empresa</th>
+                      <th className="py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-center whitespace-nowrap">Nota Google</th>
+                      <th className="py-2.5 pr-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500 text-right whitespace-nowrap">Avaliações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100">
+                    {linhasComparativo.map((linha) => (
+                      <tr key={linha.id} className={linha.isLead ? 'bg-emerald-50 font-bold' : ''}>
+                        <td className="py-3 px-3 text-zinc-800">
+                          <span className="block truncate">{nomeCurto(linha.nome)}</span>
+                          {linha.isLead && (
+                            <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100/60 px-1.5 py-0.5 rounded mt-0.5">
+                              Sua Empresa
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 text-center tabular-nums text-zinc-700 whitespace-nowrap">
+                          {linha.isLead
+                            ? (temGmb ? `⭐ ${lead.gmb_nota?.toFixed(1)}` : '—')
+                            : (linha.gmb_nota != null ? `⭐ ${linha.gmb_nota.toFixed(1)}` : '—')}
+                        </td>
+                        <td className={`py-3 pr-3 text-right tabular-nums ${linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-600'}`}>
+                          {linha.isLead
+                            ? (temGmb ? `${lead.gmb_avaliacoes}` : '0 (Sem perfil)')
+                            : (linha.gmb_avaliacoes != null ? `${linha.gmb_avaliacoes}` : '—')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* Matriz de Mercado: Líderes da Região vs Lead */
+              <div className="border border-zinc-200 rounded-lg overflow-hidden mb-6 bg-white shadow-xs">
+                <table className="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-200 bg-zinc-50">
+                      <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-zinc-500 w-1/3">
+                        Critério de Captação
+                      </th>
+                      <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-zinc-600 w-1/3">
+                        Líderes em {cidadeCurta || 'Região'}
+                      </th>
+                      <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-50/50">
+                        {empresa} (Sua Empresa)
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100">
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-zinc-800">
+                        Presença no Topo do Google
                       </td>
-                      <td className="py-3 text-center tabular-nums text-zinc-700 whitespace-nowrap">
-                        {linha.isLead
-                          ? (temGmb ? `⭐ ${lead.gmb_nota?.toFixed(1)}` : '—')
-                          : (linha.gmb_nota != null ? `⭐ ${linha.gmb_nota.toFixed(1)}` : '—')}
+                      <td className="py-3 px-4 text-xs font-semibold text-emerald-800">
+                        ✅ Anúncios Ativos (1º Lugar)
                       </td>
-                      <td className={`py-3 pr-3 text-right tabular-nums ${linha.isLead ? 'font-bold text-zinc-900' : 'text-zinc-600'}`}>
-                        {linha.isLead
-                          ? (temGmb ? `${lead.gmb_avaliacoes}` : '0 (Sem perfil)')
-                          : (linha.gmb_avaliacoes != null ? `${linha.gmb_avaliacoes}` : '—')}
+                      <td className="py-3 px-4 text-xs font-bold text-rose-700 bg-emerald-50/20">
+                        {lead.anuncio_detectado ? '✅ Anúncio Ativo' : '❌ Ausente no Leilão'}
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-zinc-800">
+                        Volume de Prova Social
+                      </td>
+                      <td className="py-3 px-4 text-xs text-zinc-700">
+                        60 a 200+ avaliações no mapa
+                      </td>
+                      <td className="py-3 px-4 text-xs font-medium text-zinc-800 bg-emerald-50/20">
+                        {temGmb ? `⭐ ${lead.gmb_nota?.toFixed(1)} (${lead.gmb_avaliacoes} avaliações)` : '❌ 0 avaliações / Sem ficha'}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-zinc-800">
+                        Página de Contato no Celular
+                      </td>
+                      <td className="py-3 px-4 text-xs text-zinc-700">
+                        ✅ Site &lt; 2s com botão WhatsApp
+                      </td>
+                      <td className="py-3 px-4 text-xs font-medium text-zinc-800 bg-emerald-50/20">
+                        {lead.site ? (
+                          lead.tags_rastreamento?.google_ads ? '✅ Site com Tags' : '⚠️ Site sem Tag Google Ads'
+                        ) : (
+                          '❌ Sem Página Própria'
+                        )}
+                      </td>
+                    </tr>
+                    <tr className="bg-zinc-50/40">
+                      <td className="py-3 px-4 font-semibold text-zinc-800">
+                        Destino dos Clientes Urgentes
+                      </td>
+                      <td className="py-3 px-4 text-xs font-bold text-emerald-900">
+                        Recebem mais de 80% dos chamados
+                      </td>
+                      <td className="py-3 px-4 text-xs font-bold text-rose-700 bg-emerald-50/20">
+                        Vulnerável / Não Captando
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             <div className="border-l-2 border-emerald-700 pl-4 py-1">
               <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
                 {temGmb ? (
                   <>
-                    <strong>Diagnóstico Estratégico:</strong> A sua nota ({lead.gmb_nota?.toFixed(1)} ⭐) é de altíssimo nível. A única vantagem dos concorrentes mais antigos é a visibilidade no topo do Google. Anúncios de precisão no Google Ads colocam a <strong>{empresa}</strong> na primeira posição para quem tem urgência hoje.
+                    <strong>Diagnóstico Estratégico:</strong> A sua nota ({lead.gmb_nota?.toFixed(1)} ⭐) é excelente. O único motivo de os líderes de {cidadeCurta || 'sua região'} absorverem a maior parte dos clientes é que eles aparecem imediatamente no topo do Google. Ao ativar anúncios de alta precisão, a <strong>{empresa}</strong> assume o 1º lugar do leilão hoje mesmo.
                   </>
                 ) : (
                   <>
-                    <strong>Diagnóstico Estratégico:</strong> A sua empresa ainda não possui presença no Google Maps. Enquanto os concorrentes acima acumulam contatos diários, a sua empresa não aparece nas buscas. Criar e otimizar a sua ficha junto com anúncios no Google Ads coloca a <strong>{empresa}</strong> no mapa e no topo das buscas imediatamente.
+                    <strong>Diagnóstico Estratégico:</strong> A sua empresa ainda não possui presença no Google Maps. Enquanto os líderes locais acumulam chamados diários, a sua empresa fica invisível nas buscas. Estruturar a sua ficha e ativar anúncios no Google Ads coloca a <strong>{empresa}</strong> na frente dos concorrentes imediatamente.
                   </>
                 )}
               </p>
