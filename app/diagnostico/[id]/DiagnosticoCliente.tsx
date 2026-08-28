@@ -13,6 +13,7 @@ import {
   AlertTriangle, MessageCircle, MapPin, Megaphone,
   ArrowUpRight, CheckCircle2, Printer,
 } from 'lucide-react';
+import { SolicitarDiagnostico } from '@/components/SolicitarDiagnostico';
 
 /**
  * Este relatório é um DOCUMENTO, não uma tela de produto.
@@ -304,6 +305,10 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
         <p className="text-sm">Gerando diagnóstico de visibilidade digital...</p>
       </div>
     );
+  }
+
+  if (slugParam === 'solicitar' || slugParam === 'novo' || slugParam === 'gratis') {
+    return <SolicitarDiagnostico />;
   }
 
   if (!lead) {
