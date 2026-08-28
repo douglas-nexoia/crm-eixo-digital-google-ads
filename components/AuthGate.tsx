@@ -1,70 +1,64 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-const ROTAS_PUBLICAS = ['login', 'diagnostico', 'solicitar', 'diagnostico-gratis'];
-
-const ehRotaPublica = (pathname?: string | null) => {
-  if (!pathname) {
-    if (typeof window !== 'undefined') {
-      const atual = window.location.pathname.replace(/^\/+|\/+$/g, '');
-      return ROTAS_PUBLICAS.some((rota) => atual === rota || atual.startsWith(`${rota}/`));
-    }
-    return true;
-  }
-  const limpo = pathname.replace(/^\/+|\/+$/g, '');
-  return ROTAS_PUBLICAS.some((rota) => limpo === rota || limpo.startsWith(`${rota}/`));
-};
+// Apenas estas rotas exigem sessão de login
+const ROTAS_PRIVADAS = ['explorar', 'ranking', 'leads'];
 
 export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const [liberado, setLiberado] = useState(false);
-  const [checouSessao, setChecouSessao] = useState(false);
+  const [autenticado, setAutenticado] = useState<boolean | null>(null);
 
-  const publica = ehRotaPublica(pathname);
+  const path = (pathname || '').replace(/^\/+|\/+$/g, '');
+  const isRaiz = path === '';
+  const isPrivada = isRaiz || ROTAS_PRIVADAS.some((r) => path === r || path.startsWith(`${r}/`));
 
   useEffect(() => {
-    if (publica) {
-      setLiberado(true);
-      setChecouSessao(true);
+    if (!isPrivada) {
+      setAutenticado(true);
       return;
     }
 
     let ativo = true;
 
-    const aplicar = (temSessao: boolean) => {
+    supabase.auth.getSession().then(({ data }) => {
       if (!ativo) return;
-      setLiberado(temSessao);
-      setChecouSessao(true);
-
-      const rotaAtual = typeof window !== 'undefined' ? window.location.pathname : pathname;
-      if (!temSessao && !ehRotaPublica(rotaAtual)) {
+      const temSessao = Boolean(data.session);
+      setAutenticado(temSessao);
+      if (!temSessao) {
         router.replace('/login');
       }
-    };
+    });
 
-    supabase.auth.getSession().then(({ data }) => aplicar(Boolean(data.session)));
-
-    const { data: inscricao } = supabase.auth.onAuthStateChange((_evento, sessao) =>
-      aplicar(Boolean(sessao))
-    );
+    const { data: inscricao } = supabase.auth.onAuthStateChange((_evento, sessao) => {
+      if (!ativo) return;
+      const temSessao = Boolean(sessao);
+      setAutenticado(temSessao);
+      if (!temSessao) {
+        router.replace('/login');
+      }
+    });
 
     return () => {
       ativo = false;
       inscricao.subscription.unsubscribe();
     };
-  }, [publica, pathname, router]);
+  }, [isPrivada, pathname, router]);
 
-  if (publica) return <>{children}</>;
+  // Se a rota for pública (/solicitar, /diagnostico, /login...), renderiza direto sem travar
+  if (!isPrivada) {
+    return <>{children}</>;
+  }
 
-  if (!checouSessao || !liberado) {
+  // Rota privada sem sessão confirmada
+  if (autenticado === null || !autenticado) {
     return (
-      <div className="flex-1 min-h-screen flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin text-[#64748B]" />
+      <div className="flex-1 min-h-screen flex items-center justify-center bg-[#0B0F19]">
+        <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
       </div>
     );
   }
