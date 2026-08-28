@@ -5,26 +5,34 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+function isPublicPath(p?: string | null): boolean {
+  if (!p) return false;
+  const path = p.toLowerCase().trim();
+  return (
+    path === '/login' ||
+    path.startsWith('/login/') ||
+    path === '/solicitar' ||
+    path.startsWith('/solicitar/') ||
+    path === '/diagnostico' ||
+    path.startsWith('/diagnostico/') ||
+    path === '/diagnostico-gratis' ||
+    path.startsWith('/diagnostico-gratis/')
+  );
+}
+
 export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const [autenticado, setAutenticado] = useState<boolean | null>(null);
+  const [autenticado, setAutenticado] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Descobrir a rota atual com segurança total (SSR e Cliente)
-  const currentPath = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
-
-  // Rotas que NUNCA exigem login
-  const isPublica =
-    !currentPath ||
-    currentPath.startsWith('/solicitar') ||
-    currentPath.startsWith('/diagnostico') ||
-    currentPath.startsWith('/diagnostico-gratis') ||
-    currentPath.startsWith('/login');
+  const windowPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const ehPublico = isPublicPath(pathname) || isPublicPath(windowPath);
 
   useEffect(() => {
-    // Se for rota pública, NUNCA executa checagem de sessão nem redirecionamento
-    if (isPublica) {
-      setAutenticado(true);
+    // Se for público, não faz nada
+    if (ehPublico) {
+      setLoading(false);
       return;
     }
 
@@ -32,56 +40,51 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
     supabase.auth.getSession().then(({ data }) => {
       if (!ativo) return;
-      const temSessao = Boolean(data.session);
-      setAutenticado(temSessao);
-      
-      const nowPath = window.location.pathname;
-      const nowPublic =
-        nowPath.startsWith('/solicitar') ||
-        nowPath.startsWith('/diagnostico') ||
-        nowPath.startsWith('/diagnostico-gratis') ||
-        nowPath.startsWith('/login');
+      const tem = Boolean(data.session);
+      setAutenticado(tem);
+      setLoading(false);
 
-      if (!temSessao && !nowPublic) {
-        router.replace('/login');
+      if (!tem) {
+        const current = typeof window !== 'undefined' ? window.location.pathname : '';
+        if (!isPublicPath(current)) {
+          router.replace('/login');
+        }
       }
     });
 
-    const { data: inscricao } = supabase.auth.onAuthStateChange((_evento, sessao) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (!ativo) return;
-      const temSessao = Boolean(sessao);
-      setAutenticado(temSessao);
-
-      const nowPath = window.location.pathname;
-      const nowPublic =
-        nowPath.startsWith('/solicitar') ||
-        nowPath.startsWith('/diagnostico') ||
-        nowPath.startsWith('/diagnostico-gratis') ||
-        nowPath.startsWith('/login');
-
-      if (!temSessao && !nowPublic) {
-        router.replace('/login');
+      const tem = Boolean(session);
+      setAutenticado(tem);
+      if (!tem) {
+        const current = typeof window !== 'undefined' ? window.location.pathname : '';
+        if (!isPublicPath(current)) {
+          router.replace('/login');
+        }
       }
     });
 
     return () => {
       ativo = false;
-      inscricao.subscription.unsubscribe();
+      sub.subscription.unsubscribe();
     };
-  }, [isPublica, pathname, router]);
+  }, [ehPublico, router]);
 
-  // Se a rota for pública, renderiza IMEDIATAMENTE (zero bloqueio)
-  if (isPublica) {
+  // Se a rota for pública, renderiza IMEDIATAMENTE os filhos
+  if (ehPublico) {
     return <>{children}</>;
   }
 
-  // Rota restrita sem sessão
-  if (autenticado === null || !autenticado) {
+  if (loading) {
     return (
       <div className="flex-1 min-h-screen flex items-center justify-center bg-[#0B0F19]">
         <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
       </div>
     );
+  }
+
+  if (!autenticado) {
+    return null;
   }
 
   return <>{children}</>;
