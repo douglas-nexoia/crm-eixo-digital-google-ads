@@ -33,12 +33,11 @@ export const Sidebar: React.FC = () => {
   };
 
   // Não renderizar Sidebar nas rotas sem sessão (diagnóstico público, formulário e login)
-  if (
-    pathname.startsWith('/diagnostico') ||
-    pathname.startsWith('/solicitar') ||
-    pathname.startsWith('/diagnostico-gratis') ||
-    pathname === '/login'
-  ) {
+  const limpo = (pathname || '').replace(/^\/+|\/+$/g, '');
+  const ehPublica = ['login', 'diagnostico', 'solicitar', 'diagnostico-gratis'].some(
+    (rota) => limpo === rota || limpo.startsWith(`${rota}/`)
+  );
+  if (ehPublica) {
     return null;
   }
 
