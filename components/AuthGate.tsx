@@ -27,13 +27,9 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const windowPath = typeof window !== 'undefined' ? window.location.pathname : '';
   const rotaPrivada = rotaEhPrivada(pathname) || (windowPath ? rotaEhPrivada(windowPath) : false);
 
-  console.log('[AuthGate Render]', { pathname, windowPath, rotaPrivada });
-
   useEffect(() => {
-    console.log('[AuthGate Effect Init]', { pathname, windowPath, rotaPrivada });
     // Se a rota for pública (/solicitar, /diagnostico, /login...), libera na hora
     if (!rotaPrivada) {
-      console.log('[AuthGate Public Route Allowed]', pathname || windowPath);
       setChecando(false);
       return;
     }
