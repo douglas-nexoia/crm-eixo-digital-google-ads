@@ -94,11 +94,10 @@ Deno.serve(async (req) => {
       minute: '2-digit',
     });
 
-    const registro = `[${data} às ${hora}] SOLICITOU o diagnóstico avançado pela página do relatório`;
+    const registro = `[${data} às ${hora}] CLICOU para falar no WhatsApp comercial pela página do relatório`;
     const notas = lead.notas ? `${registro}\n${lead.notas}` : registro;
 
-    // Grava primeiro: se o WhatsApp falhar, o pedido não pode se perder — é o
-    // único sinal do funil que vem do prospect.
+    // Grava no banco: atualiza status_funil para 'Aceitou Diagnóstico'
     const { error: erroUpdate } = await supabase
       .from('leads')
       .update({ status_funil: 'Aceitou Diagnóstico', notas })
@@ -109,37 +108,7 @@ Deno.serve(async (req) => {
       return json({ success: false, error: 'Não foi possível registrar o pedido.' }, 500);
     }
 
-    // Confirmação para o prospect. Sem prazo prometido de propósito: a
-    // mensagem também serve de aviso no WhatsApp do operador (é o mesmo
-    // aparelho, então a conversa sobe na lista), e prometer data cria dívida.
-    const apiUrl = Deno.env.get('EVOLUTION_API_URL')?.trim();
-    const apiKey = Deno.env.get('EVOLUTION_API_KEY')?.trim();
-    const instancia = Deno.env.get('EVOLUTION_INSTANCE')?.trim();
-    const numero = lead.telefone ? formatarNumero(lead.telefone) : null;
-
-    if (apiUrl && apiKey && instancia && numero) {
-      const base = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-      const texto =
-        `Recebido! Vou preparar a análise mais detalhada da *${lead.nome}* e te mando por aqui assim que ficar pronta.\n\n` +
-        `Se quiser adiantar alguma dúvida enquanto isso, é só me escrever.`;
-
-      try {
-        const resposta = await fetch(`${base}/send/text`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', apikey: apiKey },
-          body: JSON.stringify({ instance: instancia, number: numero, text: texto }),
-        });
-
-        if (!resposta.ok) {
-          console.error('Evolution recusou a confirmação:', resposta.status, await resposta.text());
-        }
-      } catch (erro) {
-        console.error('Falha ao enviar a confirmação:', erro);
-      }
-    }
-
-    // O pedido está registrado. Falha no WhatsApp não vira erro para quem
-    // clicou — para ele, deu certo, e o lead está no CRM de qualquer forma.
+    // O pedido está registrado no CRM. O cliente é redirecionado diretamente pelo navegador para o WhatsApp comercial.
     return json({ success: true, jaSolicitado: false });
   } catch (erro) {
     console.error('Falha ao solicitar diagnóstico:', erro);
