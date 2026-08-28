@@ -1,4 +1,4 @@
-﻿export const runtime = 'edge';
+export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -30,7 +30,7 @@ async function consultarPageSpeedEdge(urlBruta: string) {
     )}&strategy=mobile&category=performance&key=${apiKey}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000); // 12s timeout seguro
+    const timeout = setTimeout(() => controller.abort(), 35000); // 35s para Lighthouse renderizar no Chrome Headless
 
     const res = await fetch(endpoint, { signal: controller.signal });
     clearTimeout(timeout);
