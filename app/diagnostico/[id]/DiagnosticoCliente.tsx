@@ -701,9 +701,158 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </div>
           </section>
 
-          {/* ── 02. O Cenário na sua Região ─────────────────────────────────────────── */}
+          {/* ── 02. Auditoria Técnica de Código & Tags ─────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero="02. O Cenário na sua Região">
+            <TituloSecao numero="02. Auditoria Técnica &amp; Tags de Rastreamento">
+              Varredura de infraestrutura e tecnologias detectadas
+            </TituloSecao>
+
+            <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch] mb-6">
+              Nossa ferramenta de auditoria realizou uma varredura técnica de código para identificar se a <strong>{empresa}</strong> possui a infraestrutura necessária para anunciar com inteligência no Google:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {/* Box 1: Status do Site & Segurança */}
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50">
+                <h3 className="text-sm font-bold text-zinc-900 mb-3 border-b border-zinc-200/80 pb-2">
+                  Infraestrutura da Página
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-zinc-650">Site Próprio Ativo:</span>
+                    {lead.site ? (
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        ✅ Detectado ({lead.site.replace(/^https?:\/\//, '').replace(/\/$/, '')})
+                      </span>
+                    ) : (
+                      <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                        ❌ Não Detectado
+                      </span>
+                    )}
+                  </li>
+                  <li className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-zinc-650">Certificado de Segurança (HTTPS):</span>
+                    {lead.site_https ? (
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        ✅ Ativo e Seguro
+                      </span>
+                    ) : (
+                      <span className="text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+                        {lead.site ? '❌ Inseguro / Sem HTTPS' : '—'}
+                      </span>
+                    )}
+                  </li>
+                  <li className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-zinc-650">Otimização para Smartphone:</span>
+                    {lead.site_responsivo ? (
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        ✅ Adaptado para Celular
+                      </span>
+                    ) : (
+                      <span className="text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+                        {lead.site ? '⚠️ Não Otimizado' : '—'}
+                      </span>
+                    )}
+                  </li>
+                </ul>
+              </div>
+
+              {/* Box 2: Tags de Rastreamento de Conversão */}
+              <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/50">
+                <h3 className="text-sm font-bold text-zinc-900 mb-3 border-b border-zinc-200/80 pb-2">
+                  Tags de Conversão &amp; Tráfego
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-zinc-650">Tag de Conversão Google Ads:</span>
+                    {lead.tags_rastreamento?.google_ads ? (
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        ✅ Instalada
+                      </span>
+                    ) : (
+                      <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                        ❌ Não Detectada
+                      </span>
+                    )}
+                  </li>
+                  <li className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-zinc-650">Google Tag Manager (GTM):</span>
+                    {lead.tags_rastreamento?.gtm ? (
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        ✅ Instalado
+                      </span>
+                    ) : (
+                      <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                        ❌ Não Detectado
+                      </span>
+                    )}
+                  </li>
+                  <li className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-zinc-650">Google Analytics 4 (GA4):</span>
+                    {lead.tags_rastreamento?.ga4 ? (
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        ✅ Instalado
+                      </span>
+                    ) : (
+                      <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                        ❌ Não Detectado
+                      </span>
+                    )}
+                  </li>
+                  <li className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-zinc-650">Pixel da Meta (Instagram/Face):</span>
+                    {lead.tags_rastreamento?.meta_pixel ? (
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        ✅ Instalado
+                      </span>
+                    ) : (
+                      <span className="text-rose-750 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                        ❌ Não Detectado
+                      </span>
+                    )}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Diagnóstico Analítico em Destaque */}
+            {!lead.site ? (
+              <div className="border border-zinc-200 bg-zinc-50 rounded-lg p-4 mb-4">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-900 mb-1">
+                  💡 Diagnóstico da Infraestrutura:
+                </h4>
+                <p className="text-xs sm:text-sm text-zinc-650 leading-relaxed">
+                  A ausência de site próprio e de tags de rastreamento é o principal fator que mantém o seu Índice em {totalIndice}/100. Sem uma página rápida no celular conectada ao WhatsApp, 100% dos clientes que buscam no Google com pressa vão para os concorrentes que possuem essa estrutura pronta.
+                </p>
+              </div>
+            ) : !lead.tags_rastreamento?.google_ads ? (
+              <div className="border border-amber-200 bg-amber-50/60 rounded-lg p-4 mb-4">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-amber-900 mb-1">
+                  ⚠️ Gargalo Crítico no Leilão:
+                </h4>
+                <p className="text-xs sm:text-sm text-amber-950 leading-relaxed">
+                  Identificamos o seu site ativo, mas a <strong>Tag de Conversão do Google Ads não está instalada</strong>. Sem essa tag, se você anunciar, o robô do Google não sabe quais cliques geram chamados no WhatsApp, o que encarece o custo por clique e queima orçamento sem otimização inteligente.
+                </p>
+              </div>
+            ) : (
+              <div className="border border-emerald-200 bg-emerald-50/60 rounded-lg p-4 mb-4">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-emerald-900 mb-1">
+                  ✅ Rastreamento Técnico Ativo:
+                </h4>
+                <p className="text-xs sm:text-sm text-emerald-950 leading-relaxed">
+                  Detectamos tags de conversão ativas. Isso permite mensurar com precisão cada ligação e mensagem gerada pelos anúncios do Google.
+                </p>
+              </div>
+            )}
+
+            <div className="text-[11px] text-zinc-400 italic">
+              * Varredura realizada com base no código-fonte e histórico de leilão do Google Ads.
+            </div>
+          </section>
+
+          {/* ── 03. O Cenário na sua Região ─────────────────────────────────────────── */}
+          <section>
+            <TituloSecao numero="03. O Cenário na sua Região">
               Demanda de clientes e concorrentes em {cidadeCurta || 'sua cidade'}
             </TituloSecao>
 
@@ -760,9 +909,9 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </p>
           </section>
 
-          {/* ── 03. Como Elevar o Índice para 90+ ─────────────────────────────────────────── */}
+          {/* ── 04. Como Elevar o Índice para 90+ ─────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero="03. Como Elevar o Índice para 90+">
+            <TituloSecao numero="04. Como Elevar o Índice para 90+">
               O que você precisa para receber chamados todos os dias
             </TituloSecao>
 
@@ -812,9 +961,9 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </div>
           </section>
 
-          {/* ── 04. Investimento e Retorno ─────────────────────────────────────────── */}
+          {/* ── 05. Investimento e Retorno ─────────────────────────────────────────── */}
           <section>
-            <TituloSecao numero="04. Investimento Diário & Retorno">
+            <TituloSecao numero="05. Investimento Diário & Retorno">
               Quanto investir e quantos clientes você recebe no WhatsApp
             </TituloSecao>
 
@@ -891,7 +1040,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </div>
           </section>
 
-          {/* ── 05. Ação (CTA Falar com o Douglas) ──────────────────────────────────────────────────────── */}
+          {/* ── 06. Ação (CTA Falar com o Douglas) ──────────────────────────────────────────────────────── */}
           <section className="nao-imprimir border-t border-zinc-200 pt-10">
             {pedido === 'feito' ? (
               <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-5 max-w-lg">
