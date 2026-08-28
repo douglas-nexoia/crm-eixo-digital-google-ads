@@ -1,6 +1,6 @@
-﻿import { SolicitarDiagnostico } from '@/components/SolicitarDiagnostico';
+﻿export const runtime = 'edge';
 
-export const dynamic = 'force-dynamic';
+import { SolicitarDiagnostico } from '@/components/SolicitarDiagnostico';
 
 export default function SolicitarPage() {
   return <SolicitarDiagnostico />;
