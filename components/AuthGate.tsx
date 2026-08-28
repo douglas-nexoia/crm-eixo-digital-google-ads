@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
  * /diagnostico é o relatório que vai por WhatsApp para o prospect — ele não
  * tem login e não pode ganhar um. O resto do CRM é privado.
  */
-const ROTAS_PUBLICAS = ['/login', '/diagnostico'];
+const ROTAS_PUBLICAS = ['/login', '/diagnostico', '/solicitar', '/diagnostico-gratis'];
 
 const ehRotaPublica = (pathname: string) =>
   ROTAS_PUBLICAS.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));

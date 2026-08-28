@@ -32,8 +32,13 @@ export const Sidebar: React.FC = () => {
     router.replace('/login');
   };
 
-  // Não renderizar Sidebar nas rotas sem sessão (diagnóstico público e login)
-  if (pathname.startsWith('/diagnostico') || pathname === '/login') {
+  // Não renderizar Sidebar nas rotas sem sessão (diagnóstico público, formulário e login)
+  if (
+    pathname.startsWith('/diagnostico') ||
+    pathname.startsWith('/solicitar') ||
+    pathname.startsWith('/diagnostico-gratis') ||
+    pathname === '/login'
+  ) {
     return null;
   }
 
