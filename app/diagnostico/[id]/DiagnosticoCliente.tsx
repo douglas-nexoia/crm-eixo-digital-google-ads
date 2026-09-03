@@ -841,13 +841,15 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                         Tempo de Abertura (4G)
                       </span>
                       <div className="text-xl font-black text-zinc-900 my-1">
-                        {pageSpeed.lcp != null ? `${pageSpeed.lcp.toFixed(2)}s` : (lead.site_responsivo ? '3.80s' : '5.40s')}
+                        {pageSpeed.lcp != null ? `${pageSpeed.lcp.toFixed(2)}s` : '—'}
                       </div>
                       <div>
                         <span className={`inline-block text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
-                          (pageSpeed.lcp || (lead.site_responsivo ? 3.8 : 5.4)) > 3.5 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          pageSpeed.lcp != null
+                            ? (pageSpeed.lcp > 3.5 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200')
+                            : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
                         }`}>
-                          {pageSpeed.status || ((pageSpeed.lcp || 3.8) > 3.5 ? 'Crítico (> 3.5s)' : 'Bom')}
+                          {pageSpeed.status || (pageSpeed.lcp != null ? (pageSpeed.lcp > 3.5 ? 'Crítico (> 3.5s)' : 'Bom') : 'Não Medido')}
                         </span>
                       </div>
                     </div>
@@ -858,7 +860,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                         Score Mobile (0-100)
                       </span>
                       <div className="text-xl font-black text-zinc-900 my-1">
-                        {pageSpeed.score != null ? `${pageSpeed.score}/100` : '53/100'}
+                        {pageSpeed.score != null ? `${pageSpeed.score}/100` : '—'}
                       </div>
                       <span className="inline-block text-[10px] font-medium text-zinc-500">
                         Lighthouse Google
