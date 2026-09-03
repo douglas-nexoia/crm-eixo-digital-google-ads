@@ -788,11 +788,15 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                       )}
                     </td>
                     <td className="py-3 px-4 text-zinc-650 text-xs">
-                      {temGmb ? (
-                        (lead.gmb_avaliacoes || 0) >= 50
-                          ? 'Perfil consolidado com excelente volume de avaliações na região.'
-                          : 'Excelente nota de satisfação, mas volume inicial frente aos líderes da região.'
-                      ) : (
+                      {temGmb ? (() => {
+                        const nota = lead.gmb_nota ?? 0;
+                        const aval = lead.gmb_avaliacoes ?? 0;
+                        if (aval >= 50 && nota >= 4.5) return 'Perfil consolidado com excelente volume de avaliações na região.';
+                        if (aval >= 50) return 'Bom volume de avaliações, mas nota abaixo dos líderes reduz o clique orgânico.';
+                        if (nota >= 4.5) return 'Boa nota de satisfação, mas volume inicial frente aos líderes da região.';
+                        if (nota >= 4.0) return 'Nota regular. Avaliações negativas ou poucas resenhas reduzem a confiança do cliente antes do contato.';
+                        return 'Nota crítica. Clientes desistem antes de ligar ao ver a avaliação baixa no Google Maps.';
+                      })() : (
                         'Empresa invisível no Google Maps. Sem endereço ou avaliações públicas para gerar confiança inicial.'
                       )}
                     </td>
@@ -1062,7 +1066,29 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
               <p className="text-[15px] text-zinc-700 leading-relaxed max-w-[62ch]">
                 {temGmb ? (
                   <>
-                    <strong>Diagnóstico Estratégico:</strong> A sua nota ({lead.gmb_nota?.toFixed(1)} ⭐) é excelente. O único motivo de os líderes de {cidadeCurta || 'sua região'} absorverem a maior parte dos clientes é que eles aparecem imediatamente no topo do Google. Ao ativar anúncios de alta precisão, a <strong>{empresa}</strong> assume o 1º lugar do leilão hoje mesmo.
+                    {(() => {
+                      const nota = lead.gmb_nota ?? 0;
+                      const aval = lead.gmb_avaliacoes ?? 0;
+                      if (nota >= 4.5) {
+                        return (
+                          <>
+                            <strong>Diagnóstico Estratégico:</strong> A sua nota ({lead.gmb_nota?.toFixed(1)} ⭐) é excelente. O único motivo de os líderes de {cidadeCurta || 'sua região'} absorverem a maior parte dos clientes é que eles aparecem imediatamente no topo do Google. Ao ativar anúncios de alta precisão, a <strong>{empresa}</strong> assume o 1º lugar do leilão hoje mesmo.
+                          </>
+                        );
+                      }
+                      if (nota >= 4.0) {
+                        return (
+                          <>
+                            <strong>Diagnóstico Estratégico:</strong> A sua nota ({lead.gmb_nota?.toFixed(1)} ⭐) está na média, mas abaixo dos líderes de {cidadeCurta || 'sua região'}. Clientes comparam avaliações antes de ligar. Trabalhar o volume de resenhas em paralelo aos anúncios no Google Ads acelera o retorno e aumenta a taxa de conversão dos cliques.
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          <strong>Diagnóstico Estratégico:</strong> A sua nota ({lead.gmb_nota?.toFixed(1)} ⭐) está abaixo do esperado para o mercado de {cidadeCurta || 'sua região'}. Clientes desconfiam de empresas com nota baixa antes mesmo de ligar. A prioridade é trabalhar a reputação no Google Maps enquanto ativamos anúncios segmentados — isso gera novos clientes satisfeitos e avaliações positivas que sobem a nota rapidamente.
+                        </>
+                      );
+                    })()}
                   </>
                 ) : (
                   <>
