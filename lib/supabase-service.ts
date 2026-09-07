@@ -278,21 +278,18 @@ export async function solicitarDiagnosticoAvancado(
   leadId: string
 ): Promise<{ success: boolean; jaSolicitado?: boolean; error?: string }> {
   try {
-    const { data, error } = await supabase.functions.invoke('solicitar-diagnostico', {
-      body: { leadId },
+    const res = await fetch('/api/solicitar-avancado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadId }),
     });
 
-    if (error) {
-      let detalhe = error.message;
-      try {
-        const corpo = await (error as { context?: Response }).context?.json();
-        if (corpo?.error) detalhe = corpo.error;
-      } catch {
-        // sem corpo legível: fica o error.message
-      }
-      return { success: false, error: detalhe };
+    if (!res.ok) {
+      const corpo = await res.json().catch(() => null);
+      return { success: false, error: corpo?.error || 'Erro ao registrar pedido.' };
     }
 
+    const data = await res.json();
     return data ?? { success: false, error: 'Resposta vazia do servidor.' };
   } catch (err) {
     console.error('Erro ao solicitar diagnóstico avançado:', err);
