@@ -155,7 +155,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
               </div>
               <div>
                 <span className="text-sm font-bold text-zinc-900 block leading-tight">Eixo Digital</span>
-                <span className="text-[10px] text-zinc-500 block leading-tight">Estratégia Local para Assistências Técnicas</span>
+                <span className="text-xs text-zinc-500 block leading-tight">Estratégia Local para Assistências Técnicas</span>
               </div>
             </div>
 
@@ -168,7 +168,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
             </button>
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold mb-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold mb-3">
             <Wrench className="w-3.5 h-3.5 text-emerald-700" />
             <span>Diagnóstico Prático de Captação a Domicílio</span>
           </div>
@@ -178,28 +178,28 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
           </h1>
 
           {empresa !== lead.nome && (
-            <p className="text-xs sm:text-sm text-zinc-500 leading-snug mb-4 max-w-[65ch]">
+            <p className="text-sm text-zinc-500 leading-snug mb-4 max-w-[65ch]">
               {lead.nome}
             </p>
           )}
 
-          <p className="text-sm sm:text-[15px] text-zinc-700 leading-relaxed max-w-[65ch]">
+          <p className="text-base text-zinc-700 leading-relaxed max-w-[65ch]">
             Análise objetiva de como a sua assistência pode captar os clientes com urgência de <strong>{cidadeCurta || 'sua região'}</strong> e cidades vizinhas no Google, direcionando os orçamentos direto para o seu WhatsApp.
           </p>
 
-          <dl className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-6 mt-6 pt-5 border-t border-zinc-100 text-xs">
+          <dl className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-6 mt-6 pt-5 border-t border-zinc-100">
             <div>
-              <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Segmento de Atuação</dt>
-              <dd className="font-semibold text-zinc-800 capitalize">{termo}</dd>
+              <dt className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Segmento de Atuação</dt>
+              <dd className="text-sm font-semibold text-zinc-800 capitalize">{termo}</dd>
             </div>
             <div>
-              <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Região da Sede</dt>
-              <dd className="font-semibold text-zinc-800">{cidadeLead || 'Região Metropolitana'}</dd>
+              <dt className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Região da Sede</dt>
+              <dd className="text-sm font-semibold text-zinc-800">{cidadeLead || 'Região Metropolitana'}</dd>
             </div>
             {dataColeta && (
               <div>
-                <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Levantamento em</dt>
-                <dd className="font-semibold text-zinc-800 tabular-nums">{dataColeta}</dd>
+                <dt className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Levantamento em</dt>
+                <dd className="text-sm font-semibold text-zinc-800 tabular-nums">{dataColeta}</dd>
               </div>
             )}
           </dl>
@@ -232,14 +232,14 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
           {/* ── BLOCO 4: Plano de Ação em 48 Horas & Transparência Total ── */}
           <section className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-xs">
             <div className="p-5 sm:p-6 border-b border-zinc-200 bg-zinc-50/70">
-              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800 block mb-1">
+              <span className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-800 block mb-1">
                 04. Plano Prático de Implementação
               </span>
-              <h2 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight leading-snug">
+              <h2 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight leading-tight">
                 Como colocar a {empresa} no topo do Google em 48 horas úteis
               </h2>
-              <p className="text-sm text-zinc-650 mt-1 max-w-[65ch]">
-                Sem enrolação ou reuniões conceituais: estruturamos a operação da sua assistência em 3 etapas diretas.
+              <p className="text-sm sm:text-base text-zinc-700 mt-2 max-w-[65ch]">
+                Sem enrolação: estruturamos a operação da sua assistência em 3 etapas diretas.
               </p>
             </div>
 
@@ -247,54 +247,54 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
               {/* As 3 Frentes de Execução */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="border border-zinc-200 rounded-lg p-4 bg-zinc-50/50">
-                  <div className="w-7 h-7 rounded-md bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-xs mb-2">
+                  <div className="w-8 h-8 rounded-md bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-sm mb-2">
                     1
                   </div>
-                  <h4 className="text-sm font-bold text-zinc-900 mb-1">Anúncios no Topo</h4>
-                  <p className="text-xs text-zinc-600 leading-relaxed">
+                  <h4 className="text-base font-bold text-zinc-900 mb-1">Anúncios no Topo</h4>
+                  <p className="text-sm text-zinc-700 leading-relaxed">
                     Campanhas no Google Ads ativadas exclusivamente para buscas de conserto urgente no seu raio de 35 km.
                   </p>
                 </div>
 
                 <div className="border border-zinc-200 rounded-lg p-4 bg-zinc-50/50">
-                  <div className="w-7 h-7 rounded-md bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-xs mb-2">
+                  <div className="w-8 h-8 rounded-md bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-sm mb-2">
                     2
                   </div>
-                  <h4 className="text-sm font-bold text-zinc-900 mb-1">Página no WhatsApp</h4>
-                  <p className="text-xs text-zinc-600 leading-relaxed">
-                    Página ultra-rápida (&lt; 1s de carga) com botão direto para o seu WhatsApp, evitando que o cliente desista.
+                  <h4 className="text-base font-bold text-zinc-900 mb-1">Página no WhatsApp</h4>
+                  <p className="text-sm text-zinc-700 leading-relaxed">
+                    Página ultra-rápida (&lt; 1s de carga) com botão direto para o seu WhatsApp, sem perda de interessados.
                   </p>
                 </div>
 
                 <div className="border border-zinc-200 rounded-lg p-4 bg-zinc-50/50">
-                  <div className="w-7 h-7 rounded-md bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-xs mb-2">
+                  <div className="w-8 h-8 rounded-md bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-sm mb-2">
                     3
                   </div>
-                  <h4 className="text-sm font-bold text-zinc-900 mb-1">Mapa &amp; Avaliações</h4>
-                  <p className="text-xs text-zinc-600 leading-relaxed">
-                    Otimização da sua ficha do Google para converter clientes satisfeitos em avaliações 5 estrelas contínuas.
+                  <h4 className="text-base font-bold text-zinc-900 mb-1">Mapa &amp; Avaliações</h4>
+                  <p className="text-sm text-zinc-700 leading-relaxed">
+                    Otimização da ficha do Google para converter atendimentos realizados em novas avaliações 5 estrelas.
                   </p>
                 </div>
               </div>
 
               {/* Transparência Factual de Investimento (Sem cálculos mágicos) */}
               <div className="border border-zinc-200 rounded-xl p-5 bg-zinc-50/60">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-700 mb-3 flex items-center gap-1.5">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-zinc-800 mb-3 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-700" />
                   <span>Transparência de Custos (Sem Pegadinhas):</span>
                 </h4>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="bg-white p-3.5 rounded-lg border border-zinc-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div className="bg-white p-4 rounded-lg border border-zinc-200">
                     <span className="font-bold text-zinc-900 block mb-1">Saldo de Anúncios no Google:</span>
-                    <p className="text-zinc-600 leading-relaxed">
-                      A partir de <strong>R$ 25 a R$ 35/dia</strong> (crédito pago diretamente para o Google). Você controla o limite de investimento e só paga quando alguém clica para consertar.
+                    <p className="text-zinc-700 leading-relaxed">
+                      A partir de <strong>R$ 25 a R$ 35/dia</strong> (crédito pago diretamente ao Google). Você define o limite diário e só paga quando alguém clica no anúncio.
                     </p>
                   </div>
 
-                  <div className="bg-white p-3.5 rounded-lg border border-zinc-200">
+                  <div className="bg-white p-4 rounded-lg border border-zinc-200">
                     <span className="font-bold text-zinc-900 block mb-1">Assessoria da Eixo Digital:</span>
-                    <p className="text-zinc-600 leading-relaxed">
+                    <p className="text-zinc-700 leading-relaxed">
                       Cuidamos da configuração técnica dos anúncios, criamos a página rápida de WhatsApp e prestamos suporte contínuo diretamente com o Douglas.
                     </p>
                   </div>
@@ -307,7 +307,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                   <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 uppercase tracking-wider">
                     <span>💡 Nunca anunciou no Google ou já tentou e não teve retorno?</span>
                   </div>
-                  <p className="text-xs text-zinc-650 leading-relaxed max-w-lg">
+                  <p className="text-sm text-zinc-700 leading-relaxed max-w-lg">
                     Entenda em um guia visual de 3 minutos como funcionam os anúncios no celular, por que 90% das assistências perdem dinheiro com sites lentos e como funciona o rastreamento inteligente.
                   </p>
                 </div>
@@ -316,10 +316,10 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                   href="/como-funciona"
                   target="_blank"
                   rel="noreferrer"
-                  className="shrink-0 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-900 bg-white hover:bg-emerald-100/60 border border-emerald-300 px-4 py-2.5 rounded-lg transition-colors shadow-2xs"
+                  className="shrink-0 inline-flex items-center justify-center gap-1.5 text-sm font-bold text-emerald-900 bg-white hover:bg-emerald-100/60 border border-emerald-300 px-4 py-2.5 rounded-lg transition-colors shadow-2xs"
                 >
                   <span>Ver Como Funciona na Prática</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-700" />
+                  <ArrowUpRight className="w-4 h-4 text-emerald-700" />
                 </a>
               </div>
 
@@ -331,17 +331,17 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                       <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
                       <span>Redirecionando para o WhatsApp...</span>
                     </div>
-                    <p className="text-xs text-zinc-700 leading-relaxed">
+                    <p className="text-sm text-zinc-700 leading-relaxed">
                       Estamos abrindo a conversa com o Douglas para tirar suas dúvidas sobre o raio de atendimento da <strong>{empresa}</strong>.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-4 max-w-xl">
                     <div>
-                      <h3 className="text-lg font-black text-zinc-900 mb-1">
+                      <h3 className="text-xl sm:text-2xl font-black text-zinc-900 mb-2">
                         Quer ver como ficaria a {empresa} no topo da sua região?
                       </h3>
-                      <p className="text-xs sm:text-sm text-zinc-650 leading-relaxed">
+                      <p className="text-sm sm:text-base text-zinc-700 leading-relaxed">
                         Podemos mapear juntos o seu raio de atendimento exato e tirar todas as suas dúvidas no WhatsApp, sem compromisso e sem reuniões demoradas.
                       </p>
                     </div>
@@ -349,22 +349,22 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                     <button
                       onClick={handleConversarWhatsApp}
                       disabled={pedido === 'enviando'}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 text-white font-extrabold px-7 py-3.5 rounded-xl transition-all text-sm cursor-pointer shadow-sm hover:shadow-md"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 text-white font-extrabold px-8 py-4 rounded-xl transition-all text-base cursor-pointer shadow-sm hover:shadow-md"
                     >
-                      <MessageCircle className="w-4 h-4 shrink-0" />
+                      <MessageCircle className="w-5 h-5 shrink-0" />
                       <span>
                         {pedido === 'enviando' ? 'Redirecionando...' : 'Conversar com o Douglas no WhatsApp'}
                       </span>
                     </button>
 
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-2 text-xs text-zinc-500">
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-2 text-sm text-zinc-600">
                       <a
                         href={`https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(`Olá Douglas! Vi o diagnóstico da ${empresa} em ${cidadeCurta} e o raio de 35 km. Quero entender como funciona para a minha assistência.`)}`}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 font-medium transition-colors"
                       >
-                        <MessageCircle className="w-3.5 h-3.5 text-emerald-700" />
+                        <MessageCircle className="w-4 h-4 text-emerald-700" />
                         <span>Falar direto pelo link do WhatsApp</span>
                       </a>
 
@@ -375,7 +375,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                         className="inline-flex items-center gap-1 text-zinc-600 hover:text-emerald-800 underline underline-offset-4 decoration-zinc-300 font-medium transition-colors"
                       >
                         <span>Conhecer a Eixo Digital</span>
-                        <ArrowUpRight className="w-3 h-3 text-zinc-400" />
+                        <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
                       </a>
                     </div>
                   </div>

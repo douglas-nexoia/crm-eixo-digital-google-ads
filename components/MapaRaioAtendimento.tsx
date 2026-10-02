@@ -142,48 +142,48 @@ export function MapaRaioAtendimento({ cidade, nomeEmpresa, nicho }: MapaRaioAten
   return (
     <section className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-xs">
       {/* Cabeçalho do Bloco */}
-      <div className="p-5 sm:p-6 border-b border-zinc-200 bg-zinc-50/70">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800">
+      <div className="p-5 sm:p-7 border-b border-zinc-200 bg-zinc-50/70">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-emerald-800">
             01. Território &amp; Raio de Cobertura
           </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-emerald-100/80 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-            <Car className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Raio Ativo: ~{raioSelecionado} km a domicílio</span>
+          <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-1 rounded-full">
+            <Car className="w-4 h-4 text-emerald-700" />
+            <span>Raio Ativo: ~{raioSelecionado} km</span>
           </span>
         </div>
 
-        <h2 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight leading-snug">
-          Onde a sua assistência técnica atende na prática
+        <h2 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight leading-tight mb-2">
+          Onde a sua assistência atende na prática
         </h2>
-        <p className="text-sm text-zinc-650 mt-1 max-w-[65ch]">
-          Assistências locais não dependem de clientes passando na calçada: a sua receita vem de técnicos rodando a domicílio em <strong>{cobertura.cidade}</strong> e nas cidades vizinhas.
+        <p className="text-base text-zinc-700 leading-relaxed max-w-[65ch]">
+          Sua assistência roda a domicílio em <strong>{cobertura.cidade}</strong> e região. Quando alguém precisa de conserto urgente nessa área, quem essa pessoa encontra no celular?
         </p>
       </div>
 
       {/* Área do Mapa Interativo com Controles */}
       <div className="relative bg-zinc-100">
         {/* Seletor Rápido de Raio Operacional */}
-        <div className="p-3 bg-white border-b border-zinc-200 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <span className="font-semibold text-zinc-700 flex items-center gap-1.5">
+        <div className="p-3.5 bg-white border-b border-zinc-200 flex flex-wrap items-center justify-between gap-3">
+          <span className="font-bold text-xs sm:text-sm text-zinc-800 flex items-center gap-1.5">
             <Compass className="w-4 h-4 text-emerald-700" />
-            <span>Ajustar Raio de Atendimento:</span>
+            <span>Raio de Atendimento:</span>
           </span>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {[
-              { km: 15, rotulo: '15 km (Centro e Bairros)' },
-              { km: 35, rotulo: '35 km (Padrão Assistências)' },
-              { km: 50, rotulo: '50 km (Cidades Vizinhas)' },
+              { km: 15, rotulo: '15 km (Centro)' },
+              { km: 35, rotulo: '35 km (Padrão)' },
+              { km: 50, rotulo: '50 km (Região)' },
             ].map(opcao => (
               <button
                 key={opcao.km}
                 type="button"
                 onClick={() => setRaioSelecionado(opcao.km)}
-                className={`px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   raioSelecionado === opcao.km
                     ? 'bg-emerald-800 text-white shadow-xs'
-                    : 'bg-zinc-100 text-zinc-650 hover:bg-zinc-200 border border-zinc-200'
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200'
                 }`}
               >
                 {opcao.rotulo}
@@ -193,25 +193,25 @@ export function MapaRaioAtendimento({ cidade, nomeEmpresa, nicho }: MapaRaioAten
         </div>
 
         {/* Container do Mapa Leaflet */}
-        <div className="relative w-full h-[320px] sm:h-[380px] overflow-hidden bg-zinc-100">
+        <div className="relative w-full h-[320px] sm:h-[400px] overflow-hidden bg-zinc-100">
           <div ref={containerRef} className="w-full h-full z-0" />
 
           {/* Loader inicial enquanto tiles e Leaflet carregam */}
           {carregando && (
             <div className="absolute inset-0 bg-zinc-100/90 flex flex-col items-center justify-center gap-2 z-10">
               <Loader2 className="w-6 h-6 text-emerald-700 animate-spin" />
-              <span className="text-xs text-zinc-600 font-medium">Carregando mapa da região...</span>
+              <span className="text-sm text-zinc-700 font-semibold">Carregando mapa da região...</span>
             </div>
           )}
 
           {/* Badge Flutuante no Topo Esquerdo */}
           <div className="absolute top-3 left-3 z-[400] pointer-events-none">
-            <div className="bg-white/95 backdrop-blur-xs border border-zinc-200 rounded-lg p-2.5 shadow-sm text-xs">
-              <div className="flex items-center gap-1.5 font-bold text-zinc-900">
-                <MapPin className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+            <div className="bg-white/95 backdrop-blur-xs border border-zinc-200 rounded-lg p-3 shadow-sm">
+              <div className="flex items-center gap-1.5 font-bold text-sm text-zinc-900">
+                <MapPin className="w-4 h-4 text-rose-600 shrink-0" />
                 <span className="truncate max-w-[200px] sm:max-w-[280px]">{nomeEmpresa}</span>
               </div>
-              <div className="text-[11px] text-zinc-500 mt-0.5 flex items-center gap-2">
+              <div className="text-xs text-zinc-600 mt-0.5 flex items-center gap-2">
                 <span>Base: {cobertura.cidade}/{cobertura.estado}</span>
                 <span>•</span>
                 <span>~25 a 45 min de rota</span>
@@ -221,29 +221,29 @@ export function MapaRaioAtendimento({ cidade, nomeEmpresa, nicho }: MapaRaioAten
 
           {/* Indicador Flutuante no Canto Inferior Direito */}
           <div className="absolute bottom-3 right-3 z-[400] pointer-events-none">
-            <div className="bg-emerald-900/90 text-white backdrop-blur-xs text-[11px] font-bold px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Zona de Captação Ativa: {raioSelecionado} km</span>
+            <div className="bg-emerald-900/90 text-white backdrop-blur-xs text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-lg shadow-md flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Zona de Captação: {raioSelecionado} km</span>
             </div>
           </div>
         </div>
 
         {/* Cidades Vizinhas & Rota Operacional */}
-        <div className="p-4 sm:p-5 bg-white border-t border-zinc-200">
-          <div className="flex items-center gap-2 text-xs font-bold text-zinc-700 uppercase tracking-wider mb-2.5">
-            <Navigation className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Principais Cidades e Regiões atendidas nesta rota:</span>
+        <div className="p-5 sm:p-6 bg-white border-t border-zinc-200">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-zinc-800 uppercase tracking-wider mb-3">
+            <Navigation className="w-4 h-4 text-emerald-700" />
+            <span>Cidades e regiões atendidas nesta rota:</span>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            <span className="inline-flex items-center gap-1 text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 px-2.5 py-1 rounded-md">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+          <div className="flex flex-wrap gap-2 mb-5">
+            <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1.5 rounded-lg">
+              <CheckCircle2 className="w-4 h-4 text-emerald-700" />
               {cobertura.cidade} (Sede)
             </span>
             {cobertura.cidadesVizinhas.map((vizinha, idx) => (
               <span
                 key={idx}
-                className="inline-flex items-center gap-1 text-xs font-medium bg-zinc-50 text-zinc-750 border border-zinc-200 px-2.5 py-1 rounded-md"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium bg-zinc-50 text-zinc-800 border border-zinc-200 px-3 py-1.5 rounded-lg"
               >
                 <span>🚗</span>
                 {vizinha}
@@ -252,9 +252,9 @@ export function MapaRaioAtendimento({ cidade, nomeEmpresa, nicho }: MapaRaioAten
           </div>
 
           {/* Fechamento Factual do Bloco 01 */}
-          <div className="border-l-3 border-emerald-700 bg-emerald-50/50 p-3.5 sm:p-4 rounded-r-lg">
-            <p className="text-xs sm:text-[13px] text-emerald-950 leading-relaxed">
-              <strong>A pergunta que define o faturamento da sua assistência:</strong> Quando {cenario.fraseProblema} dentro desse raio de {raioSelecionado} km hoje, <strong>a sua empresa é a primeira que essa pessoa encontra no celular, ou essa ordem de serviço vai direto para o concorrente?</strong>
+          <div className="border-l-4 border-emerald-600 bg-emerald-50/70 p-4 sm:p-5 rounded-r-xl">
+            <p className="text-sm sm:text-base text-emerald-950 font-medium leading-relaxed">
+              <strong>A pergunta-chave:</strong> Quando {cenario.fraseProblema} dentro desse raio de {raioSelecionado} km hoje, <strong>a sua empresa é a primeira que essa pessoa encontra no celular, ou a ordem de serviço vai pro concorrente?</strong>
             </p>
           </div>
         </div>
