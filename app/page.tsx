@@ -84,7 +84,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[rgba(255,255,255,0.08)] pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-2.5 py-0.5 rounded-full">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-2.5 py-0.5 rounded-full">
               Visão Geral
             </span>
           </div>
@@ -175,7 +175,7 @@ export default function DashboardPage() {
                 {taxa(diagnosticosEnviados, contatados)}
               </span>
             </div>
-            <p className="text-[11px] text-[#64748B] mt-1">
+            <p className="text-xs text-[#64748B] mt-1">
               {diagnosticosEnviados} de {contatados} abordados · mede a mensagem de abordagem
             </p>
           </div>
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                 {taxa(pediramAnalise, diagnosticosEnviados)}
               </span>
             </div>
-            <p className="text-[11px] text-[#64748B] mt-1">
+            <p className="text-xs text-[#64748B] mt-1">
               {pediramAnalise} de {diagnosticosEnviados} que receberam · mede o relatório
             </p>
           </div>

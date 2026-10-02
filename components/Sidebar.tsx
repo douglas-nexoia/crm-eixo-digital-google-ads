@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -76,7 +76,7 @@ export const Sidebar: React.FC = () => {
             {!collapsed && (
               <div className="flex flex-col">
                 <span className="font-outfit font-bold text-sm tracking-tight text-white">Eixo Digital</span>
-                <span className="text-[10px] text-[#10B981] font-mono tracking-wider">GOOGLE ADS CRM</span>
+                <span className="text-xs text-[#10B981] font-mono tracking-wider">GOOGLE ADS CRM</span>
               </div>
             )}
           </div>

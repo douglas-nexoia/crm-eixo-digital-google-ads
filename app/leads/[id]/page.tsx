@@ -362,8 +362,8 @@ export default function LeadDetalhesPage() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                   {erroTelefone && (
-                    <span className="flex items-center gap-1 text-[11px] text-red-400">
-                      <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span className="flex items-center gap-1 text-xs text-red-400">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       {erroTelefone}
                     </span>
                   )}
@@ -529,7 +529,7 @@ export default function LeadDetalhesPage() {
                     {lead.pagespeed_score != null ? `${lead.pagespeed_score}/100` : 'Lighthouse'}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 bg-slate-950/60 p-2 rounded border border-slate-800/65 text-[11px]">
+                <div className="grid grid-cols-2 gap-2 bg-slate-950/60 p-2.5 rounded border border-slate-800/65 text-xs">
                   <div>
                     <span className="text-slate-500 block">Tempo LCP:</span>
                     <span className="font-bold text-slate-200">
@@ -618,7 +618,7 @@ export default function LeadDetalhesPage() {
                      href={evolutionFeedback.manualLink}
                      target="_blank"
                      rel="noreferrer"
-                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-[11px] uppercase tracking-wider text-center shrink-0 transition-colors"
+                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs uppercase tracking-wider text-center shrink-0 transition-colors"
                    >
                      Enviar Manualmente (WhatsApp Web)
                    </a>

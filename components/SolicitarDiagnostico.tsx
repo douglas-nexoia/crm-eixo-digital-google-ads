@@ -121,7 +121,7 @@ export const SolicitarDiagnostico: React.FC = () => {
             </div>
             <div>
               <span className="font-bold text-white tracking-wide text-sm md:text-base">EIXO DIGITAL</span>
-              <span className="text-[10px] text-cyan-400 font-mono block -mt-1 tracking-wider uppercase">Google Ads & Presença Digital</span>
+              <span className="text-xs text-cyan-400 font-mono block tracking-wider uppercase">Google Ads &amp; Presença Digital</span>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 text-xs font-medium">
@@ -254,8 +254,8 @@ export const SolicitarDiagnostico: React.FC = () => {
                 {/* LINHA 1: NOME E CIDADE */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                    <label className="block text-sm font-bold text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-cyan-400" />
                       Nome da sua Empresa <span className="text-cyan-400">*</span>
                     </label>
                     <input
@@ -265,13 +265,13 @@ export const SolicitarDiagnostico: React.FC = () => {
                       value={nome}
                       onChange={(e) => setNome(e.target.value)}
                       disabled={isSubmitting}
-                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 text-base focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                    <label className="block text-sm font-bold text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-cyan-400" />
                       Cidade e Estado <span className="text-cyan-400">*</span>
                     </label>
                     <input
@@ -281,22 +281,22 @@ export const SolicitarDiagnostico: React.FC = () => {
                       value={cidade}
                       onChange={(e) => setCidade(e.target.value)}
                       disabled={isSubmitting}
-                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 text-base focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
                     />
                   </div>
                 </div>
 
                 {/* LINHA 2: NICHO / SEGMENTO */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Flame className="w-3.5 h-3.5 text-cyan-400" />
+                  <label className="block text-sm font-bold text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Flame className="w-4 h-4 text-cyan-400" />
                     Seu Nicho / Especialidade <span className="text-cyan-400">*</span>
                   </label>
                   <select
                     value={nicho}
                     onChange={(e) => setNicho(e.target.value)}
                     disabled={isSubmitting}
-                    className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all cursor-pointer"
+                    className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3.5 text-white text-base focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all cursor-pointer"
                   >
                     {NICHOS_COMUNS.map((n) => (
                       <option key={n} value={n} className="bg-[#09101a] text-slate-100">
@@ -312,7 +312,7 @@ export const SolicitarDiagnostico: React.FC = () => {
                       value={nichoOutro}
                       onChange={(e) => setNichoOutro(e.target.value)}
                       disabled={isSubmitting}
-                      className="mt-3 w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                      className="mt-3 w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 text-base focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
                     />
                   )}
                 </div>
@@ -320,8 +320,8 @@ export const SolicitarDiagnostico: React.FC = () => {
                 {/* LINHA 3: WHATSAPP E SITE */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                    <label className="block text-sm font-bold text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Phone className="w-4 h-4 text-emerald-400" />
                       Seu WhatsApp com DDD <span className="text-emerald-400">*</span>
                     </label>
                     <input
@@ -331,17 +331,17 @@ export const SolicitarDiagnostico: React.FC = () => {
                       value={telefone}
                       onChange={handleTelefoneChange}
                       disabled={isSubmitting}
-                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm font-mono focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all"
+                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 text-base font-mono focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all"
                     />
-                    <span className="text-[11px] text-slate-400 mt-1 block">
+                    <span className="text-xs text-slate-400 mt-1.5 block">
                       O laudo completo e o comparativo serão enviados para este WhatsApp.
                     </span>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                      Site ou Instagram <span className="text-slate-400 font-normal text-[11px]">(Opcional)</span>
+                    <label className="block text-sm font-bold text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-cyan-400" />
+                      Site ou Instagram <span className="text-slate-400 font-normal text-xs">(Opcional)</span>
                     </label>
                     <input
                       type="text"
@@ -353,9 +353,9 @@ export const SolicitarDiagnostico: React.FC = () => {
                       autoCorrect="off"
                       autoCapitalize="none"
                       spellCheck={false}
-                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                      className="w-full bg-[#09101a] border border-slate-700/80 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 text-base focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
                     />
-                    <span className="text-[11px] text-slate-400 mt-1 block">
+                    <span className="text-xs text-slate-400 mt-1.5 block">
                       Caso já possua site para auditarmos tags de tráfego.
                     </span>
                   </div>
@@ -384,7 +384,7 @@ export const SolicitarDiagnostico: React.FC = () => {
                 </div>
 
                 {/* GARANTIAS / BENEFÍCIOS */}
-                <div className="pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-400">
+                <div className="pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs sm:text-sm text-slate-300">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>100% Gratuito e Instantâneo</span>
@@ -429,19 +429,19 @@ export const SolicitarDiagnostico: React.FC = () => {
 
             {/* BARRA DE ETAPAS */}
             <div className="space-y-3 text-left mb-6">
-              <div className={`p-3 rounded-lg border text-xs flex items-center gap-3 transition-all ${
+              <div className={`p-3 rounded-lg border text-sm flex items-center gap-3 transition-all ${
                 stepScan >= 1 ? 'bg-cyan-950/40 border-cyan-800/80 text-cyan-200' : 'bg-slate-900/40 border-slate-800 text-slate-500'
               }`}>
                 {stepScan > 1 ? '✓' : '1.'} Localizando sua empresa e concorrentes no Google...
               </div>
 
-              <div className={`p-3 rounded-lg border text-xs flex items-center gap-3 transition-all ${
+              <div className={`p-3 rounded-lg border text-sm flex items-center gap-3 transition-all ${
                 stepScan >= 2 ? 'bg-cyan-950/40 border-cyan-800/80 text-cyan-200' : 'bg-slate-900/40 border-slate-800 text-slate-500'
               }`}>
                 {stepScan > 2 ? '✓' : '2.'} Calculando custos do leilão e volume de buscas na sua cidade...
               </div>
 
-              <div className={`p-3 rounded-lg border text-xs flex items-center gap-3 transition-all ${
+              <div className={`p-3 rounded-lg border text-sm flex items-center gap-3 transition-all ${
                 stepScan >= 3 ? 'bg-cyan-950/40 border-cyan-800/80 text-cyan-200' : 'bg-slate-900/40 border-slate-800 text-slate-500'
               }`}>
                 {stepScan >= 4 ? '✓' : '3.'} Gerando laudo e enviando para o seu WhatsApp...

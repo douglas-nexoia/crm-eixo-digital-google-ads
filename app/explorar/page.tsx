@@ -586,7 +586,7 @@ export default function ExplorarLeadsPage() {
                         
                         {/* Feedback inline caso envie mensagem */}
                         {feedback && (
-                          <div className={`text-[10px] font-bold mt-1 ${feedback.success ? 'text-emerald-400' : 'text-red-400'}`}>
+                          <div className={`text-xs font-bold mt-1 ${feedback.success ? 'text-emerald-400' : 'text-red-400'}`}>
                             {feedback.msg}
                           </div>
                         )}
@@ -598,7 +598,7 @@ export default function ExplorarLeadsPage() {
                         <div className="text-slate-400 capitalize">{cidadeExibicao}</div>
                         {lead.origem && lead.origem !== 'Outbound' && (
                           <div className="mt-1">
-                            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap">
+                            <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap">
                               {lead.origem}
                             </span>
                           </div>
