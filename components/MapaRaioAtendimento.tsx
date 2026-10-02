@@ -75,10 +75,9 @@ export function MapaRaioAtendimento({ cidade, nomeEmpresa, nicho }: MapaRaioAten
       // Controle de zoom no canto superior direito
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      // Tiles do CARTO Voyager (ultra-rápidos, estética Google Maps, sem tela cinza)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
+      // Tiles do ESRI World Street Map (sem marca d'água, sem API key, alta definição)
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18,
       }).addTo(map);
 
       // Círculo sombreado do Raio de Atendimento Real (35 km)
