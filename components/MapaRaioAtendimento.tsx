@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { MapPin, Navigation, Compass, CheckCircle2, Car } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapPin, Navigation, Compass, CheckCircle2, Car, Loader2 } from 'lucide-react';
 import { obterDadosCobertura } from '@/lib/cidades-coordenadas';
 
 interface MapaRaioAtendimentoProps {
@@ -10,21 +10,133 @@ interface MapaRaioAtendimentoProps {
   nicho?: string | null;
 }
 
-export function MapaRaioAtendimento({ cidade, nomeEmpresa, nicho }: MapaRaioAtendimentoProps) {
+export function MapaRaioAtendimento({ cidade, nomeEmpresa }: MapaRaioAtendimentoProps) {
   const [raioSelecionado, setRaioSelecionado] = useState<number>(35);
+  const [carregando, setCarregando] = useState<boolean>(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const circleRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
 
   const cobertura = obterDadosCobertura(cidade);
 
-  // Calcula o bbox dinâmico conforme o raio selecionado
-  const fatorGrauLat = (raioSelecionado / 111);
-  const fatorGrauLon = (raioSelecionado / 102);
+  // Inicialização e montagem do mapa interativo via Leaflet + CARTO Voyager
+  useEffect(() => {
+    let ativo = true;
 
-  const minLon = (cobertura.lon - fatorGrauLon).toFixed(4);
-  const minLat = (cobertura.lat - fatorGrauLat).toFixed(4);
-  const maxLon = (cobertura.lon + fatorGrauLon).toFixed(4);
-  const maxLat = (cobertura.lat + fatorGrauLat).toFixed(4);
+    async function carregarLeafletEMapa() {
+      if (typeof window === 'undefined') return;
 
-  const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${minLon}%2C${minLat}%2C${maxLon}%2C${maxLat}&layer=mapnik&marker=${cobertura.lat}%2C${cobertura.lon}`;
+      // 1. Injetar CSS do Leaflet se necessário
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+
+      // 2. Injetar JS do Leaflet se necessário
+      if (!(window as any).L) {
+        await new Promise<void>((resolve, reject) => {
+          const scriptExistente = document.getElementById('leaflet-js');
+          if (scriptExistente) {
+            scriptExistente.addEventListener('load', () => resolve());
+            return;
+          }
+          const script = document.createElement('script');
+          script.id = 'leaflet-js';
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.onload = () => resolve();
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      if (!ativo) return;
+      const L = (window as any).L;
+      if (!L || !containerRef.current) return;
+
+      // Destrói instância anterior se existir
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+
+      // Inicializa o mapa com foco na coordenada da cidade
+      const map = L.map(containerRef.current, {
+        zoomControl: false,
+        attributionControl: false,
+        scrollWheelZoom: false, // Não trava o scroll da página no celular
+      }).setView([cobertura.lat, cobertura.lon], 10);
+
+      // Controle de zoom no canto superior direito
+      L.control.zoom({ position: 'topright' }).addTo(map);
+
+      // Tiles do CARTO Voyager (ultra-rápidos, estética Google Maps, sem tela cinza)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd',
+      }).addTo(map);
+
+      // Círculo sombreado do Raio de Atendimento Real (35 km)
+      const circle = L.circle([cobertura.lat, cobertura.lon], {
+        radius: raioSelecionado * 1000,
+        color: '#047857',      // Borda verde esmeralda
+        fillColor: '#10b981',  // Preenchimento translúcido
+        fillOpacity: 0.16,
+        weight: 2.5,
+        dashArray: '6, 6',
+      }).addTo(map);
+
+      circleRef.current = circle;
+
+      // Pino Central da Empresa
+      const customIcon = L.divIcon({
+        className: 'custom-pin-base',
+        html: `
+          <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(16, 185, 129, 0.35); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #065f46; border: 3px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 7px; height: 7px; border-radius: 50%; background: #ffffff;"></div>
+            </div>
+          </div>
+        `,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22],
+      });
+
+      const marker = L.marker([cobertura.lat, cobertura.lon], { icon: customIcon }).addTo(map);
+      markerRef.current = marker;
+
+      // Enquadra o zoom perfeitamente para exibir todo o círculo de 35 km
+      map.fitBounds(circle.getBounds(), { padding: [25, 25] });
+
+      mapRef.current = map;
+      setCarregando(false);
+    }
+
+    carregarLeafletEMapa();
+
+    return () => {
+      ativo = false;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [cobertura.lat, cobertura.lon]);
+
+  // Atualiza o raio e reenquadra o mapa quando o usuário clica nos botões de km
+  useEffect(() => {
+    if (circleRef.current && mapRef.current) {
+      circleRef.current.setRadius(raioSelecionado * 1000);
+      mapRef.current.fitBounds(circleRef.current.getBounds(), {
+        padding: [25, 25],
+        animate: true,
+      });
+    }
+  }, [raioSelecionado]);
 
   return (
     <section className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-xs">
@@ -79,33 +191,35 @@ export function MapaRaioAtendimento({ cidade, nomeEmpresa, nicho }: MapaRaioAten
           </div>
         </div>
 
-        {/* Mapa Embed OpenStreetMap com Bounding Box Real */}
-        <div className="relative w-full h-[280px] sm:h-[340px] overflow-hidden bg-zinc-200">
-          <iframe
-            key={`${raioSelecionado}-${cobertura.cidade}`}
-            title={`Mapa de cobertura em ${cobertura.cidade}`}
-            src={osmUrl}
-            className="w-full h-full border-0 filter contrast-[1.05]"
-            loading="lazy"
-          />
+        {/* Container do Mapa Leaflet */}
+        <div className="relative w-full h-[320px] sm:h-[380px] overflow-hidden bg-zinc-100">
+          <div ref={containerRef} className="w-full h-full z-0" />
 
-          {/* Badge Flutuante no Topo do Mapa */}
-          <div className="absolute top-3 left-3 right-3 sm:right-auto flex flex-col gap-1.5 pointer-events-none">
+          {/* Loader inicial enquanto tiles e Leaflet carregam */}
+          {carregando && (
+            <div className="absolute inset-0 bg-zinc-100/90 flex flex-col items-center justify-center gap-2 z-10">
+              <Loader2 className="w-6 h-6 text-emerald-700 animate-spin" />
+              <span className="text-xs text-zinc-600 font-medium">Carregando mapa da região...</span>
+            </div>
+          )}
+
+          {/* Badge Flutuante no Topo Esquerdo */}
+          <div className="absolute top-3 left-3 z-[400] pointer-events-none">
             <div className="bg-white/95 backdrop-blur-xs border border-zinc-200 rounded-lg p-2.5 shadow-sm text-xs">
               <div className="flex items-center gap-1.5 font-bold text-zinc-900">
                 <MapPin className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                <span className="truncate max-w-[220px] sm:max-w-none">{nomeEmpresa}</span>
+                <span className="truncate max-w-[200px] sm:max-w-[280px]">{nomeEmpresa}</span>
               </div>
               <div className="text-[11px] text-zinc-500 mt-0.5 flex items-center gap-2">
                 <span>Base: {cobertura.cidade}/{cobertura.estado}</span>
                 <span>•</span>
-                <span>Tempo médio: ~25 a 45 min de rota</span>
+                <span>~25 a 45 min de rota</span>
               </div>
             </div>
           </div>
 
-          {/* Indicador Flutuante no Canto Inferior */}
-          <div className="absolute bottom-3 right-3 pointer-events-none">
+          {/* Indicador Flutuante no Canto Inferior Direito */}
+          <div className="absolute bottom-3 right-3 z-[400] pointer-events-none">
             <div className="bg-emerald-900/90 text-white backdrop-blur-xs text-[11px] font-bold px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Zona de Captação Ativa: {raioSelecionado} km</span>
@@ -117,7 +231,7 @@ export function MapaRaioAtendimento({ cidade, nomeEmpresa, nicho }: MapaRaioAten
         <div className="p-4 sm:p-5 bg-white border-t border-zinc-200">
           <div className="flex items-center gap-2 text-xs font-bold text-zinc-700 uppercase tracking-wider mb-2.5">
             <Navigation className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Principais Cidades e Regiões dentro deste Raio:</span>
+            <span>Principais Cidades e Regiões atendidas nesta rota:</span>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4">
