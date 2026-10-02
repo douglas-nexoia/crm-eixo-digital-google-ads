@@ -301,6 +301,28 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
                 </div>
               </div>
 
+              {/* Card Convite para o Guia Visual /como-funciona */}
+              <div className="border border-emerald-200 bg-emerald-50/50 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 uppercase tracking-wider">
+                    <span>💡 Nunca anunciou no Google ou já tentou e não teve retorno?</span>
+                  </div>
+                  <p className="text-xs text-zinc-650 leading-relaxed max-w-lg">
+                    Entenda em um guia visual de 3 minutos como funcionam os anúncios no celular, por que 90% das assistências perdem dinheiro com sites lentos e como funciona o rastreamento inteligente.
+                  </p>
+                </div>
+
+                <a
+                  href="/como-funciona"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-900 bg-white hover:bg-emerald-100/60 border border-emerald-300 px-4 py-2.5 rounded-lg transition-colors shadow-2xs"
+                >
+                  <span>Ver Como Funciona na Prática</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-700" />
+                </a>
+              </div>
+
               {/* Box de Ação & CTA Sem Pressão */}
               <div className="nao-imprimir pt-4 border-t border-zinc-100">
                 {pedido === 'feito' ? (
