@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Lead } from '@/lib/types';
-import { termoDoNicho } from '@/lib/demanda-busca';
+import { obterCenarioUrgencia } from '@/lib/cenarios-urgencia';
 import { CheckCircle2, XCircle, AlertCircle, Sparkles, TrendingUp } from 'lucide-react';
 
 interface QuadroComparativoProps {
@@ -15,7 +15,8 @@ export function QuadroComparativoLadoALado({ lead, cidadeCurta, empresa }: Quadr
   const temGmb = !!(lead.gmb_nota != null && (lead.gmb_avaliacoes || 0) > 0);
   const nota = lead.gmb_nota ?? 0;
   const avaliacoes = lead.gmb_avaliacoes ?? 0;
-  const termo = termoDoNicho(lead.nicho) || 'assistência técnica';
+  const cenario = obterCenarioUrgencia(lead.nicho, empresa);
+  const termo = cenario.rotuloServico;
 
   return (
     <section className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-xs">

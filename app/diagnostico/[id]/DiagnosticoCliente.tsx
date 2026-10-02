@@ -16,6 +16,7 @@ import { SolicitarDiagnostico } from '@/components/SolicitarDiagnostico';
 import { MapaRaioAtendimento } from '@/components/MapaRaioAtendimento';
 import { QuadroComparativoLadoALado } from '@/components/QuadroComparativoLadoALado';
 import { JornadaClienteUrgente } from '@/components/JornadaClienteUrgente';
+import { obterCenarioUrgencia } from '@/lib/cenarios-urgencia';
 
 /**
  * Nome curto para exibição amigável sem poluir a diagramação.
@@ -104,7 +105,8 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
   const cidadeLead = lead.cidade || lead.buscas?.cidade;
   const cidadeCurta = (cidadeLead || '').split('/')[0].trim();
   const empresa = nomeCurto(lead.nome);
-  const termo = termoDoNicho(nichoLead) || 'assistência técnica';
+  const cenario = obterCenarioUrgencia(nichoLead, empresa);
+  const termo = cenario.rotuloServico;
 
   const dataColeta = (() => {
     if (!lead.data_busca) return null;
@@ -224,6 +226,7 @@ export default function DiagnosticoCliente({ slug }: { slug: string }) {
           <JornadaClienteUrgente
             nicho={nichoLead}
             cidadeCurta={cidadeCurta}
+            nomeEmpresa={empresa}
           />
 
           {/* ── BLOCO 4: Plano de Ação em 48 Horas & Transparência Total ── */}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, Compass, CheckCircle2, Car, Loader2 } from 'lucide-react';
 import { obterDadosCobertura } from '@/lib/cidades-coordenadas';
+import { obterCenarioUrgencia } from '@/lib/cenarios-urgencia';
 
 interface MapaRaioAtendimentoProps {
   cidade?: string | null;
@@ -10,7 +11,7 @@ interface MapaRaioAtendimentoProps {
   nicho?: string | null;
 }
 
-export function MapaRaioAtendimento({ cidade, nomeEmpresa }: MapaRaioAtendimentoProps) {
+export function MapaRaioAtendimento({ cidade, nomeEmpresa, nicho }: MapaRaioAtendimentoProps) {
   const [raioSelecionado, setRaioSelecionado] = useState<number>(35);
   const [carregando, setCarregando] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -19,6 +20,7 @@ export function MapaRaioAtendimento({ cidade, nomeEmpresa }: MapaRaioAtendimento
   const markerRef = useRef<any>(null);
 
   const cobertura = obterDadosCobertura(cidade);
+  const cenario = obterCenarioUrgencia(nicho, nomeEmpresa);
 
   // Inicialização e montagem do mapa interativo via Leaflet + CARTO Voyager
   useEffect(() => {
@@ -253,7 +255,7 @@ export function MapaRaioAtendimento({ cidade, nomeEmpresa }: MapaRaioAtendimento
           {/* Fechamento Factual do Bloco 01 */}
           <div className="border-l-3 border-emerald-700 bg-emerald-50/50 p-3.5 sm:p-4 rounded-r-lg">
             <p className="text-xs sm:text-[13px] text-emerald-950 leading-relaxed">
-              <strong>A pergunta que define o faturamento da sua assistência:</strong> Quando uma geladeira para de gelar, uma máquina de lavar trava ou o ar-condicionado quebra dentro desse raio de {raioSelecionado} km hoje, <strong>a sua empresa é a primeira que essa pessoa encontra no celular, ou essa ordem de serviço vai direto para o concorrente?</strong>
+              <strong>A pergunta que define o faturamento da sua assistência:</strong> Quando {cenario.fraseProblema} dentro desse raio de {raioSelecionado} km hoje, <strong>a sua empresa é a primeira que essa pessoa encontra no celular, ou essa ordem de serviço vai direto para o concorrente?</strong>
             </p>
           </div>
         </div>

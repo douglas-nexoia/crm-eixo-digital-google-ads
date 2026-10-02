@@ -1,16 +1,17 @@
 'use client';
 
 import React from 'react';
-import { termoDoNicho } from '@/lib/demanda-busca';
-import { Smartphone, Zap, MessageSquare, ArrowRight } from 'lucide-react';
+import { Smartphone, Zap, MessageSquare } from 'lucide-react';
+import { obterCenarioUrgencia } from '@/lib/cenarios-urgencia';
 
 interface JornadaClienteUrgenteProps {
   nicho?: string | null;
   cidadeCurta: string;
+  nomeEmpresa?: string | null;
 }
 
-export function JornadaClienteUrgente({ nicho, cidadeCurta }: JornadaClienteUrgenteProps) {
-  const termo = termoDoNicho(nicho) || 'assistência técnica';
+export function JornadaClienteUrgente({ nicho, cidadeCurta, nomeEmpresa }: JornadaClienteUrgenteProps) {
+  const cenario = obterCenarioUrgencia(nicho, nomeEmpresa);
 
   return (
     <section className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-xs">
@@ -20,7 +21,7 @@ export function JornadaClienteUrgente({ nicho, cidadeCurta }: JornadaClienteUrge
           03. Comportamento do Consumidor
         </span>
         <h2 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight leading-snug">
-          Como o cliente decide quando um aparelho quebra em {cidadeCurta || 'sua região'}
+          Como o cliente decide quando precisa de {cenario.rotuloServico} em {cidadeCurta || 'sua região'}
         </h2>
         <p className="text-sm text-zinc-650 mt-1 max-w-[65ch]">
           Entender a cabeça da pessoa com urgência explica por que os anúncios no topo do Google decidem mais de 70% das ordens de serviço.
@@ -43,7 +44,7 @@ export function JornadaClienteUrgente({ nicho, cidadeCurta }: JornadaClienteUrge
                 A pane acontece de surpresa
               </h3>
               <p className="text-xs text-zinc-600 leading-relaxed">
-                A geladeira esquenta com comida dentro, o ar-condicionado para no calor ou a máquina de lavar trava cheia de água. A pessoa precisa de socorro <strong>hoje</strong>.
+                {cenario.fraseDescricao}
               </p>
             </div>
           </div>
@@ -61,7 +62,7 @@ export function JornadaClienteUrgente({ nicho, cidadeCurta }: JornadaClienteUrge
                 Pesquisa com pressa no Google
               </h3>
               <p className="text-xs text-zinc-600 leading-relaxed">
-                A pessoa digita <em>&ldquo;{termo} em {cidadeCurta || 'minha cidade'}&rdquo;</em>. Mais de <strong>70% dos cliques imediatos</strong> acontecem nos 2 primeiros links patrocinados do topo.
+                A pessoa digita <em>&ldquo;{cenario.termoBuscaExemplo} em {cidadeCurta || 'minha cidade'}&rdquo;</em>. Mais de <strong>70% dos cliques imediatos</strong> acontecem nos 2 primeiros links patrocinados do topo.
               </p>
             </div>
           </div>
@@ -88,7 +89,7 @@ export function JornadaClienteUrgente({ nicho, cidadeCurta }: JornadaClienteUrge
         {/* Fechamento Factual do Bloco 03 */}
         <div className="border-l-3 border-emerald-700 bg-emerald-50/50 p-3.5 sm:p-4 rounded-r-lg">
           <p className="text-xs sm:text-[13px] text-emerald-950 leading-relaxed">
-            <strong>A regra de ouro do serviço local:</strong> Quem está com um aparelho quebrado em casa não pesquisa até a 10ª ou 15ª opção da lista. O cliente chama quem está nos primeiros links com um canal direto no WhatsApp. Se você não está no topo, você não concorre a esse serviço.
+            <strong>A regra de ouro do serviço local:</strong> Quem está com {cenario.fraseProblema} não pesquisa até a 10ª ou 15ª opção da lista. O cliente chama quem está nos primeiros links com um canal direto no WhatsApp. Se você não está no topo, você não concorre a esse serviço.
           </p>
         </div>
       </div>
